@@ -267,6 +267,32 @@
             { angleA: 2.8, angleB: 5.9, color: '#bb8844', anchorColor: '#998866' },
         ];
 
+        // Tight junctions: continuous seal between cells, preventing molecules from
+        // passing between them — completes the junction trio (gap, desmosome, tight)
+        var tightJunctions = [];
+        var tjCount = 6;
+        for (var tji = 0; tji < tjCount; tji++) {
+            // Span a band of angles between the two cells (facing each other)
+            var baseA = Math.atan2(cellB.cy - cellA.cy, cellB.cx - cellA.cx);
+            var baseB = Math.atan2(cellA.cy - cellB.cy, cellA.cx - cellB.cx);
+            var spread = (tji - (tjCount - 1) / 2) * 0.18;
+            tightJunctions.push({
+                angleA: baseA + spread,
+                angleB: baseB + spread,
+                phase: tji * 0.9,
+            });
+        }
+
+        // Smooth ER: lipid synthesis tubules, distinct from rough ER (no ribosomes)
+        cellA.smoothER = [
+            { cx: 24, cy: 11, rx: 1.5, ry: 0.8, angle: 0.4 },
+            { cx: 18, cy: 7, rx: 1.2, ry: 0.6, angle: 2.1 },
+        ];
+        cellB.smoothER = [
+            { cx: 14, cy: 25, rx: 1.5, ry: 0.8, angle: 0.7 },
+            { cx: 8, cy: 21, rx: 1.2, ry: 0.6, angle: 2.5 },
+        ];
+
         // Lysosomes: small digestive organelles orbiting in the cytoplasm
         cellA.lysosomes = [
             { orbitR: 2.5, baseAngle: 1.0, speed: 1.2, color: '#8855aa' },
@@ -558,6 +584,30 @@
                 }
             }
 
+            // Smooth ER: lipid-synthesizing tubules rendered as small ellipses
+            var serPixels = {};
+            if (cell.smoothER) {
+                var tSER = (t * 8000 / 7000) % 1.0;
+                for (var sei = 0; sei < cell.smoothER.length; sei++) {
+                    var ser = cell.smoothER[sei];
+                    // Draw small elliptical tubule with pulsing lipid synthesis
+                    var serPulse = Math.sin(tSER * 2 * Math.PI + sei * 2.0);
+                    var serColor = serPulse > 0.3 ? '#aa7744' : '#996633';
+                    for (var sa = 0; sa < 8; sa++) {
+                        var sAngle = sa * 2 * Math.PI / 8 + ser.angle;
+                        var sx = Math.round(ser.cx + Math.cos(sAngle) * ser.rx);
+                        var sy = Math.round(ser.cy + Math.sin(sAngle) * ser.ry);
+                        if (sx >= 0 && sx < size && sy >= 0 && sy < size) {
+                            serPixels[sx + ',' + sy] = serColor;
+                        }
+                    }
+                    // Center pixel: lipid droplet forming
+                    if (serPulse > 0.5) {
+                        serPixels[ser.cx + ',' + ser.cy] = '#ccaa55';
+                    }
+                }
+            }
+
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
             if (cell.filopodia) {
@@ -586,7 +636,8 @@
                 vesPixels: vesPixels, atpPixels: atpPixels,
                 centPixels: centPixels, furrowPixels: furrowPixels,
                 lysoPixels: lysoPixels, filoPixels: filoPixels,
-                riboPixels: riboPixels, peroxPixels: peroxPixels
+                riboPixels: riboPixels, peroxPixels: peroxPixels,
+                serPixels: serPixels
             };
         }
 
@@ -728,6 +779,31 @@
                 }
             }
 
+            // Tight junction pixels: continuous seal band between cells
+            var tjPx = {};
+            var tTJ = (Date.now() % 8000) / 8000;
+            for (var tji = 0; tji < tightJunctions.length; tji++) {
+                var tj = tightJunctions[tji];
+                // Points on each cell's membrane facing the other
+                var tjAx = cellA.cx + Math.cos(tj.angleA) * dA.maxR;
+                var tjAy = cellA.cy + Math.sin(tj.angleA) * dA.maxR;
+                var tjBx = cellB.cx + Math.cos(tj.angleB) * dB.maxR;
+                var tjBy = cellB.cy + Math.sin(tj.angleB) * dB.maxR;
+                // Draw a short strand connecting the two membrane points
+                var tjSteps = Math.max(Math.abs(Math.round(tjBx) - Math.round(tjAx)), Math.abs(Math.round(tjBy) - Math.round(tjAy)));
+                if (tjSteps === 0) tjSteps = 1;
+                // Only draw the middle portion (the seal zone between membranes)
+                for (var tjs = Math.floor(tjSteps * 0.3); tjs <= Math.ceil(tjSteps * 0.7); tjs++) {
+                    var tjx = Math.round(tjAx + (tjBx - tjAx) * tjs / tjSteps);
+                    var tjy = Math.round(tjAy + (tjBy - tjAy) * tjs / tjSteps);
+                    if (tjx >= 0 && tjx < size && tjy >= 0 && tjy < size) {
+                        // Claudin proteins pulse along the seal
+                        var tjPulse = Math.sin(tTJ * 2 * Math.PI + tj.phase + tjs * 0.5);
+                        tjPx[tjx + ',' + tjy] = tjPulse > 0 ? '#ddccaa' : '#ccbb99';
+                    }
+                }
+            }
+
             // Signal molecule positions
             var signalPx = {};
             var tSig = Date.now();
@@ -822,6 +898,8 @@
                                 color = cc.membraneColors[mi];
                             } else if (dd.riboPixels && dd.riboPixels[key]) {
                                 color = dd.riboPixels[key];
+                            } else if (dd.serPixels && dd.serPixels[key]) {
+                                color = dd.serPixels[key];
                             } else if (cc.erPixels[key]) {
                                 color = cc.erColor;
                             } else {
@@ -863,6 +941,10 @@
                         }
                         if (!drawn && desmoPx[key]) {
                             color = desmoPx[key];
+                            drawn = true;
+                        }
+                        if (!drawn && tjPx[key]) {
+                            color = tjPx[key];
                             drawn = true;
                         }
                         if (!drawn && signalPx[key]) {
