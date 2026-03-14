@@ -1944,6 +1944,44 @@
                     if(p>0.5){var p2yR2=p2yR+1.0;
                     s(Math.round(it.x+Math.cos(p2yA)*p2yR2),Math.round(it.y+Math.sin(p2yA)*p2yR2),'#eebb66');}}
                 }},
+                // Muscularis mucosae: thin smooth muscle layer beneath lamina propria
+                // Generates slow peristaltic waves; α-actin filaments with Ca²⁺-dependent contraction
+                // ICC (interstitial cells of Cajal) pace the slow wave; gap junctions couple muscle cells
+                {period:35000, phaseStep:1.57, items:[
+                    {x:29,y:10,color:'#cc7766',dimColor:'#aa5544'},{x:30,y:14,color:'#bb6655',dimColor:'#994433'},
+                    {x:29,y:18,color:'#cc7766',dimColor:'#aa5544'},{x:27,y:22,color:'#bb6655',dimColor:'#994433'},
+                    {x:24,y:26,color:'#cc7766',dimColor:'#aa5544'},{x:20,y:29,color:'#bb6655',dimColor:'#994433'},
+                    {x:15,y:30,color:'#cc7766',dimColor:'#aa5544'},{x:10,y:30,color:'#bb6655',dimColor:'#994433'},
+                    {x:6,y:27,color:'#cc7766',dimColor:'#aa5544'},{x:4,y:23,color:'#bb6655',dimColor:'#994433'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // α-actin filaments: elongated contractile fibers tangent to the muscle layer arc
+                    var tanA=Math.atan2(it.y-16,it.x-16)+Math.PI*0.5;
+                    var contrP=Math.sin(ph*0.8+idx*0.628);
+                    var contrShort=contrP>0?0.85:1.0;
+                    for(var fi=0;fi<2;fi++){var fDir=fi===0?1:-1;
+                    var fA=tanA+fDir*0.08*contrP;
+                    var fX=Math.round(it.x+Math.cos(fA)*contrShort),fY=Math.round(it.y+Math.sin(fA)*contrShort);
+                    if(inB(fX,fY))s(fX,fY,contrP>0.3?'#dd8877':'#bb7766');}
+                    // Peristaltic wave: Ca²⁺ flash propagates sequentially along muscle arc
+                    var wavePh=(t*3.0+idx*0.1)%1.0;
+                    var waveAmp=Math.sin(wavePh*2*Math.PI);
+                    if(waveAmp>0.5){var caX=Math.round(it.x+Math.cos(tanA)*0.5),caY=Math.round(it.y+Math.sin(tanA)*0.5);
+                    if(inB(caX,caY))s(caX,caY,waveAmp>0.8?'#ffeeaa':'#eedd88');}
+                    // ICC pacemaker cell (every 3rd muscle cell): generates slow wave depolarization
+                    if(idx%3===0){var iccA=Math.atan2(16-it.y,16-it.x);
+                    var iccP=Math.sin(ph*1.5+idx*2.3);
+                    var iccX=Math.round(it.x+Math.cos(iccA)*0.8),iccY=Math.round(it.y+Math.sin(iccA)*0.8);
+                    if(inB(iccX,iccY))s(iccX,iccY,iccP>0?'#eecc44':'#ccaa33');
+                    // ICC gap junction coupling: current spreads to neighboring muscle cells
+                    if(iccP>0.4){var gjA=tanA+0.3;
+                    var gjX=Math.round(it.x+Math.cos(gjA)*1.5),gjY=Math.round(it.y+Math.sin(gjA)*1.5);
+                    if(inB(gjX,gjY))s(gjX,gjY,'#ddcc77');}}
+                    // Dense bodies: smooth muscle focal adhesions anchoring actin to membrane
+                    if(idx%2===0&&Math.sin(ph*2.0+idx*1.7)>0.2){
+                    var dbA=Math.atan2(it.y-16,it.x-16);
+                    var dbX=Math.round(it.x+Math.cos(dbA)*0.7),dbY=Math.round(it.y+Math.sin(dbA)*0.7);
+                    if(inB(dbX,dbY))s(dbX,dbY,'#996655');}
+                }},
             ]);
             // Meissner's (submucosal) plexus: enteric neuron ganglia
             // Cholinergic neurons release ACh → epithelial secretion; VIPergic neurons → vasodilation
