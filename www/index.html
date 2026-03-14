@@ -152,9 +152,15 @@
             { fromCell: 'B', toCell: 'A', color: '#66aaff', speed: 0.0003, phase: 0.55 },
         ];
 
-        function drawCell(cell, t, tOrbit, tCilia, tChromatin) {
+        // G1 growth: cells slowly grow as they absorb nutrients
+        // Growth oscillates gently to show metabolic activity
+        var growthRate = 0.4; // max additional radius from growth
+
+        function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
-            var maxR = cell.radius + breath * 0.3;
+            // G1 growth: cells expand as they absorb nutrients and receive signals
+            var growthPulse = (1 + Math.sin(tGrowth * 2 * Math.PI)) * 0.5; // 0 to 1
+            var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
             var nucR = cell.nucleusRadius + nucleusPulse * 0.2;
@@ -219,14 +225,24 @@
                 }
             }
 
-            // Receptor pixels on membrane
+            // Receptor pixels on membrane — glow when activated by nearby signals
             var recPixels = {};
             for (var ri = 0; ri < cell.receptors.length; ri++) {
                 var rec = cell.receptors[ri];
                 var recR = maxR - 0.5;
                 var rx = Math.round(cell.cx + Math.cos(rec.angle) * recR);
                 var ry = Math.round(cell.cy + Math.sin(rec.angle) * recR);
-                recPixels[rx + ',' + ry] = rec.color;
+                // Activated receptors pulse brighter (signal transduction)
+                var activePulse = Math.sin(tGrowth * 2 * Math.PI + ri * 1.5);
+                if (activePulse > 0.3) {
+                    recPixels[rx + ',' + ry] = '#ffffff'; // receptor fires white when active
+                    // Cascade pixel: signal travels one pixel inward toward cytoplasm
+                    var cascX = Math.round(cell.cx + Math.cos(rec.angle) * (recR - 1.5));
+                    var cascY = Math.round(cell.cy + Math.sin(rec.angle) * (recR - 1.5));
+                    recPixels[cascX + ',' + cascY] = rec.color;
+                } else {
+                    recPixels[rx + ',' + ry] = rec.color;
+                }
             }
 
             // Vesicles along ER
@@ -258,18 +274,29 @@
             var tCilia = (Date.now() % 4000) / 4000 * 2 * Math.PI;
             var tChromatin = (Date.now() % 10000) / 10000 * 2 * Math.PI;
             var tNutrient = (Date.now() % 20000) / 20000 * 2 * Math.PI;
+            var tGrowth = (Date.now() % 16000) / 16000; // slow growth cycle
 
-            var dA = drawCell(cellA, t, tOrbit, tCilia, tChromatin);
-            var dB = drawCell(cellB, t, tOrbit, tCilia, tChromatin);
+            var dA = drawCell(cellA, t, tOrbit, tCilia, tChromatin, tGrowth);
+            var dB = drawCell(cellB, t, tOrbit, tCilia, tChromatin, tGrowth + 0.5);
 
-            // Nutrient positions
+            // Nutrient positions — nutrients drift but are attracted toward nearby cells
             var nutrientPx = {};
             for (var ni = 0; ni < nutrients.length; ni++) {
                 var n = nutrients[ni];
-                var ndx = Math.round(Math.sin(tNutrient + ni * 1.7) * 1);
-                var ndy = Math.round(Math.cos(tNutrient + ni * 2.3) * 1);
-                var nx = n.x + ndx;
-                var ny = n.y + ndy;
+                var ndx = Math.sin(tNutrient + ni * 1.7) * 1;
+                var ndy = Math.cos(tNutrient + ni * 2.3) * 1;
+                // Chemotaxis: nutrients drift toward nearest cell
+                var dToA = Math.sqrt((n.x - cellA.cx) * (n.x - cellA.cx) + (n.y - cellA.cy) * (n.y - cellA.cy));
+                var dToB = Math.sqrt((n.x - cellB.cx) * (n.x - cellB.cx) + (n.y - cellB.cy) * (n.y - cellB.cy));
+                var nearCell = dToA < dToB ? cellA : cellB;
+                var dNear = Math.min(dToA, dToB);
+                if (dNear < 12 && dNear > 2) {
+                    var pullStr = 0.5 * (1 - dNear / 12);
+                    ndx += (nearCell.cx - n.x) / dNear * pullStr;
+                    ndy += (nearCell.cy - n.y) / dNear * pullStr;
+                }
+                var nx = Math.round(n.x + ndx);
+                var ny = Math.round(n.y + ndy);
                 if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
                     nutrientPx[nx + ',' + ny] = n.color;
                 }
