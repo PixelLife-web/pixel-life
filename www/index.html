@@ -279,6 +279,15 @@
             gn.centrosomeDist = 1.0 + gn.nucleolusSize * 0.3;
         }
 
+        // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
+        // Allow direct cytoplasmic exchange of organelles, ions, and signaling molecules
+        // Each TNT connects two neighboring granddaughters — the tissue's private communication network
+        var tunnelingNanotubes = [
+            { from: 0, to: 1, phase: 0, cargoColor: '#ffaa55', tubeColor: '#998877' },   // GD0 ↔ GD1 (sisters from A)
+            { from: 2, to: 3, phase: 0.33, cargoColor: '#55aaff', tubeColor: '#998877' }, // GD2 ↔ GD3 (sisters from B)
+            { from: 1, to: 2, phase: 0.66, cargoColor: '#aa55ff', tubeColor: '#887766' }, // GD1 ↔ GD2 (cross-lineage bridge)
+        ];
+
         // Calcium waves: tissue-level signaling between granddaughter nuclei
         // IP3-mediated Ca2+ release propagates sequentially through the four-cell cluster
         var calciumWaves = [];
@@ -748,82 +757,6 @@
                         nucPixels[pole.x + ',' + pole.y] = cell.nucleolusColor;
                     }
                 }
-            } else if (cell.separated) {
-                // Nucleus — in prophase, envelope starts to become discontinuous
-                var unifiedNucR = nucR + 0.9;
-                var isProphase = cell.prophase ? true : false;
-                var isPrometa = cell.prophase && cell.prophase.prometaphase;
-                for (var ea = 0; ea < 24; ea++) {
-                    var eAngle = ea * 2 * Math.PI / 24;
-                    if (isPrometa) {
-                        if (ea % 8 !== 0) continue;
-                        var flickerT = Math.sin(t * 2 * Math.PI * 4 + ea * 1.2);
-                        if (flickerT > -0.4) continue;
-                    } else if (isProphase && cell.prophase.laminPhospho > 0) {
-                        // Lamin phosphorylation: envelope flickers more as CDK1 weakens lamina
-                        var flickerT = Math.sin(t * 2 * Math.PI * 3 + ea * 0.8);
-                        var laminThresh = -0.3 + cell.prophase.laminPhospho * 0.8;
-                        // At critical phosphorylation (>0.6), most envelope positions are gaps
-                        var gapPositions = cell.prophase.laminPhospho > 0.6
-                            ? (ea % 2 === 0 || ea % 3 === 0 || ea % 5 === 1)
-                            : cell.prophase.laminPhospho > 0.35
-                            ? (ea % 3 === 0 || ea % 5 === 1 || ea % 7 === 3)
-                            : (ea % 4 === 0 || ea % 6 === 2);
-                        if (gapPositions && flickerT > laminThresh) continue;
-                    } else if (isProphase) {
-                        var flickerT = Math.sin(t * 2 * Math.PI * 3 + ea * 0.8);
-                        if ((ea % 4 === 0 || ea % 6 === 2) && flickerT > -0.1) continue;
-                    }
-                    var ex = Math.round(cell.cx + Math.cos(eAngle) * unifiedNucR);
-                    var ey = Math.round(cell.cy + Math.sin(eAngle) * unifiedNucR);
-                    if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
-                        // Lamin phosphorylation dims envelope — lamina dissolving into soluble dimers
-                        var envColor = isProphase
-                            ? (cell.prophase.laminPhospho > 0.6 ? '#997711' : (cell.prophase.laminPhospho > 0.35 ? '#bb8822' : (cell.prophase.laminPhospho > 0.1 ? '#cc9933' : '#ddaa33')))
-                            : cell.nucleusEdge;
-                        envPixels[ex + ',' + ey] = envColor;
-                    }
-                }
-                nucPixels[cell.cx + ',' + cell.cy] = cell.nucleolusColor;
-                nucPixels[(cell.cx + 1) + ',' + cell.cy] = cell.nucleusColor;
-                nucPixels[(cell.cx - 1) + ',' + cell.cy] = cell.nucleusColor;
-                // Envelope vesicles: membrane fragments drifting outward as NE breaks apart
-                if (cell.prophase && cell.prophase.envelopeVesicles) {
-                    var tVes2 = (t * 8000 / 6000) % 1.0;
-                    for (var evi = 0; evi < 6; evi++) {
-                        var evAngle = evi * 2 * Math.PI / 6 + tVes2 * 0.5;
-                        // Vesicles drift outward from nucleus edge
-                        var evDrift = unifiedNucR + 0.5 + ((tVes2 + evi * 0.17) % 1.0) * 2.0;
-                        var evx = Math.round(cell.cx + Math.cos(evAngle) * evDrift);
-                        var evy = Math.round(cell.cy + Math.sin(evAngle) * evDrift);
-                        var evDist = Math.sqrt((evx - cell.cx) * (evx - cell.cx) + (evy - cell.cy) * (evy - cell.cy));
-                        if (evDist < maxR - 0.5 && evx >= 0 && evx < size && evy >= 0 && evy < size) {
-                            var evPulse = Math.sin(tVes2 * 2 * Math.PI + evi * 1.3);
-                            envPixels[evx + ',' + evy] = evPulse > 0 ? '#aa8833' : '#887722';
-                        }
-                    }
-                }
-            } else if (cell.centrosomes && cell.centrosomes.length >= 2) {
-                var pole0 = cell.centrosomes[0];
-                var pole1 = cell.centrosomes[1];
-                var reformR = envR + nucSwell;
-                for (var ea = 0; ea < 20; ea++) {
-                    var eAngle = ea * 2 * Math.PI / 20;
-                    var ex0 = Math.round(pole0.x + Math.cos(eAngle) * reformR * 0.7);
-                    var ey0 = Math.round(pole0.y + Math.sin(eAngle) * reformR * 0.7);
-                    var ex1 = Math.round(pole1.x + Math.cos(eAngle) * reformR * 0.7);
-                    var ey1 = Math.round(pole1.y + Math.sin(eAngle) * reformR * 0.7);
-                    if (ex0 >= 0 && ex0 < size && ey0 >= 0 && ey0 < size) {
-                        envPixels[ex0 + ',' + ey0] = cell.nucleusEdge;
-                    }
-                    if (ex1 >= 0 && ex1 < size && ey1 >= 0 && ey1 < size) {
-                        envPixels[ex1 + ',' + ey1] = cell.nucleusEdge;
-                    }
-                }
-                nucPixels[pole0.x + ',' + pole0.y] = cell.nucleolusColor;
-                nucPixels[pole1.x + ',' + pole1.y] = cell.nucleolusColor;
-                nucPixels[(pole0.x + 1) + ',' + pole0.y] = cell.nucleusColor;
-                nucPixels[(pole1.x - 1) + ',' + pole1.y] = cell.nucleusColor;
             }
 
             // PROPHASE: chromatin condenses into distinct chromosomes
@@ -855,123 +788,15 @@
                         var deconR = 0.5 + Math.sin(tChromatin * 0.05 + chi * 0.8) * 0.3;
                         driftX = Math.round(targetPole.x + Math.cos(deconAngle) * deconR);
                         driftY = Math.round(targetPole.y + Math.sin(deconAngle) * deconR);
-                    } else if (isAnaphase) {
-                        // LATE ANAPHASE: sister chromatids nearly at poles
-                        var halfLen = Math.floor(allChromatin.length / 2);
-                        var goesToPole1 = chi < halfLen;
-                        var targetPole = goesToPole1 ? cell.prophase.pole1Target : cell.prophase.pole2Target;
-                        // Late anaphase: sisters 85% to poles, slight oscillation as they decelerate
-                        var anaBase = cell.prophase.lateAnaphase ? 0.85 : 0.5;
-                        var anaProgress = anaBase + Math.sin(tChromatin * 0.06 + chi * 0.3) * 0.08;
-                        var spindleAngle = Math.atan2(
-                            cell.prophase.pole2Target.y - cell.prophase.pole1Target.y,
-                            cell.prophase.pole2Target.x - cell.prophase.pole1Target.x
-                        );
-                        var perpAngle = spindleAngle + Math.PI / 2;
-                        var localIdx = goesToPole1 ? chi : (chi - halfLen);
-                        var localSpread = (localIdx - halfLen / 2) * 0.4;
-                        // Interpolate from plate to pole
-                        driftX = Math.round(plateX + (targetPole.x - plateX) * anaProgress + Math.cos(perpAngle) * localSpread * (1 - anaProgress * 0.5));
-                        driftY = Math.round(plateY + (targetPole.y - plateY) * anaProgress + Math.sin(perpAngle) * localSpread * (1 - anaProgress * 0.5));
-                    } else if (isMeta) {
-                        // METAPHASE: chromosomes locked at metaphase plate in a neat line
-                        var spindleAngle = Math.atan2(
-                            cell.prophase.pole2Target.y - cell.prophase.pole1Target.y,
-                            cell.prophase.pole2Target.x - cell.prophase.pole1Target.x
-                        );
-                        var perpAngle = spindleAngle + Math.PI / 2;
-                        var plateSpread = (chi - allChromatin.length / 2) * 0.35;
-                        driftX = Math.round(plateX + Math.cos(perpAngle) * plateSpread);
-                        driftY = Math.round(plateY + Math.sin(perpAngle) * plateSpread);
-                    } else if (isPrometa) {
-                        // Prometaphase: chromosomes congress toward metaphase plate
-                        // congressProgress controls how tightly aligned they are
-                        var baseFrac = cell.prophase.congressProgress || 0.5;
-                        var congressFrac = baseFrac + Math.sin(tChromatin * 0.08 + chi * 0.9) * (0.15 * (1.0 - baseFrac));
-                        var spindleAngle = Math.atan2(
-                            cell.prophase.pole2Target.y - cell.prophase.pole1Target.y,
-                            cell.prophase.pole2Target.x - cell.prophase.pole1Target.x
-                        );
-                        var perpAngle = spindleAngle + Math.PI / 2;
-                        var plateSpread = (chi - allChromatin.length / 2) * 0.35;
-                        var fromCenterX = cell.cx + Math.cos(diffAngle = chi * 2 * Math.PI / allChromatin.length) * 0.3;
-                        var fromCenterY = cell.cy + Math.sin(chi * 2 * Math.PI / allChromatin.length) * 0.3;
-                        var targetX = plateX + Math.cos(perpAngle) * plateSpread;
-                        var targetY = plateY + Math.sin(perpAngle) * plateSpread;
-                        // Jitter decreases as congress progresses — chromosomes settle into alignment
-                        var jitterAmp = 0.4 * (1.0 - baseFrac);
-                        var jitter = Math.sin(tChromatin * 0.2 + chi * 2.1) * jitterAmp;
-                        driftX = Math.round(fromCenterX + (targetX - fromCenterX) * congressFrac + jitter);
-                        driftY = Math.round(fromCenterY + (targetY - fromCenterY) * congressFrac + jitter);
-                    } else {
-                        // Condensing: radius shrinks as condensation increases
-                        diffuseR = (1.0 - cond) * 0.6 + cond * 0.2 + Math.sin(tChromatin * 0.3 + chi * 1.2) * (0.15 * (1.0 - cond));
-                        diffAngle = chi * 2 * Math.PI / allChromatin.length + tChromatin * 0.02 * (1.0 - cond);
-                        driftX = Math.round(cell.cx + Math.cos(diffAngle) * diffuseR);
-                        driftY = Math.round(cell.cy + Math.sin(diffAngle) * diffuseR);
                     }
                     // Condensed chromosomes are brighter, thicker — condensin complexes glow
                     var condPulse = Math.sin(tChromatin * 0.15 + chi * 0.7);
                     var chrColor = cond > 0.5 ? (condPulse > 0 ? '#e0a070' : '#d09060') : (condPulse > 0.3 ? '#d09060' : '#c08050');
                     // Telophase: chromatids decondensing — softer, diffusing color
-                    if (isTelophase) {
-                        var deconGlow = Math.sin(tChromatin * 0.08 + chi * 0.5);
-                        chrColor = deconGlow > 0 ? '#d8b888' : '#c8a878';
-                    } else if (isAnaphase) {
-                        var halfLen2 = Math.floor(allChromatin.length / 2);
-                        var anaGlow = Math.sin(tChromatin * 0.1 + chi * 0.6);
-                        // Chromatids heading to pole1 vs pole2 get subtly different hues
-                        chrColor = chi < halfLen2
-                            ? (anaGlow > 0 ? '#f8d898' : '#e8c888')
-                            : (anaGlow > 0 ? '#f0c890' : '#e0b880');
-                    } else if (isMeta) {
-                        var tensionGlow = Math.sin(tChromatin * 0.08 + chi * 0.5);
-                        chrColor = tensionGlow > 0 ? '#f4c488' : '#e8b878';
-                    } else if (isPrometa) {
-                        var kineGlow = Math.sin(tChromatin * 0.12 + chi * 1.3);
-                        // Near-metaphase: chromosomes brighter as bipolar tension increases
-                        var sacGlow = cell.prophase.sacSatisfaction || 0;
-                        chrColor = sacGlow > 0.5
-                            ? (kineGlow > 0.2 ? '#f4c488' : '#e8b478')  // tension-bright, approaching metaphase
-                            : (kineGlow > 0.2 ? '#f0b878' : '#e0a868');
-                    }
+                    var deconGlow = Math.sin(tChromatin * 0.08 + chi * 0.5);
+                    chrColor = deconGlow > 0 ? '#d8b888' : '#c8a878';
                     if (driftX >= 0 && driftX < size && driftY >= 0 && driftY < size) {
                         chrPixels[driftX + ',' + driftY] = chrColor;
-                    }
-                    // Paired sister chromatid (adjacent pixel) — NOT in anaphase (sisters separated)
-                    if ((cond > 0.5 || isPrometa || isMeta) && !isAnaphase) {
-                        var sAngle = (isPrometa || isMeta)
-                            ? Math.atan2(cell.prophase.pole2Target.y - cell.prophase.pole1Target.y,
-                                         cell.prophase.pole2Target.x - cell.prophase.pole1Target.x)
-                            : (chi * 2 * Math.PI / allChromatin.length + tChromatin * 0.02);
-                        var sx = Math.round(driftX + Math.cos(sAngle) * 0.6);
-                        var sy = Math.round(driftY + Math.sin(sAngle) * 0.6);
-                        if (sx >= 0 && sx < size && sy >= 0 && sy < size) {
-                            // Metaphase: sisters under tension pulse with securin glow
-                            var sisterColor = isMeta
-                                ? (condPulse > 0 ? '#e8b478' : '#d8a468')
-                                : (condPulse > 0 ? '#d8a068' : '#c89058');
-                            chrPixels[sx + ',' + sy] = sisterColor;
-                        }
-                    }
-                }
-            } else if (cell.centrosomes && cell.centrosomes.length >= 2) {
-                var pole0 = cell.centrosomes[0];
-                var pole1 = cell.centrosomes[1];
-                for (var chi = 0; chi < cell.chromatin.length; chi++) {
-                    var diffuseR = 0.4 + Math.sin(tChromatin * 0.5 + chi * 1.6) * 0.2;
-                    var diffAngle = chi * 2 * Math.PI / cell.chromatin.length + tChromatin * 0.08;
-                    var driftX = Math.round(pole0.x + Math.cos(diffAngle) * diffuseR);
-                    var driftY = Math.round(pole0.y + Math.sin(diffAngle) * diffuseR);
-                    chrPixels[driftX + ',' + driftY] = '#c08050';
-                }
-                if (cell.sisterChromatin) {
-                    for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
-                        var diffR2 = 0.4 + Math.sin(tChromatin * 0.5 + rci * 1.6 + 1.0) * 0.2;
-                        var diffAngle2 = rci * 2 * Math.PI / cell.sisterChromatin.length + tChromatin * 0.08 + 0.5;
-                        var sDriftX = Math.round(pole1.x + Math.cos(diffAngle2) * diffR2);
-                        var sDriftY = Math.round(pole1.y + Math.sin(diffAngle2) * diffR2);
-                        chrPixels[sDriftX + ',' + sDriftY] = '#c08050';
                     }
                 }
             }
@@ -1186,57 +1011,6 @@
                                 var ab2y = Math.round(kfPlateY + Math.sin(kfPerpAngle) * 0.8);
                                 if (ab2x >= 0 && ab2x < size && ab2y >= 0 && ab2y < size) {
                                     centPixels[ab2x + ',' + ab2y] = abPulse > 0.7 ? '#dd44dd' : '#bb33bb';
-                                }
-                            }
-                        }
-                    }
-                } else if (cell.separated) {
-                    // Duplicating centrosome: two centrioles orbit each other near nucleus
-                    var cs = cell.centrosomes[0];
-                    var tCentDup = (t * 8000 / 9000) % 1.0;
-                    var dupSep = 1.2;
-                    var dupAngle = tCentDup * 2 * Math.PI * 0.3;
-                    var c1x = Math.round(cs.x + Math.cos(dupAngle) * dupSep * 0.5);
-                    var c1y = Math.round(cs.y + Math.sin(dupAngle) * dupSep * 0.5);
-                    var c2x = Math.round(cs.x - Math.cos(dupAngle) * dupSep * 0.5);
-                    var c2y = Math.round(cs.y - Math.sin(dupAngle) * dupSep * 0.5);
-                    if (c1x >= 0 && c1x < size && c1y >= 0 && c1y < size) {
-                        centPixels[c1x + ',' + c1y] = '#ddcc44';
-                    }
-                    if (c2x >= 0 && c2x < size && c2y >= 0 && c2y < size) {
-                        var centPulse = Math.sin(tCentDup * 2 * Math.PI);
-                        centPixels[c2x + ',' + c2y] = centPulse > 0 ? '#ccbb33' : '#bbaa22';
-                    }
-                    var pcmAngle = dupAngle + Math.PI / 2;
-                    var pcmX = Math.round(cs.x + Math.cos(pcmAngle) * 0.8);
-                    var pcmY = Math.round(cs.y + Math.sin(pcmAngle) * 0.8);
-                    if (pcmX >= 0 && pcmX < size && pcmY >= 0 && pcmY < size) {
-                        centPixels[pcmX + ',' + pcmY] = '#99882e';
-                    }
-                } else {
-                    var tCent = (t * 8000 / 3000) % 1.0;
-                    for (var csi = 0; csi < cell.centrosomes.length; csi++) {
-                        var cs = cell.centrosomes[csi];
-                        centPixels[cs.x + ',' + cs.y] = '#ddcc44';
-                    }
-                    if (cell.centrosomes.length >= 2) {
-                        var c0 = cell.centrosomes[0];
-                        var c1 = cell.centrosomes[1];
-                        var midX = (c0.x + c1.x) / 2;
-                        var midY = (c0.y + c1.y) / 2;
-                        var fAxisX = c1.x - c0.x;
-                        var fAxisY = c1.y - c0.y;
-                        var fAxisLen = Math.sqrt(fAxisX * fAxisX + fAxisY * fAxisY);
-                        if (fAxisLen > 0) {
-                            var fPerpX = -fAxisY / fAxisLen;
-                            var fPerpY = fAxisX / fAxisLen;
-                            var furrowLen = cell.furrowProgress ? cell.furrowProgress * maxR : 0;
-                            for (var fi = -3; fi <= 3; fi++) {
-                                var fx = Math.round(midX + fPerpX * fi * furrowLen);
-                                var fy = Math.round(midY + fPerpY * fi * furrowLen);
-                                if (fx >= 0 && fx < size && fy >= 0 && fy < size) {
-                                    var fIntensity = 1.0 - Math.abs(fi) / 3.0;
-                                    furrowPixels[fx + ',' + fy] = fIntensity > 0.5 ? '#774422' : '#995533';
                                 }
                             }
                         }
@@ -1769,72 +1543,6 @@
                                     ? (fPulse > 0 ? '#552200' : '#441100')
                                     : (fPulse > 0 ? '#774422' : '#663311');
                                 sacPixels[fX + ',' + fY] = fColor;
-                            }
-                        }
-                    }
-                } else if (cell.prophase.lateAnaphase) {
-                    // LATE ANAPHASE: central spindle midzone assembles between separating masses
-                    // Centralspindlin (MKLP1 + CYK-4) + PRC1 bundles antiparallel MTs
-                    var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-                    var perpAngle = spindleAngle + Math.PI / 2;
-                    // Midzone: bundle of overlapping MTs at the cell equator
-                    for (var mzI = -1; mzI <= 1; mzI++) {
-                        var mzPerpOff = mzI * 0.7;
-                        for (var mzL = -1; mzL <= 1; mzL++) {
-                            var mzX = Math.round(sacMidX + Math.cos(spindleAngle) * mzL * 0.6 + Math.cos(perpAngle) * mzPerpOff);
-                            var mzY = Math.round(sacMidY + Math.sin(spindleAngle) * mzL * 0.6 + Math.sin(perpAngle) * mzPerpOff);
-                            if (mzX >= 0 && mzX < size && mzY >= 0 && mzY < size) {
-                                var mzPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + mzI * 1.2 + mzL * 0.8);
-                                // PRC1 bundles glow green-blue; centralspindlin pulses
-                                sacPixels[mzX + ',' + mzY] = mzPulse > 0 ? '#66ccbb' : '#55aa99';
-                            }
-                        }
-                    }
-                    // Aurora B kinase: relocated from kinetochores to midzone
-                    var abMzPulse = Math.sin(tSAC * 2 * Math.PI * 2.5);
-                    if (abMzPulse > -0.3) {
-                        var abMzX = Math.round(sacMidX);
-                        var abMzY = Math.round(sacMidY);
-                        if (abMzX >= 0 && abMzX < size && abMzY >= 0 && abMzY < size) {
-                            sacPixels[abMzX + ',' + abMzY] = abMzPulse > 0.5 ? '#ff66ff' : '#dd55dd'; // Aurora B magenta
-                        }
-                    }
-                    // APC/C: continues degrading cyclin B — dim ring expanding outward
-                    var apcPulse = Math.sin(tSAC * 2 * Math.PI * 0.5 + 1.0);
-                    if (apcPulse > 0.3) {
-                        for (var apcI = 0; apcI < 3; apcI++) {
-                            var apcAngle = apcI * 2 * Math.PI / 3 + tSAC * 0.6;
-                            var apcR = 2.0 + apcPulse * 0.5;
-                            var apcX = Math.round(sacMidX + Math.cos(apcAngle) * apcR);
-                            var apcY = Math.round(sacMidY + Math.sin(apcAngle) * apcR);
-                            if (apcX >= 0 && apcX < size && apcY >= 0 && apcY < size) {
-                                sacPixels[apcX + ',' + apcY] = '#bb7799'; // dimmer APC/C
-                            }
-                        }
-                    }
-                } else {
-                    // Early anaphase: separase flashes (kept for backward compat)
-                    var sepPulse = Math.sin(tSAC * 2 * Math.PI * 1.2);
-                    if (sepPulse > 0.2) {
-                        var sepAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x) + Math.PI / 2;
-                        for (var sepI = -1; sepI <= 1; sepI++) {
-                            var sepX = Math.round(sacMidX + Math.cos(sepAngle) * sepI * 0.8);
-                            var sepY = Math.round(sacMidY + Math.sin(sepAngle) * sepI * 0.8);
-                            if (sepX >= 0 && sepX < size && sepY >= 0 && sepY < size) {
-                                sacPixels[sepX + ',' + sepY] = sepPulse > 0.6 ? '#ffffaa' : '#ddddaa';
-                            }
-                        }
-                    }
-                    // APC/C degradation wave
-                    var apcPulse = Math.sin(tSAC * 2 * Math.PI * 0.5 + 1.0);
-                    if (apcPulse > 0.4) {
-                        for (var apcI = 0; apcI < 4; apcI++) {
-                            var apcAngle = apcI * Math.PI / 2 + tSAC * 0.8;
-                            var apcR = 1.5 + apcPulse * 0.8;
-                            var apcX = Math.round(sacMidX + Math.cos(apcAngle) * apcR);
-                            var apcY = Math.round(sacMidY + Math.sin(apcAngle) * apcR);
-                            if (apcX >= 0 && apcX < size && apcY >= 0 && apcY < size) {
-                                sacPixels[apcX + ',' + apcY] = '#cc88aa';
                             }
                         }
                     }
@@ -2480,6 +2188,37 @@
                                     if (Math.abs(gnDist - auraR) < auraWidth && auraPulse > 0) {
                                         color = auraPulse > 0.5 ? '#ffdd88' : '#eebb66';
                                         drawn = true;
+                                    }
+                                }
+                            }
+                        }
+                        // Tunneling nanotubes: thin bridges between adjacent granddaughter cells
+                        if (!drawn) {
+                            var tTNT = (Date.now() % 10000) / 10000;
+                            for (var tntI = 0; tntI < tunnelingNanotubes.length && !drawn; tntI++) {
+                                var tnt = tunnelingNanotubes[tntI];
+                                var gnFrom = granddaughterNuclei[tnt.from];
+                                var gnTo = granddaughterNuclei[tnt.to];
+                                // Tube path: line of pixels between the two granddaughter cell bodies
+                                var tntDx = gnTo.x - gnFrom.x, tntDy = gnTo.y - gnFrom.y;
+                                var tntLen = Math.sqrt(tntDx * tntDx + tntDy * tntDy);
+                                var tntSteps = Math.ceil(tntLen);
+                                for (var tntS = 0; tntS <= tntSteps; tntS++) {
+                                    var tntFrac = tntS / tntSteps;
+                                    var tntPx = Math.round(gnFrom.x + tntDx * tntFrac);
+                                    var tntPy = Math.round(gnFrom.y + tntDy * tntFrac);
+                                    if (x === tntPx && y === tntPy) {
+                                        // Skip pixels inside cell bodies
+                                        var insideFrom = Math.sqrt((tntPx-gnFrom.x)*(tntPx-gnFrom.x)+(tntPy-gnFrom.y)*(tntPy-gnFrom.y)) < gnFrom.bodyRadius;
+                                        var insideTo = Math.sqrt((tntPx-gnTo.x)*(tntPx-gnTo.x)+(tntPy-gnTo.y)*(tntPy-gnTo.y)) < gnTo.bodyRadius;
+                                        if (!insideFrom && !insideTo) {
+                                            // Cargo vesicle shuttling along the tube
+                                            var cargoFrac = (tTNT + tnt.phase) % 1.0;
+                                            var cargoPos = cargoFrac < 0.5 ? cargoFrac * 2 : (1.0 - cargoFrac) * 2;
+                                            var isCargo = Math.abs(tntFrac - cargoPos) < 0.12;
+                                            color = isCargo ? tnt.cargoColor : tnt.tubeColor;
+                                            drawn = true;
+                                        }
                                     }
                                 }
                             }
