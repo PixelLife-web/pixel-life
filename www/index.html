@@ -412,7 +412,7 @@
             { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
         ];
 
-        // G2 PHASE: S phase complete, genome fully duplicated — 4n DNA content
+        // G2 PHASE: replication finished, genome fully duplicated — 4n DNA content
 
         // Genome: "PETAR RAKOVI" encoded as nucleotide colors — the cell's genetic identity
         // Each letter maps to a base color; the sequence is read during S phase replication
@@ -440,14 +440,9 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // Cyclin E-CDK2: fully degraded by SCF-Skp2 ubiquitination
-        // Only a dim cytoplasmic remnant detectable — CDK2 exclusively bound to cyclin A now
-        cellA.cyclinE = [
-            { orbitR: 2.8, baseAngle: 0.5, speed: 0.35, color: '#155540', nuclear: false },
-        ];
-        cellB.cyclinE = [
-            { orbitR: 2.6, baseAngle: 2.2, speed: -0.32, color: '#155540', nuclear: false },
-        ];
+        // Cyclin E-CDK2: completely degraded — no trace remains in G2
+        cellA.cyclinE = [];
+        cellB.cyclinE = [];
 
         // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
         // They reverse CDK1 effects on lamins, condensins, NPCs — restoring interphase state
@@ -485,20 +480,22 @@
         cellA.e2fFactors = [];
         cellB.e2fFactors = [];
 
-        // Cyclin A-CDK2: dominant S-phase kinase, now at high concentration
-        // Phosphorylates pre-RC components (Cdc6, Cdt1) preventing re-replication
-        // 4th particle: cyclin A continues accumulating toward G2 threshold
+        // Cyclin A-CDK2: G2 peak — highest concentration before mitotic entry
+        // Prevents re-replication (Cdc6/Cdt1 phosphorylated), primes CDK1 activation
+        // 5th particle: cyclin A at G2 maximum, will be destroyed in prometaphase
         cellA.cyclinA = [
             { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
             { orbitR: 3.4, baseAngle: 1.5, speed: 0.35, color: '#dd77aa' },
             { orbitR: 1.2, baseAngle: 0.3, speed: 0.65, color: '#ee88bb' },
             { orbitR: 2.0, baseAngle: 5.5, speed: -0.5, color: '#dd88aa' },
+            { orbitR: 1.8, baseAngle: 2.8, speed: 0.48, color: '#dd6699' },
         ];
         cellB.cyclinA = [
             { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
             { orbitR: 3.4, baseAngle: 4.3, speed: -0.38, color: '#dd77aa' },
             { orbitR: 1.2, baseAngle: 3.2, speed: -0.6, color: '#ee88bb' },
             { orbitR: 2.0, baseAngle: 2.5, speed: 0.48, color: '#dd88aa' },
+            { orbitR: 1.8, baseAngle: 5.8, speed: -0.45, color: '#dd6699' },
         ];
 
         // Cyclin D-CDK4/6: mitogen-responsive G1 cyclin, driven by MAPK/ERK cascade
@@ -515,30 +512,17 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // LATE S PHASE: replication forks converge at termination zones
-        // Cohesin rings (Smc1/Smc3) established behind forks by Eco1 acetyltransferase
-        // Cyclin E fully degraded (SCF-Skp2 complete), cyclin A-CDK2 sole S-phase kinase
-        // Topoisomerase II resolves catenanes between newly replicated sister chromatids
+        // G2 PHASE: S phase complete, genome fully replicated (4n DNA content)
+        // All replication forks have terminated — PCNA/RPA unloaded
+        // Cohesins locked on sisters, topoII finishing decatenation
+        // Cyclin A-CDK2 high, cyclin B accumulating in cytoplasm (CRM1 exports it from nucleus)
         cellA.prophase = null;
         cellB.prophase = null;
 
-        // Replication forks: bidirectional forks emanate from fired origins
-        // Each fork has two arms (leading/lagging strand) moving in opposite directions
-        // PCNA sliding clamps ride at each fork; RPA coats single-stranded DNA
-        // Replication forks: early + late-firing origins now active
-        // 4th fork = late replicon firing as CDK2 activity reaches threshold
-        cellA.replicationForks = [
-            { originAngle: 0.8, speed: 0.3, armSpread: 0.4, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-            { originAngle: 2.5, speed: -0.25, armSpread: 0.35, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-            { originAngle: 4.2, speed: 0.28, armSpread: 0.38, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-            { originAngle: 5.6, speed: -0.22, armSpread: 0.33, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-        ];
-        cellB.replicationForks = [
-            { originAngle: 1.5, speed: -0.28, armSpread: 0.42, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-            { originAngle: 3.8, speed: 0.32, armSpread: 0.36, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-            { originAngle: 5.5, speed: -0.26, armSpread: 0.4, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-            { originAngle: 0.3, speed: 0.24, armSpread: 0.34, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
-        ];
+        // Replication forks: all terminated — S phase is complete
+        // Only residual PCNA foci remain at late-replicating heterochromatin, rapidly unloading
+        cellA.replicationForks = [];
+        cellB.replicationForks = [];
 
         // Condensins: unloaded from chromatin in G1 — no longer needed
         cellA.condensins = [];
@@ -558,16 +542,31 @@
             { baseAngle: 5.2, orbitR: 0.6, speed: -0.13, color: '#88aadd' },
         ];
 
-        // Topoisomerase II: resolves catenanes between newly replicated sisters
-        // Orange-red particle pulses as it decatenates intertwined DNA
+        // Topoisomerase II: still resolving residual catenanes between sisters
+        // Decatenation checkpoint ensures sisters are fully separated before mitosis
+        // Second topoII molecule recruited for final decatenation pass
         cellA.topoII = [
             { baseAngle: 1.5, orbitR: 1.0, speed: 0.3, color: '#dd6644' },
+            { baseAngle: 4.0, orbitR: 0.7, speed: -0.2, color: '#cc5533' },
         ];
         cellB.topoII = [
             { baseAngle: 4.2, orbitR: 1.0, speed: -0.28, color: '#dd6644' },
+            { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
         ];
 
-        // Late S phase: forks converging at termination zones, cohesins established
+        // Cyclin B-CDK1: M-phase cyclin begins accumulating in cytoplasm
+        // CRM1 exportin keeps cyclin B out of nucleus; Wee1 keeps CDK1 inactive (Y15 phospho)
+        // Bright green-teal particles orbit in cytoplasm — the trigger for mitosis builds
+        cellA.cyclinB = [
+            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#44ddaa' },
+            { orbitR: 2.8, baseAngle: 3.0, speed: -0.42, color: '#33ccaa' },
+        ];
+        cellB.cyclinB = [
+            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#44ddaa' },
+            { orbitR: 2.8, baseAngle: 5.5, speed: 0.45, color: '#33ccaa' },
+        ];
+
+        // G2 phase: replication complete, cell grows and prepares for mitosis
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1692,6 +1691,28 @@
                 }
             }
 
+            // Cyclin B-CDK1: G2 accumulation — green-teal particles in cytoplasm only
+            // CRM1 exportin shuttles cyclin B out of nucleus; Wee1 keeps CDK1 inactive
+            var cycBPixels = {};
+            if (cell.cyclinB && cell.separated) {
+                var tCycB = (t * 8000 / 5800) % 1.0;
+                for (var cbi = 0; cbi < cell.cyclinB.length; cbi++) {
+                    var cyb = cell.cyclinB[cbi];
+                    var cybAngle = cyb.baseAngle + cyb.speed * tOrbit;
+                    var cbx = Math.round(cell.cx + Math.cos(cybAngle) * cyb.orbitR);
+                    var cby = Math.round(cell.cy + Math.sin(cybAngle) * cyb.orbitR);
+                    var cbPulse = Math.sin(tCycB * 2 * Math.PI + cbi * 1.9);
+                    var cbdx = cbx - cell.cx, cbdy = cby - cell.cy;
+                    var cbDist = Math.sqrt(cbdx * cbdx + cbdy * cbdy);
+                    // Strictly cytoplasmic: CRM1 export keeps it out of nucleus
+                    if (cbDist < maxR - 0.8 && cbDist > nucR + 1.2) {
+                        if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
+                            cycBPixels[cbx + ',' + cby] = cbPulse > 0.2 ? '#55eebb' : cyb.color;
+                        }
+                    }
+                }
+            }
+
             // Cyclin D-CDK4/6: amber particles, some cytoplasmic, some nuclear
             var cycDPixels = {};
             if (cell.cyclinD && cell.separated) {
@@ -2017,7 +2038,8 @@
                 phosphPixels: phosphPixels,
                 gfPixels: gfPixels,
                 cohesinPixels: cohesinPixels,
-                topoPixels: topoPixels
+                topoPixels: topoPixels,
+                cycBPixels: cycBPixels
             };
         }
 
@@ -2312,6 +2334,8 @@
                                 color = dd.cycEPixels[key];
                             } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
                                 color = dd.cdc25Pixels[key];
+                            } else if (dd.cycBPixels && dd.cycBPixels[key]) {
+                                color = dd.cycBPixels[key];
                             } else if (dd.cycDPixels && dd.cycDPixels[key]) {
                                 color = dd.cycDPixels[key];
                             } else if (dd.phosphPixels && dd.phosphPixels[key]) {
