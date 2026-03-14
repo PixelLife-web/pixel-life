@@ -355,6 +355,23 @@
             cellB.intermediateFilaments.push({ targetAngle: cageAngle + 0.2, length: 2.5, phase: ifi2 * 0.8 + 2.5 });
         }
 
+        // Nuclear pores: channels on the nuclear envelope for mRNA export
+        // mRNA particles travel from nucleus outward toward ribosomes on rough ER
+        cellA.nuclearPores = [
+            { angle: 0.5, mRNAphase: 0 },
+            { angle: 1.8, mRNAphase: 0.33 },
+            { angle: 3.3, mRNAphase: 0.66 },
+            { angle: 4.7, mRNAphase: 0.5 },
+            { angle: 5.8, mRNAphase: 0.17 },
+        ];
+        cellB.nuclearPores = [
+            { angle: 0.8, mRNAphase: 0.15 },
+            { angle: 2.1, mRNAphase: 0.48 },
+            { angle: 3.6, mRNAphase: 0.82 },
+            { angle: 5.0, mRNAphase: 0.31 },
+            { angle: 5.5, mRNAphase: 0.64 },
+        ];
+
         // G1 growth: cells slowly grow as they absorb nutrients
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -715,6 +732,35 @@
                 }
             }
 
+            // Nuclear pores and mRNA export particles
+            var porePixels = {};
+            if (cell.nuclearPores && cell.separated) {
+                var tPore = (t * 8000 / 6000) % 1.0;
+                var unifiedNucR2 = nucR + 0.6;
+                for (var npi = 0; npi < cell.nuclearPores.length; npi++) {
+                    var np = cell.nuclearPores[npi];
+                    // Pore sits on the nuclear envelope
+                    var poreX = Math.round(cell.cx + Math.cos(np.angle) * unifiedNucR2);
+                    var poreY = Math.round(cell.cy + Math.sin(np.angle) * unifiedNucR2);
+                    if (poreX >= 0 && poreX < size && poreY >= 0 && poreY < size) {
+                        // Pore complex: bright spot on nuclear envelope
+                        var porePulse = Math.sin(tPore * 2 * Math.PI + np.mRNAphase * 6);
+                        porePixels[poreX + ',' + poreY] = porePulse > 0 ? '#ffcc66' : '#ddaa44';
+                    }
+                    // mRNA particle: travels from pore outward toward cytoplasm
+                    var mRNAprogress = (tPore + np.mRNAphase) % 1.0;
+                    var mRNAdist = unifiedNucR2 + mRNAprogress * 2.5;
+                    // Only show while within cytoplasm
+                    if (mRNAdist < maxR - 1.5) {
+                        var mX = Math.round(cell.cx + Math.cos(np.angle) * mRNAdist);
+                        var mY = Math.round(cell.cy + Math.sin(np.angle) * mRNAdist);
+                        if (mX >= 0 && mX < size && mY >= 0 && mY < size) {
+                            porePixels[mX + ',' + mY] = mRNAprogress < 0.5 ? '#ff8855' : '#ee7744';
+                        }
+                    }
+                }
+            }
+
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
             if (cell.microtubules && cell.centrosomes && cell.separated) {
@@ -782,7 +828,8 @@
                 lysoPixels: lysoPixels, filoPixels: filoPixels,
                 riboPixels: riboPixels, peroxPixels: peroxPixels,
                 serPixels: serPixels, actinPixels: actinPixels,
-                mtPixels: mtPixels, ifPixels: ifPixels
+                mtPixels: mtPixels, ifPixels: ifPixels,
+                porePixels: porePixels
             };
         }
 
@@ -1059,6 +1106,8 @@
                                 color = dd.mitoPixels[key];
                             } else if (dd.nucPixels[key]) {
                                 color = dd.nucPixels[key];
+                            } else if (dd.porePixels && dd.porePixels[key]) {
+                                color = dd.porePixels[key];
                             } else if (dd.envPixels[key]) {
                                 color = dd.envPixels[key];
                             } else if (dd.chrPixels[key]) {
