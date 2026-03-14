@@ -431,14 +431,9 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // TELOPHASE: cyclin B nearly gone — CDK1 inactive, phosphatases take over
-        // Only 1 dim particle remains per cell, APC/C finishing degradation
-        cellA.cyclinB = [
-            { orbitR: 1.8, baseAngle: 4.2, speed: 0.4, color: '#998833' },
-        ];
-        cellB.cyclinB = [
-            { orbitR: 1.8, baseAngle: 0.5, speed: -0.38, color: '#998833' },
-        ];
+        // LATE TELOPHASE: cyclin B fully degraded — APC/C complete, CDK1 inactive
+        cellA.cyclinB = [];
+        cellB.cyclinB = [];
 
         // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
         // They reverse CDK1 effects on lamins, condensins, NPCs — restoring interphase state
@@ -518,32 +513,34 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // MID-TELOPHASE: envelopes nearly sealed, furrow deepening
-        // PP1/PP2A phosphatases dephosphorylating CDK1 substrates throughout cell
-        // Lamins mostly dephosphorylated → envelopes closing, NPCs reassembling
-        // Chromosomes decondensing as condensin releases progressively
-        // Contractile ring constricting — cleavage furrow at ~45% ingression
+        // LATE TELOPHASE: envelopes sealed, furrow deep, midbody forming
+        // PP1/PP2A have fully reversed CDK1 phosphorylations
+        // Lamins dephosphorylated → envelopes sealed, NPCs functional
+        // Chromosomes decondensing rapidly, approaching interphase chromatin
+        // Contractile ring constricting — cleavage furrow at ~60% ingression
+        // Midbody forming: centralspindlin + RhoA concentrate at intercellular bridge
         cellA.prophase = {
-            condensation: 0.6, // chromosomes decondensing as condensin releases
+            condensation: 0.35, // chromosomes decondensing rapidly toward interphase
             pole1Target: { x: 18, y: 6 },
             pole2Target: { x: 24, y: 12 },
             prometaphase: true,
             metaphase: true,
             anaphase: true,
             lateAnaphase: true,
-            telophase: true, // mid-telophase: envelopes closing, furrow deepening
+            telophase: true, // late telophase: envelopes sealed, midbody assembling
             spindleForming: true,
-            asterCount: 8, // asters shrinking as spindle disassembles
-            laminPhospho: 0.12, // lamins mostly dephosphorylated → envelope nearly sealed
-            npcDisassembly: 0.12, // NPCs reassembling rapidly into new envelopes
+            asterCount: 4, // asters mostly disassembled, only remnant MTs
+            laminPhospho: 0.03, // lamins fully dephosphorylated → envelopes sealed
+            npcDisassembly: 0.03, // NPCs fully reassembled and functional
             envelopeVesicles: false,
             congressProgress: 1.0,
             sacSatisfaction: 1.0,
             auroraBActive: false,
-            furrowInitiation: 0.45, // contractile ring constricting, furrow deepening
+            furrowInitiation: 0.60, // contractile ring deep — midbody forming at bridge
+            midbodyForming: true, // centralspindlin/PRC1/RhoA concentrate at cleavage site
         };
         cellB.prophase = {
-            condensation: 0.6,
+            condensation: 0.35,
             pole1Target: { x: 8, y: 20 },
             pole2Target: { x: 14, y: 26 },
             prometaphase: true,
@@ -552,14 +549,15 @@
             lateAnaphase: true,
             telophase: true,
             spindleForming: true,
-            asterCount: 8,
-            laminPhospho: 0.12,
-            npcDisassembly: 0.12,
+            asterCount: 4,
+            laminPhospho: 0.03,
+            npcDisassembly: 0.03,
             envelopeVesicles: false,
             congressProgress: 1.0,
             sacSatisfaction: 1.0,
             auroraBActive: false,
-            furrowInitiation: 0.45,
+            furrowInitiation: 0.60,
+            midbodyForming: true,
         };
 
         // Condensin complexes: ring-shaped SMC proteins loading onto chromosomes
@@ -583,7 +581,7 @@
         cellA.separase = [];
         cellB.separase = [];
 
-        // Mid-telophase: envelopes sealing, chromosomes decondensing, furrow deepening
+        // Late telophase: envelopes sealed, chromosomes decondensing, midbody forming
         var growthRate = 0.8;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -596,7 +594,7 @@
             // Cytokinesis constriction: cell pinches at equator perpendicular to spindle
             var cytoConstriction = 0;
             if (cell.separated && cell.prophase && cell.prophase.telophase) {
-                cytoConstriction = cell.prophase.abscission ? 0.85 : 0.55; // abscission: bridge severed, maximum constriction
+                cytoConstriction = cell.prophase.abscission ? 0.85 : (cell.prophase.midbodyForming ? 0.70 : 0.55); // midbody: deep constriction, bridge narrowing
             }
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
@@ -963,7 +961,7 @@
                     }
                     // SPINDLE MICROTUBULES: fully formed between the two poles
                     if (cell.prophase.spindleForming) {
-                        var spindleCount = cell.prophase.abscission ? 1 : (cell.prophase.telophase ? 4 : (cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4))));
+                        var spindleCount = cell.prophase.abscission ? 1 : (cell.prophase.midbodyForming ? 2 : (cell.prophase.telophase ? 4 : (cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4)))));
                         for (var spi = 0; spi < spindleCount; spi++) {
                             var spFrac = (spi + 1) / (spindleCount + 1);
                             var spx = p1x + (p2x - p1x) * spFrac;
@@ -984,6 +982,30 @@
                                     : cell.prophase.metaphase
                                         ? (spPulse > 0 ? '#66aacc' : '#5599bb')
                                         : (spPulse > 0 ? '#5588aa' : '#447799');
+                            }
+                        }
+                    }
+                    // MIDBODY: dense protein structure forming at the intercellular bridge
+                    // Centralspindlin, PRC1, and RhoA concentrate where furrow constricts
+                    if (cell.prophase.midbodyForming) {
+                        var midX2 = (p1x + p2x) / 2;
+                        var midY2 = (p1y + p2y) / 2;
+                        var mbPerpAngle = Math.atan2(p2y - p1y, p2x - p1x) + Math.PI / 2;
+                        var tMidbody = (tCentMig * 2 * Math.PI) % (2 * Math.PI);
+                        // Dense midbody core: bright centralspindlin/PRC1 ring
+                        var mbCoreX = Math.round(midX2);
+                        var mbCoreY = Math.round(midY2);
+                        if (mbCoreX >= 0 && mbCoreX < size && mbCoreY >= 0 && mbCoreY < size) {
+                            var mbPulse = Math.sin(tMidbody * 1.5);
+                            centPixels[mbCoreX + ',' + mbCoreY] = mbPulse > 0 ? '#eedd88' : '#ddcc77';
+                        }
+                        // Flanking dark zones: dense MT bundles on either side of midbody
+                        for (var mbi = -1; mbi <= 1; mbi += 2) {
+                            var flankX = Math.round(midX2 + Math.cos(mbPerpAngle) * mbi * 0.8);
+                            var flankY = Math.round(midY2 + Math.sin(mbPerpAngle) * mbi * 0.8);
+                            if (flankX >= 0 && flankX < size && flankY >= 0 && flankY < size) {
+                                var flankPulse = Math.sin(tMidbody * 2 + mbi * 1.3);
+                                centPixels[flankX + ',' + flankY] = flankPulse > 0 ? '#99aa66' : '#889955';
                             }
                         }
                     }
