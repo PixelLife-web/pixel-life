@@ -1590,29 +1590,32 @@
             var tSer = (now % 30000) / 30000;
             renderLayer(serosalPath, tSer, 1.5, 4.0, 0.3,
                 ['#bbccdd','#99aabb','#8899aa','#ccddee','#8899aa','#778899'], null);
-            var serWave = (tSer * 1.5) % 1.0;
             for (var sri = 0; sri < serosalPath.length; sri++) {
-                var srP = serosalPath[sri];
-                var srFrac = sri / (serosalPath.length - 1);
-                var srDist = Math.abs(srFrac - serWave); if (srDist > 0.5) srDist = 1.0 - srDist;
-                var srRenewal = Math.max(0, 1.0 - srDist * 4.0);
-                if (srRenewal > 0.5 && sri % 3 === 0) {
-                    var sfP = Math.sin(tSer * 2 * Math.PI * 5.0 + sri * 2.3);
-                    if (sfP > 0.3) {
-                        var sfAngle = Math.atan2(srP.y - 16, srP.x - 16);
-                        var sfx = Math.round(srP.x + Math.cos(sfAngle) * 0.8);
-                        var sfy = Math.round(srP.y + Math.sin(sfAngle) * 0.8);
-                        if (sfx >= 0 && sfx < size && sfy >= 0 && sfy < size) set(sfx, sfy, '#ddeeff');
-                    }
-                }
-                if (sri % 4 === 1) {
-                    var adP = Math.sin(tSer * 2 * Math.PI * 0.5 + sri * 1.7);
-                    var adAngle = Math.atan2(16 - srP.y, 16 - srP.x);
-                    var adx = Math.round(srP.x + Math.cos(adAngle) * 1.0);
-                    var ady = Math.round(srP.y + Math.sin(adAngle) * 1.0);
-                    if (adx >= 0 && adx < size && ady >= 0 && ady < size) set(adx, ady, adP > 0 ? '#eedd99' : '#ddcc88');
-                }
+                var srP = serosalPath[sri], srW = (tSer * 1.5) % 1.0, srD = Math.abs(sri/(serosalPath.length-1)-srW);
+                if(srD>0.5)srD=1.0-srD; var srRen=Math.max(0,1.0-srD*4.0);
+                if(srRen>0.5&&sri%3===0&&Math.sin(tSer*2*Math.PI*5+sri*2.3)>0.3){var sfA2=Math.atan2(srP.y-16,srP.x-16);set(Math.round(srP.x+Math.cos(sfA2)*0.8),Math.round(srP.y+Math.sin(sfA2)*0.8),'#ddeeff');}
+                if(sri%4===1){var adA2=Math.atan2(16-srP.y,16-srP.x),adP2=Math.sin(tSer*2*Math.PI*0.5+sri*1.7);set(Math.round(srP.x+Math.cos(adA2)),Math.round(srP.y+Math.sin(adA2)),adP2>0?'#eedd99':'#ddcc88');}
             }
+            // Helper: emit one pixel radially toward center (16,16)
+            function emitToCenter(ix,iy,r,color,s){var a=Math.atan2(16-iy,16-ix);s(Math.round(ix+Math.cos(a)*r),Math.round(iy+Math.sin(a)*r),color);}
+            // Helper: emit outward from center at varying radius; c1/c2 for pulse hi/lo
+            function emitOutward(it,p,ph,idx,r1,r2,c1,c2,s){var a=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                s(Math.round(it.x+Math.cos(a)*r1),Math.round(it.y+Math.sin(a)*r1),Math.sin(ph*1.3+idx*0.8)>0.2?c1:c2);
+                if(p>0.3){s(Math.round(it.x+Math.cos(a)*(r1+0.6+p*0.5)),Math.round(it.y+Math.sin(a)*(r1+0.6+p*0.5)),c1);
+                if(p>0.6){var lr=r2+p*0.4,ls=Math.sin(ph*2.5+idx*1.2)*0.5;s(Math.round(it.x+Math.cos(a+ls)*lr),Math.round(it.y+Math.sin(a+ls)*lr),c2);}}}
+            // Helper: emit dendrite projection along luminal axis with sway
+            function emitDendrite(it,ph,t,idx,len,sway,hiC,loC,tipC,s){var lumA=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                var dendSway=Math.sin(ph*0.4+idx*1.7)*sway;
+                for(var dl=1;dl<=len;dl++){var dA2=lumA+dendSway*(dl*0.3);
+                var dx3=Math.round(it.x+Math.cos(dA2)*dl),dy3=Math.round(it.y+Math.sin(dA2)*dl);
+                var dPulse=Math.sin(ph*1.3+idx*0.9+dl*1.5);
+                if(inB(dx3,dy3))s(dx3,dy3,dPulse>0?hiC:loC);}
+                if(tipC&&Math.sin(ph*3.0+idx*2.1)>0.5){var tipX=Math.round(it.x+Math.cos(lumA)*(len+0.5)),tipY=Math.round(it.y+Math.sin(lumA)*(len+0.5));if(inB(tipX,tipY))s(tipX,tipY,tipC);}}
+            // Helper: emit rotating granule with angle sway
+            function emitGranules(it,ph,idx,count,angStep,r,hiC,loC,s){for(var gi=0;gi<count;gi++){var gA=ph*0.3+gi*angStep+idx*0.8;
+                var gSway=Math.sin(ph*0.5+gi*1.2)*0.08;
+                var gx=Math.round(it.x+Math.cos(gA+gSway)*r),gy=Math.round(it.y+Math.sin(gA+gSway)*r);
+                if(inB(gx,gy))s(gx,gy,Math.sin(ph*1.4+gi*2.0)>0?hiC:loC);}}
             function renderTissueCells(specs) {
                 for (var tsi = 0; tsi < specs.length; tsi++) {
                     var sp = specs[tsi];
@@ -1642,9 +1645,7 @@
                     {x:13,y:8,color:'#77aa55',dimColor:'#558833'},{x:8,y:14,color:'#5588aa',dimColor:'#336688'},
                     {x:15,y:12,color:'#aa8855',dimColor:'#886633'},{x:5,y:16,color:'#77aa55',dimColor:'#558833'},
                     {x:11,y:15,color:'#5588aa',dimColor:'#336688'},
-                ], emitThresh:0.5, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    var a=Math.atan2(16-iy,16-ix); s(Math.round(ix+Math.cos(a)*1.2),Math.round(iy+Math.sin(a)*1.2),'#bbdd77');
-                }},
+                ], emitThresh:0.5, emitFn:function(it,p,ph,t,ix,iy,idx,s){emitToCenter(ix,iy,1.2,'#bbdd77',s);}},
                 {period:22000, phaseStep:2.09, items:[
                     {x:16,y:16,color:'#6644bb',dimColor:'#553399',r:2.5},{x:21,y:19,color:'#5533aa',dimColor:'#442288',r:2.0},
                     {x:11,y:13,color:'#6644bb',dimColor:'#553399',r:2.2},
@@ -1656,12 +1657,7 @@
                 {period:26000, phaseStep:2.09, items:[
                     {x:18,y:22,color:'#cc7733',dimColor:'#aa5522'},{x:14,y:17,color:'#bb6622',dimColor:'#994411'},
                     {x:23,y:22,color:'#cc7733',dimColor:'#aa5522'},
-                ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    var a=Math.atan2(it.y-16,it.x-16)+Math.PI;
-                    s(Math.round(it.x+Math.cos(a)*0.9),Math.round(it.y+Math.sin(a)*0.9),Math.sin(ph*1.3+idx*0.8)>0.2?'#ffcc66':'#eebb44');
-                    if(p>0.3){s(Math.round(it.x+Math.cos(a)*(1.5+p*0.5)),Math.round(it.y+Math.sin(a)*(1.5+p*0.5)),'#ffdd88');
-                    if(p>0.6){var lr=2.0+p*0.4,ls=Math.sin(ph*2.5+idx*1.2)*0.5;s(Math.round(it.x+Math.cos(a+ls)*lr),Math.round(it.y+Math.sin(a+ls)*lr),'#eebb44');}}
-                }},
+                ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){emitOutward(it,p,ph,idx,0.9,2.0,'#ffcc66','#eebb44',s);}},
                 {period:28000, phaseStep:2.09, items:[
                     {x:16,y:20,color:'#33bb66',dimColor:'#228844'},{x:21,y:23,color:'#33bb66',dimColor:'#228844'},
                     {x:12,y:18,color:'#2aaa55',dimColor:'#1d8844'},
@@ -1675,15 +1671,11 @@
                     {x:4,y:3,color:'#dd7744',dimColor:'#bb5533'},{x:7,y:5,color:'#cc6633',dimColor:'#aa4422'},
                     {x:3,y:7,color:'#dd7744',dimColor:'#bb5533'},{x:10,y:4,color:'#cc6633',dimColor:'#aa4422'},
                     {x:6,y:10,color:'#dd7744',dimColor:'#bb5533'},
-                ], emitThresh:0.5, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    var a=Math.atan2(16-it.y,16-it.x);s(Math.round(ix+Math.cos(a)*1.1),Math.round(iy+Math.sin(a)*1.1),'#ffaa77');
-                }},
+                ], emitThresh:0.5, emitFn:function(it,p,ph,t,ix,iy,idx,s){emitToCenter(ix,iy,1.1,'#ffaa77',s);}},
                 {period:19000, drift:0.4, driftFreq:0.6, driftFreqY:0.4, phaseStep:2.09, items:[
                     {x:19,y:24,color:'#4488bb',dimColor:'#336699'},{x:15,y:21,color:'#3377aa',dimColor:'#225588'},
                     {x:23,y:24,color:'#4488bb',dimColor:'#336699'},
-                ], emitThresh:0.4, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    var a=Math.atan2(it.y-16,it.x-16)+Math.PI;s(Math.round(ix+Math.cos(a)*0.9),Math.round(iy+Math.sin(a)*0.9),'#77bbdd');
-                }},
+                ], emitThresh:0.4, emitFn:function(it,p,ph,t,ix,iy,idx,s){emitToCenter(ix,iy,0.9,'#77bbdd',s);}},
                 {period:25000, phaseStep:2.09, items:[
                     {x:9,y:11,color:'#dd88dd',dimColor:'#aa55aa'},{x:19,y:13,color:'#cc77cc',dimColor:'#994499'},
                 ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
@@ -1794,22 +1786,9 @@
                     {x:13,y:21,color:'#cc8844',dimColor:'#996622'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
                     var phagP=Math.sin(ph*1.8+idx*1.4);
-                    if(phagP>0.3){var pa=ph*0.7+idx*2.0;
-                    s(Math.round(ix+Math.cos(pa)*0.8),Math.round(iy+Math.sin(pa)*0.8),phagP>0.6?'#eebb66':'#ddaa55');}
-                    var lumA5=Math.atan2(it.y-16,it.x-16)+Math.PI;
-                    var dendSway=Math.sin(ph*0.4+idx*1.7)*0.10;
-                    for(var dl=1;dl<=4;dl++){
-                        var dA2=lumA5+dendSway*(dl*0.3);
-                        var dx3=Math.round(it.x+Math.cos(dA2)*dl),dy3=Math.round(it.y+Math.sin(dA2)*dl);
-                        var dPulse=Math.sin(ph*1.3+idx*0.9+dl*1.5);
-                        if(inB(dx3,dy3))s(dx3,dy3,dPulse>0?'#ddaa66':'#bb8844');
-                    }
-                    if(Math.sin(ph*3.0+idx*2.1)>0.5){
-                        var tipR=4.5,tipX=Math.round(it.x+Math.cos(lumA5)*tipR),tipY=Math.round(it.y+Math.sin(lumA5)*tipR);
-                        if(inB(tipX,tipY))s(tipX,tipY,'#ffeeaa');
-                    }
-                    if(p>0.3){var il10A=Math.atan2(it.y-16,it.x-16);
-                    s(Math.round(it.x+Math.cos(il10A)*1.3),Math.round(it.y+Math.sin(il10A)*1.3),'#88ccaa');}
+                    if(phagP>0.3){var pa=ph*0.7+idx*2.0;s(Math.round(ix+Math.cos(pa)*0.8),Math.round(iy+Math.sin(pa)*0.8),phagP>0.6?'#eebb66':'#ddaa55');}
+                    emitDendrite(it,ph,t,idx,4,0.10,'#ddaa66','#bb8844','#ffeeaa',s);
+                    if(p>0.3){var il10A=Math.atan2(it.y-16,it.x-16);s(Math.round(it.x+Math.cos(il10A)*1.3),Math.round(it.y+Math.sin(il10A)*1.3),'#88ccaa');}
                 }},
                 {period:29000, phaseStep:2.09, items:[
                     {x:26,y:20,color:'#55ccaa',dimColor:'#338877'},{x:20,y:26,color:'#44bb99',dimColor:'#227766'},
@@ -1876,10 +1855,7 @@
                     {x:23,y:19,color:'#99bb44',dimColor:'#778833'},{x:16,y:23,color:'#88aa33',dimColor:'#667722'},
                     {x:11,y:17,color:'#99bb44',dimColor:'#778833'},{x:20,y:24,color:'#88aa33',dimColor:'#667722'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    for(var gi=0;gi<4;gi++){var gA=ph*0.3+gi*1.57+idx*0.8;
-                    var gSway=Math.sin(ph*0.5+gi*1.2)*0.08;
-                    var gx=Math.round(it.x+Math.cos(gA+gSway)*1.2),gy=Math.round(it.y+Math.sin(gA+gSway)*1.2);
-                    if(inB(gx,gy))s(gx,gy,Math.sin(ph*1.4+gi*2.0)>0?'#aabb55':'#889933');}
+                    emitGranules(it,ph,idx,4,1.57,1.2,'#aabb55','#889933',s);
                     var epiA3=Math.atan2(16-it.y,16-it.x);
                     if(p>0.1){s(Math.round(it.x+Math.cos(epiA3)*1.5),Math.round(it.y+Math.sin(epiA3)*1.5),'#ccdd66');
                     if(p>0.5){var gdnfR=2.2+Math.sin(ph*0.7)*0.3;
@@ -1892,47 +1868,21 @@
                     {x:27,y:17,color:'#dd66aa',dimColor:'#aa4488'},{x:21,y:27,color:'#cc5599',dimColor:'#993377'},
                     {x:15,y:24,color:'#dd66aa',dimColor:'#aa4488'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    for(var mgi=0;mgi<3;mgi++){var mgA=ph*0.4+mgi*2.09+idx*0.7;
-                    var mgR=0.6+Math.sin(ph*0.8+mgi*1.5)*0.2;
-                    var mgX=Math.round(it.x+Math.cos(mgA)*mgR),mgY=Math.round(it.y+Math.sin(mgA)*mgR);
-                    if(inB(mgX,mgY))s(mgX,mgY,Math.sin(ph*1.6+mgi*2.3)>0?'#ee88cc':'#cc66aa');}
+                    for(var mgi=0;mgi<3;mgi++){var mgA=ph*0.4+mgi*2.09+idx*0.7,mgR2=0.6+Math.sin(ph*0.8+mgi*1.5)*0.2,mgX=Math.round(it.x+Math.cos(mgA)*mgR2),mgY=Math.round(it.y+Math.sin(mgA)*mgR2);if(inB(mgX,mgY))s(mgX,mgY,Math.sin(ph*1.6+mgi*2.3)>0?'#ee88cc':'#cc66aa');}
                     var degPh=(t*1.8+idx*0.35)%1.0;
-                    if(degPh<0.35){
-                        for(var dg=0;dg<4;dg++){var dgA=dg*1.57+ph*0.3+idx*1.1;
-                        var dgR=0.8+degPh*4.5;
-                        var dgX=Math.round(it.x+Math.cos(dgA)*dgR),dgY=Math.round(it.y+Math.sin(dgA)*dgR);
-                        if(inB(dgX,dgY))s(dgX,dgY,degPh<0.12?'#ffccee':(degPh<0.25?'#ffaa77':'#ee8855'));}
-                    }
-                    if(p>0.1){var hisA=Math.atan2(it.y-16,it.x-16);
-                    var hisR=1.5+Math.sin(ph*0.9)*0.4;
-                    s(Math.round(it.x+Math.cos(hisA)*hisR),Math.round(it.y+Math.sin(hisA)*hisR),Math.sin(ph*2.5+idx*1.3)>0?'#ffbb88':'#ddaa77');
-                    if(p>0.4){var hisR2=hisR+1.2;
-                    s(Math.round(it.x+Math.cos(hisA+0.2)*hisR2),Math.round(it.y+Math.sin(hisA+0.2)*hisR2),'#eebb99');}}
-                    if(Math.sin(ph*2.8+idx*2.0)>0.3){var tryA=Math.atan2(it.y-16,it.x-16)+0.5;
-                    var tryR=1.8+Math.sin(ph*1.2)*0.5;
-                    s(Math.round(it.x+Math.cos(tryA)*tryR),Math.round(it.y+Math.sin(tryA)*tryR),'#ddcc55');}
+                    if(degPh<0.35){for(var dg=0;dg<4;dg++){var dgA=dg*1.57+ph*0.3+idx*1.1,dgR=0.8+degPh*4.5,dgX=Math.round(it.x+Math.cos(dgA)*dgR),dgY=Math.round(it.y+Math.sin(dgA)*dgR);if(inB(dgX,dgY))s(dgX,dgY,degPh<0.12?'#ffccee':(degPh<0.25?'#ffaa77':'#ee8855'));}}
+                    if(p>0.1){var hisA=Math.atan2(it.y-16,it.x-16),hisR=1.5+Math.sin(ph*0.9)*0.4;s(Math.round(it.x+Math.cos(hisA)*hisR),Math.round(it.y+Math.sin(hisA)*hisR),Math.sin(ph*2.5+idx*1.3)>0?'#ffbb88':'#ddaa77');if(p>0.4)s(Math.round(it.x+Math.cos(hisA+0.2)*(hisR+1.2)),Math.round(it.y+Math.sin(hisA+0.2)*(hisR+1.2)),'#eebb99');}
+                    if(Math.sin(ph*2.8+idx*2.0)>0.3){var tryA=Math.atan2(it.y-16,it.x-16)+0.5,tryR=1.8+Math.sin(ph*1.2)*0.5;s(Math.round(it.x+Math.cos(tryA)*tryR),Math.round(it.y+Math.sin(tryA)*tryR),'#ddcc55');}
                 }},
                 {period:33000, phaseStep:2.09, items:[
                     {x:20,y:20,color:'#aa8866',dimColor:'#887755'},{x:16,y:18,color:'#997755',dimColor:'#776644'},
                     {x:24,y:21,color:'#aa8866',dimColor:'#887755'},{x:12,y:16,color:'#997755',dimColor:'#776644'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    for(var sp=0;sp<2;sp++){var spA=ph*0.12+idx*1.57+sp*Math.PI;
-                    var spSway=Math.sin(ph*0.4+sp*2.8)*0.08;
-                    for(var sl=1;sl<=2;sl++){
-                        var spX=Math.round(it.x+Math.cos(spA+spSway)*sl),spY=Math.round(it.y+Math.sin(spA+spSway)*sl);
-                        if(inB(spX,spY))s(spX,spY,Math.sin(ph*1.2+sp*2.3+sl*1.0)>0?'#bbaa77':'#998866');}}
-                    var pcPh=(t*1.6+idx*0.3)%1.0;
-                    if(pcPh<0.5){var pcA=Math.atan2(it.y-16,it.x-16);
-                    var pcR=1.0+pcPh*3.5;
-                    var pcX=Math.round(it.x+Math.cos(pcA)*pcR),pcY=Math.round(it.y+Math.sin(pcA)*pcR);
-                    if(inB(pcX,pcY))s(pcX,pcY,pcPh<0.2?'#ddcc88':'#ccbb77');}
-                    if(Math.sin(ph*2.5+idx*1.8)>0.5){var mmpA=Math.atan2(16-it.y,16-it.x)+0.6;
-                    var mmpR=1.3+Math.sin(ph*1.0)*0.4;
-                    s(Math.round(it.x+Math.cos(mmpA)*mmpR),Math.round(it.y+Math.sin(mmpA)*mmpR),'#55aacc');}
-                    if(p>0.2){var tgfA=Math.atan2(16-it.y,16-it.x);
-                    s(Math.round(it.x+Math.cos(tgfA)*1.3),Math.round(it.y+Math.sin(tgfA)*1.3),Math.sin(ph*1.8+idx*1.1)>0?'#eedd66':'#ccbb55');
-                    if(p>0.6){var tgfR2=2.2+Math.sin(ph*0.7)*0.3;
-                    s(Math.round(it.x+Math.cos(tgfA)*tgfR2),Math.round(it.y+Math.sin(tgfA)*tgfR2),'#ddcc44');}}
+                    for(var sp2=0;sp2<2;sp2++){var spA=ph*0.12+idx*1.57+sp2*Math.PI,spSw=Math.sin(ph*0.4+sp2*2.8)*0.08;
+                    for(var sl=1;sl<=2;sl++){var spX=Math.round(it.x+Math.cos(spA+spSw)*sl),spY=Math.round(it.y+Math.sin(spA+spSw)*sl);if(inB(spX,spY))s(spX,spY,Math.sin(ph*1.2+sp2*2.3+sl*1.0)>0?'#bbaa77':'#998866');}}
+                    var pcPh=(t*1.6+idx*0.3)%1.0;if(pcPh<0.5){var pcA=Math.atan2(it.y-16,it.x-16),pcR=1.0+pcPh*3.5,pcX=Math.round(it.x+Math.cos(pcA)*pcR),pcY=Math.round(it.y+Math.sin(pcA)*pcR);if(inB(pcX,pcY))s(pcX,pcY,pcPh<0.2?'#ddcc88':'#ccbb77');}
+                    if(Math.sin(ph*2.5+idx*1.8)>0.5){var mmpA=Math.atan2(16-it.y,16-it.x)+0.6,mmpR=1.3+Math.sin(ph*1.0)*0.4;s(Math.round(it.x+Math.cos(mmpA)*mmpR),Math.round(it.y+Math.sin(mmpA)*mmpR),'#55aacc');}
+                    if(p>0.2){var tgfA=Math.atan2(16-it.y,16-it.x);s(Math.round(it.x+Math.cos(tgfA)*1.3),Math.round(it.y+Math.sin(tgfA)*1.3),Math.sin(ph*1.8+idx*1.1)>0?'#eedd66':'#ccbb55');if(p>0.6){var tgfR2=2.2+Math.sin(ph*0.7)*0.3;s(Math.round(it.x+Math.cos(tgfA)*tgfR2),Math.round(it.y+Math.sin(tgfA)*tgfR2),'#ddcc44');}}
                 }},
                 {period:32000, phaseStep:2.09, items:[
                     {x:24,y:16,color:'#77aadd',dimColor:'#557799'},{x:19,y:26,color:'#6699cc',dimColor:'#447788'},
@@ -2029,6 +1979,30 @@
                     s(Math.round(it.x+Math.cos(pgA)*1.3),Math.round(it.y+Math.sin(pgA)*1.3),'#ffbb77');}
                 }},
             ]);
+            // CBC (crypt base columnar) Lgr5+ stem cells — Wnt-dependent cell cycle
+            var cbcCells=[{x:17,y:12,ph:0},{x:19,y:11,ph:0.33},{x:15,y:13,ph:0.66}];
+            var tCBC=(now%18000)/18000, tCBCph=tCBC*2*Math.PI;
+            for(var ci=0;ci<cbcCells.length;ci++){
+                var cb=cbcCells[ci], cbPh=tCBCph+ci*2.09, cbP=Math.sin(cbPh);
+                // cell body (Lgr5+ identity: bright cyan-green)
+                if(inB(cb.x,cb.y))set(cb.x,cb.y,cbP>0?'#44ddaa':'#22bb88');
+                // nuclear β-catenin: oscillates between cytoplasm (dim ring) and nucleus (bright center)
+                var bcatPh=(tCBC*1.5+ci*0.35)%1.0; // 0=cytoplasm, 0.5=nuclear
+                var bcatNuclear=Math.sin(bcatPh*2*Math.PI);
+                var nkx=Math.round(cb.x+Math.cos(cbPh*0.3)*0.5), nky=Math.round(cb.y+Math.sin(cbPh*0.3)*0.5);
+                if(inB(nkx,nky))set(nkx,nky,bcatNuclear>0.3?'#aaffdd':(bcatNuclear>-0.3?'#55cc99':'#228866'));
+                // Sox9/Olfm4 marker pulse — magenta dot that brightens when Wnt high
+                var wntHigh=Math.sin(tCBCph*0.7+ci*1.8);
+                var mkX=Math.round(cb.x+Math.cos(cbPh+1.0)*0.8), mkY=Math.round(cb.y+Math.sin(cbPh+1.0)*0.8);
+                if(inB(mkX,mkY)&&wntHigh>0.2)set(mkX,mkY,wntHigh>0.6?'#ff88ff':'#cc55cc');
+                // asymmetric division hint: daughter migrates toward villus tip (inward, toward 16,16)
+                if(ci===0){// one CBC shows a daughter migrating inward
+                    var migPh=(tCBC*2.0+ci*0.3)%1.0, migR=0.6+migPh*2.5;
+                    var migA=Math.atan2(16-cb.y,16-cb.x);
+                    var mgX=Math.round(cb.x+Math.cos(migA)*migR), mgY=Math.round(cb.y+Math.sin(migA)*migR);
+                    if(inB(mgX,mgY))set(mgX,mgY,migPh<0.4?'#66ffcc':migPh<0.7?'#44ddaa':'#22bb88');
+                }
+            }
             function renderVessels(vessels, period, cfg) {
                 var tV = (now % period) / period;
                 for (var vi2 = 0; vi2 < vessels.length; vi2++) {
@@ -2059,6 +2033,35 @@
                 var dPh=(t*1.5+i*0.35)%1.0;if(dPh<0.6){var dA2=Math.atan2(16-v.y,16-v.x),dR=0.5+dPh*3.0;
                 s(Math.round(v.x+Math.cos(dA2)*dR),Math.round(v.y+Math.sin(dA2)*dR),dPh<0.2?'#ffddaa':(dPh<0.4?'#eebb77':'#ccaa66'));}}});
 
+            var tLact = (now % 28000) / 28000;
+            var lactealPath = [{x:16,y:13},{x:17,y:15},{x:16,y:17},{x:16,y:19},{x:17,y:21},{x:16,y:23},{x:16,y:25}];
+            for (var lai = 0; lai < lactealPath.length; lai++) {
+                var lap = lactealPath[lai], laPh = tLact * 2 * Math.PI + lai * 0.9, laP = Math.sin(laPh);
+                set(lap.x, lap.y, laP > 0 ? '#aaddaa' : '#88bb88');
+                if (lai < lactealPath.length - 1) {
+                    var lan = lactealPath[lai + 1], ladx = lan.x - lap.x, lady = lan.y - lap.y;
+                    var laSt = Math.max(Math.abs(ladx), Math.abs(lady));
+                    for (var las = 1; las < laSt; las++) {
+                        var lash = Math.sin(tLact * 2 * Math.PI * 1.5 + lai * 0.7 + las * 0.5);
+                        set(Math.round(lap.x+ladx*las/laSt), Math.round(lap.y+lady*las/laSt), lash > 0 ? '#99cc99' : '#77aa77');
+                    }
+                }
+                if (lai % 2 === 0) {
+                    var btnA = Math.atan2(lap.y - 16, lap.x - 16), btnP = Math.sin(laPh * 1.5 + lai * 2.3);
+                    var btnX = Math.round(lap.x + Math.cos(btnA) * 0.8), btnY = Math.round(lap.y + Math.sin(btnA) * 0.8);
+                    if (inB(btnX, btnY)) set(btnX, btnY, btnP > 0 ? '#bbeeaa' : '#99cc88');
+                }
+            }
+            var cmLactPh = (tLact * 2.5) % 1.0;
+            for (var cli2 = 0; cli2 < 2; cli2++) {
+                var clProg = (cmLactPh + cli2 * 0.5) % 1.0;
+                var clIdx = Math.floor(clProg * (lactealPath.length - 1)), clFrac = clProg * (lactealPath.length - 1) - clIdx;
+                if (clIdx < lactealPath.length - 1) {
+                    var clX = Math.round(lactealPath[clIdx].x + (lactealPath[clIdx+1].x - lactealPath[clIdx].x) * clFrac);
+                    var clY = Math.round(lactealPath[clIdx].y + (lactealPath[clIdx+1].y - lactealPath[clIdx].y) * clFrac);
+                    set(clX, clY, Math.sin(tLact * 2 * Math.PI * 3 + cli2 * 2.5) > 0 ? '#eedd66' : '#ccbb44');
+                }
+            }
             var tMeiss = (now % 29000) / 29000;
             var meissNeur = [{x:22,y:19,t:'A',p:1},{x:25,y:20,t:'V',p:1},{x:16,y:22,t:'A',p:2},{x:14,y:24,t:'V',p:2},{x:20,y:27,t:'A',p:3},{x:23,y:26,t:'V',p:3}];
             for (var mni = 0; mni < meissNeur.length; mni++) {
@@ -2158,63 +2161,53 @@
                 }
             }
             var tBMP = (now % 26000) / 26000;
-            var bmpSources = [{x:27,y:20},{x:23,y:25},{x:18,y:28},{x:12,y:28},{x:7,y:25}];
-            for (var bi2 = 0; bi2 < bmpSources.length; bi2++) {
-                var bs = bmpSources[bi2], bmpPh = tBMP * 2 * Math.PI + bi2 * 1.26;
-                var bmpP = Math.sin(bmpPh);
-                if (inB(bs.x, bs.y)) set(bs.x, bs.y, bmpP > 0 ? '#dd6688' : '#bb4466');
-                var bmpA = Math.atan2(16 - bs.y, 16 - bs.x);
-                var bmpDiffPh = (tBMP * 2.0 + bi2 * 0.22) % 1.0;
-                if (bmpDiffPh < 0.55) {
-                    var bmpDiffR = 1.0 + bmpDiffPh * 4.5;
-                    var bmpDX = Math.round(bs.x + Math.cos(bmpA) * bmpDiffR);
-                    var bmpDY = Math.round(bs.y + Math.sin(bmpA) * bmpDiffR);
-                    if (inB(bmpDX, bmpDY)) set(bmpDX, bmpDY, bmpDiffPh < 0.2 ? '#ee7799' : '#cc5577');
-                }
-                if (bmpP > 0.4) {
-                    var bmpLat = bmpA + Math.PI * 0.5;
-                    var bmpLX = Math.round(bs.x + Math.cos(bmpLat) * 1.0);
-                    var bmpLY = Math.round(bs.y + Math.sin(bmpLat) * 1.0);
-                    if (inB(bmpLX, bmpLY)) set(bmpLX, bmpLY, bmpP > 0.7 ? '#ffaacc' : '#ee8899');
+            var bmpSrc = [[27,20],[23,25],[18,28],[12,28],[7,25]];
+            for (var bi2 = 0; bi2 < bmpSrc.length; bi2++) {
+                var bsx = bmpSrc[bi2][0], bsy = bmpSrc[bi2][1], bmpPh = tBMP * 2 * Math.PI + bi2 * 1.26, bmpP = Math.sin(bmpPh);
+                set(bsx, bsy, bmpP > 0 ? '#dd6688' : '#bb4466');
+                var bmpA = Math.atan2(16 - bsy, 16 - bsx), bmpDiffPh = (tBMP * 2.0 + bi2 * 0.22) % 1.0;
+                if (bmpDiffPh < 0.55) { var bmpDiffR = 1.0 + bmpDiffPh * 4.5;
+                    set(Math.round(bsx + Math.cos(bmpA) * bmpDiffR), Math.round(bsy + Math.sin(bmpA) * bmpDiffR), bmpDiffPh < 0.2 ? '#ee7799' : '#cc5577'); }
+                if (bmpP > 0.4) { var bmpLat = bmpA + Math.PI * 0.5;
+                    set(Math.round(bsx + Math.cos(bmpLat)), Math.round(bsy + Math.sin(bmpLat)), bmpP > 0.7 ? '#ffaacc' : '#ee8899'); }
+            }
+            var tWntG = (now % 17000) / 17000;
+            var wntSrc = {x:17,y:12}, bmpSink = {x:16,y:26};
+            for (var wgi = 0; wgi < 16; wgi++) {
+                var wgA = wgi * Math.PI / 8 + tWntG * 2 * Math.PI * 0.25;
+                for (var wgr = 1; wgr <= 4; wgr++) {
+                    var wgR = wgr * 1.8 + Math.sin(tWntG * 2 * Math.PI * 1.5 + wgi * 0.9) * 0.4;
+                    var wgX = Math.round(wntSrc.x + Math.cos(wgA) * wgR), wgY = Math.round(wntSrc.y + Math.sin(wgA) * wgR);
+                    var wntConc = Math.max(0, 1.0 - wgR / 8.0);
+                    var bmpD = Math.sqrt((wgX-bmpSink.x)*(wgX-bmpSink.x)+(wgY-bmpSink.y)*(wgY-bmpSink.y));
+                    var bmpConc2 = Math.max(0, 1.0 - bmpD / 10.0);
+                    var wgP = Math.sin(tWntG * 2 * Math.PI * 2.0 + wgi * 1.3 + wgr * 2.1);
+                    if (wntConc > 0.15 && wgP > (1.0 - wntConc * 2.5) && inB(wgX, wgY)) {
+                        set(wgX, wgY, wntConc > 0.5 ? '#66ee44' : '#44bb22');
+                    }
+                    if (bmpConc2 > 0.3 && wgP < -(1.0 - bmpConc2 * 2.0) && inB(wgX, wgY)) {
+                        set(wgX, wgY, bmpConc2 > 0.5 ? '#ee6699' : '#cc4477');
+                    }
                 }
             }
-            var tNotch = (now % 31000) / 31000;
+            var tNotch2 = (now % 31000) / 31000;
             var notchPairs = [[0,1],[1,2],[2,3],[0,2],[1,3]];
-            for (var ni = 0; ni < notchPairs.length; ni++) {
-                var nFrom = granddaughterNuclei[notchPairs[ni][0]], nTo = granddaughterNuclei[notchPairs[ni][1]];
-                var nPh = tNotch * 2 * Math.PI + ni * 1.26;
-                var nP = Math.sin(nPh);
-                var deltaA = Math.atan2(nTo.y - nFrom.y, nTo.x - nFrom.x);
-                var deltaX = Math.round(nFrom.x + Math.cos(deltaA) * (nFrom.bodyRadius + 0.3));
-                var deltaY = Math.round(nFrom.y + Math.sin(deltaA) * (nFrom.bodyRadius + 0.3));
-                if (inB(deltaX, deltaY)) set(deltaX, deltaY, nP > 0 ? '#ee44aa' : '#bb2288');
-                var notchX = Math.round(nTo.x + Math.cos(deltaA + Math.PI) * (nTo.bodyRadius + 0.3));
-                var notchY = Math.round(nTo.y + Math.sin(deltaA + Math.PI) * (nTo.bodyRadius + 0.3));
-                if (inB(notchX, notchY)) set(notchX, notchY, nP > 0.2 ? '#44aaee' : '#2288bb');
-                var nicdPh = (tNotch * 2.5 + ni * 0.35) % 1.0;
-                if (nicdPh < 0.6 && nP > -0.2) {
-                    var nicdR = nTo.bodyRadius * (1.0 - nicdPh * 1.4);
-                    var nicdA = deltaA + Math.PI + Math.sin(nPh * 0.7) * 0.3;
-                    var nicdX = Math.round(nTo.x + Math.cos(nicdA) * nicdR);
-                    var nicdY = Math.round(nTo.y + Math.sin(nicdA) * nicdR);
-                    if (inB(nicdX, nicdY)) set(nicdX, nicdY, nicdPh < 0.25 ? '#77ccff' : '#55aadd');
-                }
-                if (nP > 0.5) {
-                    var clvX = Math.round((deltaX + notchX) / 2), clvY = Math.round((deltaY + notchY) / 2);
-                    if (inB(clvX, clvY)) set(clvX, clvY, nP > 0.7 ? '#ffddee' : '#eeccdd');
-                }
+            for (var ni2 = 0; ni2 < notchPairs.length; ni2++) {
+                var nF = granddaughterNuclei[notchPairs[ni2][0]], nT = granddaughterNuclei[notchPairs[ni2][1]];
+                var nPh = tNotch2 * 2 * Math.PI + ni2 * 1.26, nP = Math.sin(nPh);
+                var dltA = Math.atan2(nT.y - nF.y, nT.x - nF.x);
+                var dltX = Math.round(nF.x + Math.cos(dltA) * (nF.bodyRadius + 0.3)), dltY = Math.round(nF.y + Math.sin(dltA) * (nF.bodyRadius + 0.3));
+                var nchX = Math.round(nT.x + Math.cos(dltA + Math.PI) * (nT.bodyRadius + 0.3)), nchY = Math.round(nT.y + Math.sin(dltA + Math.PI) * (nT.bodyRadius + 0.3));
+                set(dltX, dltY, nP > 0 ? '#ee44aa' : '#bb2288');
+                set(nchX, nchY, nP > 0.2 ? '#44aaee' : '#2288bb');
+                var nicdPh = (tNotch2 * 2.5 + ni2 * 0.35) % 1.0;
+                if (nicdPh < 0.6 && nP > -0.2) { var nicdR = nT.bodyRadius * (1.0 - nicdPh * 1.4), nicdA = dltA + Math.PI + Math.sin(nPh * 0.7) * 0.3;
+                    set(Math.round(nT.x + Math.cos(nicdA) * nicdR), Math.round(nT.y + Math.sin(nicdA) * nicdR), nicdPh < 0.25 ? '#77ccff' : '#55aadd'); }
+                if (nP > 0.5) set(Math.round((dltX + nchX) / 2), Math.round((dltY + nchY) / 2), nP > 0.7 ? '#ffddee' : '#eeccdd');
             }
             var tMicro = (now % 23000) / 23000;
-            var commensals = [
-                {x:3,y:1,color:'#55cc77',dimColor:'#339955',coated:true,speed:0.30,phase:0},
-                {x:7,y:3,color:'#77bb55',dimColor:'#558833',coated:false,speed:0.25,phase:0.4},
-                {x:1,y:5,color:'#55cc77',dimColor:'#339955',coated:true,speed:0.35,phase:0.8},
-                {x:10,y:1,color:'#99aa44',dimColor:'#778822',coated:false,speed:0.28,phase:1.2},
-                {x:5,y:0,color:'#77bb55',dimColor:'#558833',coated:true,speed:0.32,phase:1.6},
-                {x:12,y:3,color:'#55cc77',dimColor:'#339955',coated:false,speed:0.22,phase:2.0},
-                {x:0,y:10,color:'#99aa44',dimColor:'#778822',coated:true,speed:0.30,phase:2.4},
-                {x:2,y:8,color:'#77bb55',dimColor:'#558833',coated:false,speed:0.26,phase:2.8},
-            ];
+            var commC=[['#55cc77','#339955'],['#77bb55','#558833'],['#99aa44','#778822']];
+            var commensals=[[3,1,0,1,.30,0],[7,3,1,0,.25,.4],[1,5,0,1,.35,.8],[10,1,2,0,.28,1.2],[5,0,1,1,.32,1.6],[12,3,0,0,.22,2],[0,10,2,1,.30,2.4],[2,8,1,0,.26,2.8]].map(function(d){return{x:d[0],y:d[1],color:commC[d[2]][0],dimColor:commC[d[2]][1],coated:!!d[3],speed:d[4],phase:d[5]};});
             for (var baci = 0; baci < commensals.length; baci++) {
                 var bac = commensals[baci];
                 var bacPh = tMicro * 2 * Math.PI + bac.phase;
@@ -2240,47 +2233,17 @@
                     }
                 }
             }
-            var tMcell = (now % 20000) / 20000;
-            var mCells = [
-                {x:27,y:13,pocketA:Math.PI*0.7,color:'#77bbaa',dimColor:'#559988'},
-                {x:28,y:15,pocketA:Math.PI*0.5,color:'#66aa99',dimColor:'#448877'},
-            ];
-            for (var mci = 0; mci < mCells.length; mci++) {
-                var mc = mCells[mci], mcPh = tMcell * 2 * Math.PI + mci * 3.14, mcP = Math.sin(mcPh);
-                if (inB(mc.x, mc.y)) set(mc.x, mc.y, mcP > 0 ? mc.color : mc.dimColor);
-                var lumA6 = Math.atan2(mc.y - 16, mc.x - 16) + Math.PI;
-                var tcyPh = (tMcell * 1.8 + mci * 0.4) % 1.0;
-                if (tcyPh < 0.35) {
-                    var agR = 1.5 + tcyPh * 3.0;
-                    var agX = Math.round(mc.x + Math.cos(lumA6) * agR), agY = Math.round(mc.y + Math.sin(lumA6) * agR);
-                    if (inB(agX, agY)) set(agX, agY, tcyPh < 0.12 ? '#ffddaa' : '#eebb77');
-                } else if (tcyPh < 0.55) {
-                    var vesR2 = 1.5 - (tcyPh - 0.35) * 5.0;
-                    var vesX = Math.round(mc.x + Math.cos(lumA6) * Math.max(0.3, vesR2));
-                    var vesY = Math.round(mc.y + Math.sin(lumA6) * Math.max(0.3, vesR2));
-                    if (inB(vesX, vesY)) set(vesX, vesY, '#ddcc88');
-                } else if (tcyPh < 0.75) {
-                    var basA3 = lumA6 + Math.PI;
-                    var basR3 = 0.5 + (tcyPh - 0.55) * 6.0;
-                    var basX = Math.round(mc.x + Math.cos(basA3) * basR3), basY = Math.round(mc.y + Math.sin(basA3) * basR3);
-                    if (inB(basX, basY)) set(basX, basY, '#ccbb77');
-                } else {
-                    var pktR = 1.5 + Math.sin(mcPh * 0.8) * 0.3;
-                    var pktA = mc.pocketA + Math.sin(mcPh * 0.4 + mci * 1.7) * 0.12;
-                    var pktX = Math.round(mc.x + Math.cos(pktA) * pktR), pktY = Math.round(mc.y + Math.sin(pktA) * pktR);
-                    if (inB(pktX, pktY)) set(pktX, pktY, Math.sin(mcPh * 2.5 + mci * 1.3) > 0 ? '#eedd99' : '#ccbb77');
-                }
-                if (mcP > 0.3) {
-                    var foldA = lumA6 + (mci === 0 ? 0.25 : -0.25);
-                    set(Math.round(mc.x + Math.cos(foldA) * 0.8), Math.round(mc.y + Math.sin(foldA) * 0.8), '#88ccbb');
-                }
-            }
+            var tMcell=(now%20000)/20000,mCells=[{x:27,y:13,pA:Math.PI*0.7,c:'#77bbaa',d:'#559988'},{x:28,y:15,pA:Math.PI*0.5,c:'#66aa99',d:'#448877'}];
+            for(var mci=0;mci<mCells.length;mci++){var mc=mCells[mci],mcPh=tMcell*2*Math.PI+mci*3.14,mcP=Math.sin(mcPh),lumA6=Math.atan2(mc.y-16,mc.x-16)+Math.PI;
+            if(inB(mc.x,mc.y))set(mc.x,mc.y,mcP>0?mc.c:mc.d);
+            var tcyPh2=(tMcell*1.8+mci*0.4)%1.0;
+            if(tcyPh2<0.35){set(Math.round(mc.x+Math.cos(lumA6)*(1.5+tcyPh2*3.0)),Math.round(mc.y+Math.sin(lumA6)*(1.5+tcyPh2*3.0)),tcyPh2<0.12?'#ffddaa':'#eebb77');
+            }else if(tcyPh2<0.55){var vR3=Math.max(0.3,1.5-(tcyPh2-0.35)*5.0);set(Math.round(mc.x+Math.cos(lumA6)*vR3),Math.round(mc.y+Math.sin(lumA6)*vR3),'#ddcc88');
+            }else if(tcyPh2<0.75){var bA3=lumA6+Math.PI,bR3=0.5+(tcyPh2-0.55)*6.0;set(Math.round(mc.x+Math.cos(bA3)*bR3),Math.round(mc.y+Math.sin(bA3)*bR3),'#ccbb77');
+            }else{var pR=1.5+Math.sin(mcPh*0.8)*0.3,pA2=mc.pA+Math.sin(mcPh*0.4+mci*1.7)*0.12;set(Math.round(mc.x+Math.cos(pA2)*pR),Math.round(mc.y+Math.sin(pA2)*pR),Math.sin(mcPh*2.5+mci*1.3)>0?'#eedd99':'#ccbb77');}
+            if(mcP>0.3)set(Math.round(mc.x+Math.cos(lumA6+(mci===0?0.25:-0.25))*0.8),Math.round(mc.y+Math.sin(lumA6+(mci===0?0.25:-0.25))*0.8),'#88ccbb');}
             var tAnoi = (now % 37000) / 37000;
-            var anoikisCells = [
-                {x:2,y:3,shedA:Math.PI*1.2,phase:0,casp:'#ee5544',bleb:'#aa7766',ps:'#55bb88',frag:'#886655'},
-                {x:8,y:1,shedA:Math.PI*1.5,phase:0.35,casp:'#dd4433',bleb:'#997766',ps:'#44aa77',frag:'#776644'},
-                {x:1,y:8,shedA:Math.PI*1.0,phase:0.70,casp:'#ee5544',bleb:'#aa7766',ps:'#55bb88',frag:'#886655'},
-            ];
+            var anoikisCells=[[2,3,1.2,0,'#ee5544','#aa7766','#55bb88','#886655'],[8,1,1.5,.35,'#dd4433','#997766','#44aa77','#776644'],[1,8,1.0,.70,'#ee5544','#aa7766','#55bb88','#886655']].map(function(d){return{x:d[0],y:d[1],shedA:Math.PI*d[2],phase:d[3],casp:d[4],bleb:d[5],ps:d[6],frag:d[7]};});
             for (var ani = 0; ani < anoikisCells.length; ani++) {
                 var ac = anoikisCells[ani];
                 var anPh = (tAnoi + ac.phase) % 1.0;
