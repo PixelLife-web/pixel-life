@@ -402,6 +402,8 @@
             {transporterColor:'#88aa44',bileColor:'#ccdd55',naCoColor:'#ffbb44',restColor:'#668833'},'enterocyte');
         initTransporters('ost','basal',2,0.52,0.18,0.6,1.9,
             {channelColor:'#779933',bileColor:'#bbcc44',restColor:'#557722'},'enterocyte');
+        initTransporters('npc1l1','apical',2,0.44,-0.42,0.8,1.6,
+            {transporterColor:'#dd8855',cholColor:'#ffcc44',clathrinColor:'#bb7733',restColor:'#aa6622'},'enterocyte');
         for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
             var aqn = granddaughterNuclei[aqi];
             aqn.aquaporins = [];
@@ -1323,6 +1325,8 @@
                     substrates:[{key:'bileColor', dir:'in', startR:1.4, range:3.2, wiggleFreq:8},{key:'naCoColor', dir:'in', startR:0.8, range:2.4, phaseOff:0.06, spread:0.12}]},
                 {field:'ost', period:11500, activeKey:'channelColor', restKey:'restColor', pulseFreq:1.8, cycleSpeed:1.5,
                     substrates:[{key:'bileColor', dir:'out', range:2.0, phaseOff:0.5}]},
+                {field:'npc1l1', period:12000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
+                    substrates:[{key:'cholColor', dir:'in', startR:1.5, range:3.5, wiggleFreq:6},{key:'clathrinColor', dir:'in', startR:0.5, range:1.8, phaseOff:0.15}]},
             ]);
             var tFA = (now % 11000) / 11000;
             for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {
@@ -1390,6 +1394,33 @@
                         var ipP = Math.sin(tHD * 2 * Math.PI * 2.5 + hi * 2.0);
                         set(ipx, ipy, ipP > 0 ? '#eebb66' : '#ccaa55');
                     }
+                }
+            }
+            var tLac = (now % 16000) / 16000;
+            var lactealPath = [
+                {x:26,y:14},{x:24,y:18},{x:21,y:22},{x:18,y:25},
+                {x:14,y:27},{x:10,y:26},{x:7,y:23},{x:5,y:19},
+            ];
+            for (var lai = 0; lai < lactealPath.length; lai++) {
+                var lp2 = lactealPath[lai];
+                var lacP = Math.sin(tLac * 2 * Math.PI * 1.3 + lai * 0.8);
+                set(lp2.x, lp2.y, lacP > 0.2 ? '#b8e8c8' : '#98ccaa');
+                if (lai < lactealPath.length - 1) {
+                    var ln2 = lactealPath[lai + 1];
+                    var ldx2 = ln2.x - lp2.x, ldy2 = ln2.y - lp2.y;
+                    var lSt2 = Math.max(Math.abs(ldx2), Math.abs(ldy2));
+                    for (var ls2 = 1; ls2 < lSt2; ls2++) {
+                        var lsP2 = Math.sin(tLac * 2 * Math.PI * 1.6 + lai * 0.9 + ls2 * 0.5);
+                        set(Math.round(lp2.x+ldx2*ls2/lSt2), Math.round(lp2.y+ldy2*ls2/lSt2), lsP2>0?'#a8d8b8':'#88bb99');
+                    }
+                }
+                var chyleFrac = (tLac * 2.0 + lai * 0.13) % 1.0;
+                if (chyleFrac > 0.3 && chyleFrac < 0.6) {
+                    var chyleA = Math.atan2(16 - lp2.y, 16 - lp2.x);
+                    var chyleOff = Math.sin(tLac * 2 * Math.PI * 2.5 + lai * 1.7) * 0.5;
+                    var chyleX = Math.round(lp2.x + Math.cos(chyleA + chyleOff) * 0.6);
+                    var chyleY = Math.round(lp2.y + Math.sin(chyleA + chyleOff) * 0.6);
+                    if (inB(chyleX, chyleY)) set(chyleX, chyleY, chyleFrac < 0.45 ? '#eeee88' : '#dddd66');
                 }
             }
             var tCap = (now % 13000) / 13000;
@@ -2189,85 +2220,22 @@
             }else if(tcyPh2<0.75){var bA3=lumA6+Math.PI,bR3=0.5+(tcyPh2-0.55)*6.0;set(Math.round(mc.x+Math.cos(bA3)*bR3),Math.round(mc.y+Math.sin(bA3)*bR3),'#ccbb77');
             }else{var pR=1.5+Math.sin(mcPh*0.8)*0.3,pA2=mc.pA+Math.sin(mcPh*0.4+mci*1.7)*0.12;set(Math.round(mc.x+Math.cos(pA2)*pR),Math.round(mc.y+Math.sin(pA2)*pR),Math.sin(mcPh*2.5+mci*1.3)>0?'#eedd99':'#ccbb77');}
             if(mcP>0.3)set(Math.round(mc.x+Math.cos(lumA6+(mci===0?0.25:-0.25))*0.8),Math.round(mc.y+Math.sin(lumA6+(mci===0?0.25:-0.25))*0.8),'#88ccbb');}
-            var tAnoi = (now % 37000) / 37000;
+            var tAnoi=(now%37000)/37000;
             var anoikisCells=[[2,3,1.2,0,'#ee5544','#aa7766','#55bb88','#886655'],[8,1,1.5,.35,'#dd4433','#997766','#44aa77','#776644'],[1,8,1.0,.70,'#ee5544','#aa7766','#55bb88','#886655']].map(function(d){return{x:d[0],y:d[1],shedA:Math.PI*d[2],phase:d[3],casp:d[4],bleb:d[5],ps:d[6],frag:d[7]};});
-            for (var ani = 0; ani < anoikisCells.length; ani++) {
-                var ac = anoikisCells[ani];
-                var anPh = (tAnoi + ac.phase) % 1.0;
-                var anSin = Math.sin(tAnoi * 2 * Math.PI + ani * 2.09);
-                if (anPh < 0.15) {
-                    var intR = 0.5 + anPh * 3.0;
-                    var intA = ac.shedA + Math.PI;
-                    var intX = Math.round(ac.x + Math.cos(intA) * intR), intY = Math.round(ac.y + Math.sin(intA) * intR);
-                    if (inB(intX, intY)) set(intX, intY, anPh < 0.08 ? '#ddcc88' : '#bbaa66');
-                    if (inB(ac.x, ac.y)) set(ac.x, ac.y, '#997766');
-                } else if (anPh < 0.35) {
-                    var detFrac = (anPh - 0.15) / 0.20;
-                    var detR = detFrac * 1.5;
-                    var detX = Math.round(ac.x + Math.cos(ac.shedA) * detR);
-                    var detY = Math.round(ac.y + Math.sin(ac.shedA) * detR);
-                    if (inB(detX, detY)) set(detX, detY, anSin > 0 ? ac.casp : '#cc6655');
-                    for (var bl = 0; bl < 3; bl++) {
-                        var blA = ac.shedA + (bl - 1) * 0.6 + Math.sin(tAnoi * 2 * Math.PI * 2.5 + bl * 1.8) * 0.2;
-                        var blR = detR + 0.6 + Math.sin(tAnoi * 2 * Math.PI * 3.0 + bl * 2.3) * 0.3;
-                        var blX = Math.round(ac.x + Math.cos(blA) * blR), blY = Math.round(ac.y + Math.sin(blA) * blR);
-                        if (inB(blX, blY)) set(blX, blY, ac.bleb);
-                    }
-                    var psA = ac.shedA + Math.sin(tAnoi * 2 * Math.PI * 1.5 + ani * 1.7) * 0.3;
-                    var psR = detR + 0.3;
-                    set(Math.round(ac.x + Math.cos(psA) * psR), Math.round(ac.y + Math.sin(psA) * psR), ac.ps);
-                } else if (anPh < 0.65) {
-                    var fragFrac = (anPh - 0.35) / 0.30;
-                    for (var fg = 0; fg < 3; fg++) {
-                        var fgA = ac.shedA + (fg - 1) * 0.7;
-                        var fgR = 1.5 + fragFrac * 2.5 + fg * 0.3;
-                        var fgDrift = Math.sin(tAnoi * 2 * Math.PI * 1.8 + fg * 2.5 + ani * 1.3) * 0.4;
-                        var fgX = Math.round(ac.x + Math.cos(fgA + fgDrift) * fgR);
-                        var fgY = Math.round(ac.y + Math.sin(fgA + fgDrift) * fgR);
-                        if (inB(fgX, fgY)) set(fgX, fgY, Math.sin(tAnoi * 2 * Math.PI * 2.0 + fg * 1.9) > 0 ? ac.frag : ac.ps);
-                    }
-                }
-            }
-            var tMuc = (now % 19000) / 19000;
-            var mucusAnchors = [];
-            for (var mi2 = 0; mi2 < granddaughterNuclei.length; mi2++) {
-                var mg2 = granddaughterNuclei[mi2];
-                if (mg2.cellType === 'goblet') {
-                    var mucA = Math.atan2(mg2.y - blCenter.y, mg2.x - blCenter.x);
-                    mucusAnchors.push({x: mg2.x, y: mg2.y, angle: mucA, bR: mg2.bodyRadius});
-                }
-            }
-            for (var mai = 0; mai < mucusAnchors.length; mai++) {
-                var ma = mucusAnchors[mai], innerMR = ma.bR + 2.5, outerMR = ma.bR + 4.5;
-                for (var mla = -3; mla <= 3; mla++) {
-                    var mlAngle = ma.angle + mla * 0.22;
-                    var mucSway = Math.sin(tMuc * 2 * Math.PI * 0.8 + mai * 2.3 + mla * 1.4) * 0.12;
-                    var imR = innerMR + Math.sin(tMuc * 2 * Math.PI * 1.2 + mla * 0.9) * 0.3;
-                    var imx = Math.round(ma.x + Math.cos(mlAngle + mucSway) * imR);
-                    var imy = Math.round(ma.y + Math.sin(mlAngle + mucSway) * imR);
-                    var imP = Math.sin(tMuc * 2 * Math.PI * 1.5 + mai * 1.7 + mla * 2.1);
-                    if (inB(imx, imy)) set(imx, imy, imP > 0 ? '#bbddcc' : '#99ccbb');
-                    var omR = outerMR + Math.sin(tMuc * 2 * Math.PI * 0.6 + mla * 1.3 + mai * 3.0) * 0.5;
-                    var omx = Math.round(ma.x + Math.cos(mlAngle + mucSway * 1.5) * omR);
-                    var omy = Math.round(ma.y + Math.sin(mlAngle + mucSway * 1.5) * omR);
-                    var omP = Math.sin(tMuc * 2 * Math.PI * 0.9 + mai * 2.5 + mla * 1.8);
-                    if (inB(omx, omy)) set(omx, omy, omP > 0 ? '#aaccbb' : '#88bbaa');
-                    if (mla % 2 === 0) {
-                        var mmR = (imR + omR) * 0.5;
-                        var mmx = Math.round(ma.x + Math.cos(mlAngle + mucSway * 0.7) * mmR);
-                        var mmy = Math.round(ma.y + Math.sin(mlAngle + mucSway * 0.7) * mmR);
-                        var mmP = Math.sin(tMuc * 2 * Math.PI * 2.0 + mai * 1.3 + mla * 2.5);
-                        if (inB(mmx, mmy)) set(mmx, mmy, mmP > 0 ? '#cceecc' : '#aaddbb');
-                    }
-                }
-                if (mai === 0 && mucusAnchors.length > 1) {
-                    var cAnc = mucusAnchors[1];
-                    var cMidX = Math.round((ma.x + cAnc.x) / 2 + Math.cos(ma.angle) * (innerMR + 1.0));
-                    var cMidY = Math.round((ma.y + cAnc.y) / 2 + Math.sin(ma.angle) * (innerMR + 1.0));
-                    var cMP = Math.sin(tMuc * 2 * Math.PI * 1.3 + mai * 3.5);
-                    if (inB(cMidX, cMidY)) set(cMidX, cMidY, cMP > 0 ? '#ddeecc' : '#bbddbb');
-                }
-            }
+            for(var ani=0;ani<anoikisCells.length;ani++){var ac=anoikisCells[ani],anPh=(tAnoi+ac.phase)%1.0,anSin=Math.sin(tAnoi*2*Math.PI+ani*2.09);
+            if(anPh<0.15){var intR=0.5+anPh*3.0,intA=ac.shedA+Math.PI;set(Math.round(ac.x+Math.cos(intA)*intR),Math.round(ac.y+Math.sin(intA)*intR),anPh<0.08?'#ddcc88':'#bbaa66');if(inB(ac.x,ac.y))set(ac.x,ac.y,'#997766');
+            }else if(anPh<0.35){var detR=(anPh-0.15)/0.20*1.5,detX=Math.round(ac.x+Math.cos(ac.shedA)*detR),detY=Math.round(ac.y+Math.sin(ac.shedA)*detR);if(inB(detX,detY))set(detX,detY,anSin>0?ac.casp:'#cc6655');
+            for(var bl=0;bl<3;bl++){var blA=ac.shedA+(bl-1)*0.6+Math.sin(tAnoi*2*Math.PI*2.5+bl*1.8)*0.2,blR=detR+0.6+Math.sin(tAnoi*2*Math.PI*3.0+bl*2.3)*0.3;set(Math.round(ac.x+Math.cos(blA)*blR),Math.round(ac.y+Math.sin(blA)*blR),ac.bleb);}
+            set(Math.round(ac.x+Math.cos(ac.shedA+Math.sin(tAnoi*2*Math.PI*1.5+ani*1.7)*0.3)*(detR+0.3)),Math.round(ac.y+Math.sin(ac.shedA+Math.sin(tAnoi*2*Math.PI*1.5+ani*1.7)*0.3)*(detR+0.3)),ac.ps);
+            }else if(anPh<0.65){var fragFrac=(anPh-0.35)/0.30;for(var fg=0;fg<3;fg++){var fgA=ac.shedA+(fg-1)*0.7,fgR=1.5+fragFrac*2.5+fg*0.3,fgDrift=Math.sin(tAnoi*2*Math.PI*1.8+fg*2.5+ani*1.3)*0.4;set(Math.round(ac.x+Math.cos(fgA+fgDrift)*fgR),Math.round(ac.y+Math.sin(fgA+fgDrift)*fgR),Math.sin(tAnoi*2*Math.PI*2.0+fg*1.9)>0?ac.frag:ac.ps);}}}
+            var tMuc=(now%19000)/19000;var mucusAnchors=[];
+            for(var mi2=0;mi2<granddaughterNuclei.length;mi2++){var mg2=granddaughterNuclei[mi2];if(mg2.cellType==='goblet')mucusAnchors.push({x:mg2.x,y:mg2.y,angle:Math.atan2(mg2.y-blCenter.y,mg2.x-blCenter.x),bR:mg2.bodyRadius});}
+            for(var mai=0;mai<mucusAnchors.length;mai++){var ma=mucusAnchors[mai],innerMR=ma.bR+2.5,outerMR=ma.bR+4.5;
+            for(var mla=-3;mla<=3;mla++){var mlAngle=ma.angle+mla*0.22,mucSway=Math.sin(tMuc*2*Math.PI*0.8+mai*2.3+mla*1.4)*0.12;
+            var imR=innerMR+Math.sin(tMuc*2*Math.PI*1.2+mla*0.9)*0.3;set(Math.round(ma.x+Math.cos(mlAngle+mucSway)*imR),Math.round(ma.y+Math.sin(mlAngle+mucSway)*imR),Math.sin(tMuc*2*Math.PI*1.5+mai*1.7+mla*2.1)>0?'#bbddcc':'#99ccbb');
+            var omR=outerMR+Math.sin(tMuc*2*Math.PI*0.6+mla*1.3+mai*3.0)*0.5;set(Math.round(ma.x+Math.cos(mlAngle+mucSway*1.5)*omR),Math.round(ma.y+Math.sin(mlAngle+mucSway*1.5)*omR),Math.sin(tMuc*2*Math.PI*0.9+mai*2.5+mla*1.8)>0?'#aaccbb':'#88bbaa');
+            if(mla%2===0){var mmR=(imR+omR)*0.5;set(Math.round(ma.x+Math.cos(mlAngle+mucSway*0.7)*mmR),Math.round(ma.y+Math.sin(mlAngle+mucSway*0.7)*mmR),Math.sin(tMuc*2*Math.PI*2.0+mai*1.3+mla*2.5)>0?'#cceecc':'#aaddbb');}}
+            if(mai===0&&mucusAnchors.length>1){var cAnc=mucusAnchors[1],cMidX=Math.round((ma.x+cAnc.x)/2+Math.cos(ma.angle)*(innerMR+1.0)),cMidY=Math.round((ma.y+cAnc.y)/2+Math.sin(ma.angle)*(innerMR+1.0));if(inB(cMidX,cMidY))set(cMidX,cMidY,Math.sin(tMuc*2*Math.PI*1.3+mai*3.5)>0?'#ddeecc':'#bbddbb');}}
             var tIgA = (now % 16000) / 16000;
             for (var igai = 0; igai < granddaughterNuclei.length; igai++) {
                 var igaG = granddaughterNuclei[igai];
