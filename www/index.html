@@ -408,6 +408,10 @@
             {channelColor:'#44ccdd',caColor:'#eeff55',restColor:'#339999'},'enterocyte');
         initTransporters('pmca','basal',2,0.46,-0.12,0.7,1.8,
             {pumpColor:'#cc55dd',caOutColor:'#eeff55',atpColor:'#ffdd44',restColor:'#993399'},'enterocyte');
+        initTransporters('zip4','apical',2,0.38,0.55,0.8,1.7,
+            {channelColor:'#55aacc',znColor:'#ccddee',restColor:'#338899'},'enterocyte');
+        initTransporters('znt1','basal',2,0.50,-0.18,0.7,1.9,
+            {channelColor:'#4499bb',znOutColor:'#bbddee',restColor:'#226688'},'enterocyte');
         for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
             var aqn = granddaughterNuclei[aqi];
             aqn.aquaporins = [];
@@ -436,6 +440,18 @@
                     freeColor: '#88ddaa',    // apo-calbindin (unbound)
                     boundColor: '#eeff77',   // Ca²⁺-bound calbindin
                     caColor: '#ddee55',      // Ca²⁺ ion being shuttled
+                });
+            }
+            ecn.metallothionein = [];
+            var mtCount = 2 + (eci % 2);
+            for (var mti2 = 0; mti2 < mtCount; mti2++) {
+                ecn.metallothionein.push({
+                    apicalAngle: ecApicalA + (mti2 - (mtCount-1)/2) * 0.38 + 0.20,
+                    basalAngle: ecBasalA + (mti2 - (mtCount-1)/2) * 0.42 + 0.15,
+                    phase: eci * 0.8 + mti2 * 1.3,
+                    apoColor: '#77bbcc',     // apo-metallothionein (unbound)
+                    znBoundColor: '#bbeeee', // Zn²⁺-bound metallothionein
+                    znColor: '#aadddd',      // Zn²⁺ ion being shuttled
                 });
             }
             ecn.chromaffinGranules = [];
@@ -1164,6 +1180,15 @@
                     }else if(cabCyc<0.65){var cabR2=bR*0.25+(cabCyc-0.35)*(bR*0.5);var cabA2=cab.basalAngle+(cabCyc-0.35)*(cab.apicalAngle-cab.basalAngle)*0.5;
                     setR(Math.round(g.x+Math.cos(cabA2)*cabR2),Math.round(g.y+Math.sin(cabA2)*cabR2),cabPulse>0.2?cab.freeColor:'#77cc99',g.x,g.y,bR);
                     }}}
+                if(g.metallothionein){var tMT2=(now%13000)/13000;
+                    for(var mti3=0;mti3<g.metallothionein.length;mti3++){var mt2=g.metallothionein[mti3];
+                    var mtCyc=(tMT2*1.5+mt2.phase*0.28)%1.0;
+                    var mtPulse=Math.sin(tMT2*2*Math.PI*2.0+mt2.phase);
+                    if(mtCyc<0.35){var mtR=bR*0.72-mtCyc*(bR*0.48);var mtA=mt2.apicalAngle+mtCyc*(mt2.basalAngle-mt2.apicalAngle)*0.5;
+                    setR(Math.round(g.x+Math.cos(mtA)*mtR),Math.round(g.y+Math.sin(mtA)*mtR),mtPulse>0?mt2.znBoundColor:mt2.znColor,g.x,g.y,bR);
+                    }else if(mtCyc<0.65){var mtR2=bR*0.24+(mtCyc-0.35)*(bR*0.48);var mtA2=mt2.basalAngle+(mtCyc-0.35)*(mt2.apicalAngle-mt2.basalAngle)*0.5;
+                    setR(Math.round(g.x+Math.cos(mtA2)*mtR2),Math.round(g.y+Math.sin(mtA2)*mtR2),mtPulse>0.2?mt2.apoColor:'#669faa',g.x,g.y,bR);
+                    }}}
                 if(g.exosomes){var tExo=(now%16000)/16000;
                     for(var exi=0;exi<g.exosomes.length;exi++){var exo=g.exosomes[exi],exP=(tExo*exo.speed+exo.phase)%1.0,exDR=g.bodyRadius+0.5+exP*3.5,exA=exo.releaseAngle+exP*(exo.driftAngle-exo.releaseAngle)*0.3;
                     set(Math.round(g.x+Math.cos(exA)*exDR),Math.round(g.y+Math.sin(exA)*exDR),Math.sin(tExo*2*Math.PI*4+exi*2.1+i*1.7)>0?'#ddaaee':exo.color);}}
@@ -1357,6 +1382,10 @@
                     substrates:[{key:'caColor', dir:'in', startR:1.0, range:2.6}]},
                 {field:'pmca', period:10000, activeKey:'pumpColor', restKey:'restColor', pulseFreq:2.5, cycleSpeed:1.8,
                     substrates:[{key:'caOutColor', dir:'out', range:2.0, phaseOff:0.5},{key:'atpColor', dir:'in', startR:0.6, range:1.5, phaseOff:0.3, spread:0.12}]},
+                {field:'zip4', period:10500, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.4, cycleSpeed:2.0,
+                    substrates:[{key:'znColor', dir:'in', startR:1.2, range:2.8}]},
+                {field:'znt1', period:11000, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
+                    substrates:[{key:'znOutColor', dir:'out', range:2.2, phaseOff:0.5}]},
             ]);
             var tFA = (now % 11000) / 11000;
             for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {
@@ -1384,21 +1413,18 @@
                 var cPulse = Math.sin(tCa * 2 * Math.PI * 3 + ci * 1.5);
                 set(cx2, cy2, cPulse > 0 ? cw.color : cw.dimColor);
             }
-            var tBL = (now % 12000) / 12000;
-            for (var bi = 0; bi < basalLamina.length; bi++) {
-                var bA = basalLamina[bi];
-                var bP = Math.sin(tBL * 2 * Math.PI * 1.5 + bA.phase);
-                set(bA.x, bA.y, bP > 0.2 ? '#c4a070' : '#b09060');
-                if (bi < basalLamina.length - 1) {
-                    var bB = basalLamina[bi + 1];
-                    var bdx = bB.x - bA.x, bdy = bB.y - bA.y;
-                    var bSt = Math.max(Math.abs(bdx), Math.abs(bdy));
-                    for (var bs = 1; bs < bSt; bs++) {
-                        var bSh = Math.sin(tBL * 2 * Math.PI * 2 + bA.phase + bs * 0.6);
-                        set(Math.round(bA.x+bdx*bs/bSt), Math.round(bA.y+bdy*bs/bSt), bSh>0.3?'#d4b080':'#b89868');
-                    }
+            function renderPN(path,period,nFreq,nTh,nHi,nLo,sFreq,sTh,sHi,sLo,tFn){
+                var tP=(now%period)/period;
+                for(var i=0;i<path.length;i++){
+                    var nd=path[i],nP=Math.sin(tP*2*Math.PI*nFreq+(nd.phase||i*0.8));
+                    set(nd.x,nd.y,nP>nTh?nHi:nLo);
+                    if(i<path.length-1){var nx=path[i+1],dx=nx.x-nd.x,dy=nx.y-nd.y,st=Math.max(Math.abs(dx),Math.abs(dy));
+                    for(var s2=1;s2<st;s2++){var sP=Math.sin(tP*2*Math.PI*sFreq+(nd.phase||i*0.9)+s2*0.5);
+                    set(Math.round(nd.x+dx*s2/st),Math.round(nd.y+dy*s2/st),sP>sTh?sHi:sLo);}}
+                    if(tFn)tFn(nd,i,tP,nP);
                 }
             }
+            renderPN(basalLamina,12000,1.5,0.2,'#c4a070','#b09060',2,0.3,'#d4b080','#b89868');
             var tHD = (now % 10000) / 10000;
             for (var hi = 0; hi < granddaughterNuclei.length; hi++) {
                 var hg = granddaughterNuclei[hi];
@@ -1426,60 +1452,19 @@
                     }
                 }
             }
-            var tLac = (now % 16000) / 16000;
-            var lactealPath = [
-                {x:26,y:14},{x:24,y:18},{x:21,y:22},{x:18,y:25},
-                {x:14,y:27},{x:10,y:26},{x:7,y:23},{x:5,y:19},
-            ];
-            for (var lai = 0; lai < lactealPath.length; lai++) {
-                var lp2 = lactealPath[lai];
-                var lacP = Math.sin(tLac * 2 * Math.PI * 1.3 + lai * 0.8);
-                set(lp2.x, lp2.y, lacP > 0.2 ? '#b8e8c8' : '#98ccaa');
-                if (lai < lactealPath.length - 1) {
-                    var ln2 = lactealPath[lai + 1];
-                    var ldx2 = ln2.x - lp2.x, ldy2 = ln2.y - lp2.y;
-                    var lSt2 = Math.max(Math.abs(ldx2), Math.abs(ldy2));
-                    for (var ls2 = 1; ls2 < lSt2; ls2++) {
-                        var lsP2 = Math.sin(tLac * 2 * Math.PI * 1.6 + lai * 0.9 + ls2 * 0.5);
-                        set(Math.round(lp2.x+ldx2*ls2/lSt2), Math.round(lp2.y+ldy2*ls2/lSt2), lsP2>0?'#a8d8b8':'#88bb99');
-                    }
-                }
-                var chyleFrac = (tLac * 2.0 + lai * 0.13) % 1.0;
-                if (chyleFrac > 0.3 && chyleFrac < 0.6) {
-                    var chyleA = Math.atan2(16 - lp2.y, 16 - lp2.x);
-                    var chyleOff = Math.sin(tLac * 2 * Math.PI * 2.5 + lai * 1.7) * 0.5;
-                    var chyleX = Math.round(lp2.x + Math.cos(chyleA + chyleOff) * 0.6);
-                    var chyleY = Math.round(lp2.y + Math.sin(chyleA + chyleOff) * 0.6);
-                    if (inB(chyleX, chyleY)) set(chyleX, chyleY, chyleFrac < 0.45 ? '#eeee88' : '#dddd66');
-                }
-            }
-            var tCap = (now % 13000) / 13000;
-            var capillaryPath = [
-                {x:30,y:10},{x:31,y:14},{x:30,y:18},{x:28,y:22},
-                {x:25,y:26},{x:21,y:29},{x:16,y:31},{x:11,y:30},
-                {x:7,y:27},{x:4,y:23},
-            ];
-            for (var cpi = 0; cpi < capillaryPath.length; cpi++) {
-                var cp = capillaryPath[cpi];
-                var cpP = Math.sin(tCap * 2 * Math.PI * 1.2 + cpi * 0.7);
-                set(cp.x, cp.y, cpP > 0.2 ? '#cc4444' : '#993333');
-                if (cpi < capillaryPath.length - 1) {
-                    var cpN = capillaryPath[cpi + 1];
-                    var cpdx = cpN.x - cp.x, cpdy = cpN.y - cp.y;
-                    var cpSt = Math.max(Math.abs(cpdx), Math.abs(cpdy));
-                    for (var cps = 1; cps < cpSt; cps++) {
-                        var cpsh = Math.sin(tCap * 2 * Math.PI * 1.8 + cpi * 0.9 + cps * 0.5);
-                        set(Math.round(cp.x+cpdx*cps/cpSt), Math.round(cp.y+cpdy*cps/cpSt), cpsh>0?'#bb3333':'#882222');
-                    }
-                }
-                var bcPhase = (tCap * 2.5 + cpi * 0.11) % 1.0;
-                if (bcPhase > 0.4 && bcPhase < 0.6) {
-                    var bcOff = Math.sin(tCap * 2 * Math.PI * 3 + cpi * 1.3);
-                    var bcX = cp.x + Math.round(bcOff * 0.5);
-                    var bcY = cp.y + Math.round(bcOff * 0.3);
-                    set(bcX, bcY, '#ee5555');
-                }
-            }
+            var lactealPathOld = [{x:26,y:14},{x:24,y:18},{x:21,y:22},{x:18,y:25},{x:14,y:27},{x:10,y:26},{x:7,y:23},{x:5,y:19}];
+            renderPN(lactealPathOld,16000,1.3,0.2,'#b8e8c8','#98ccaa',1.6,0,'#a8d8b8','#88bb99',function(nd,i,tP){
+                var cf=(tP*2.0+i*0.13)%1.0;
+                if(cf>0.3&&cf<0.6){var cA=Math.atan2(16-nd.y,16-nd.x),cO=Math.sin(tP*2*Math.PI*2.5+i*1.7)*0.5;
+                var cX=Math.round(nd.x+Math.cos(cA+cO)*0.6),cY=Math.round(nd.y+Math.sin(cA+cO)*0.6);
+                if(inB(cX,cY))set(cX,cY,cf<0.45?'#eeee88':'#dddd66');}
+            });
+            var capillaryPath = [{x:30,y:10},{x:31,y:14},{x:30,y:18},{x:28,y:22},{x:25,y:26},{x:21,y:29},{x:16,y:31},{x:11,y:30},{x:7,y:27},{x:4,y:23}];
+            renderPN(capillaryPath,13000,1.2,0.2,'#cc4444','#993333',1.8,0,'#bb3333','#882222',function(nd,i,tP){
+                var bcPh=(tP*2.5+i*0.11)%1.0;
+                if(bcPh>0.4&&bcPh<0.6){var bcO=Math.sin(tP*2*Math.PI*3+i*1.3);
+                set(nd.x+Math.round(bcO*0.5),nd.y+Math.round(bcO*0.3),'#ee5555');}
+            });
             var tPeri = (now % 21000) / 21000;
             for (var pci2 = 0; pci2 < capillaryPath.length; pci2 += 2) {
                 var pcCap = capillaryPath[pci2];
