@@ -513,22 +513,39 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // PROPHASE BEGINS: CDK1 fully active, triggers chromatin condensation
-        // Condensin complexes load onto chromosomes, centrosomes begin migration
+        // PROPHASE: condensation advancing, condensin II tightens chromosome axes
+        // CDK1 phosphorylates lamin B — nuclear envelope weakening
         cellA.prophase = {
-            condensation: 0.3, // early condensation — chromosomes becoming visible
+            condensation: 0.55, // mid-prophase — chromosomes clearly distinct
             pole1Target: { x: 19, y: 7 },  // upper pole
             pole2Target: { x: 23, y: 11 }, // lower pole
             spindleForming: false, // not yet — NEB hasn't occurred
-            asterCount: 6,
+            asterCount: 8, // asters growing as centrosomes recruit more gamma-tubulin
+            laminPhospho: 0.2, // early lamin phosphorylation — envelope still intact but weakening
         };
         cellB.prophase = {
-            condensation: 0.3,
+            condensation: 0.55,
             pole1Target: { x: 9, y: 21 },  // upper pole
             pole2Target: { x: 13, y: 25 }, // lower pole
             spindleForming: false,
-            asterCount: 6,
+            asterCount: 8,
+            laminPhospho: 0.2,
         };
+
+        // Condensin complexes: ring-shaped SMC proteins loading onto chromosomes
+        // They actively compact chromatin by extruding loops
+        cellA.condensins = [
+            { baseAngle: 0.8, speed: 0.15, color: '#ee8855' },
+            { baseAngle: 2.4, speed: -0.12, color: '#dd7744' },
+            { baseAngle: 4.0, speed: 0.18, color: '#ee8855' },
+            { baseAngle: 5.5, speed: -0.14, color: '#dd7744' },
+        ];
+        cellB.condensins = [
+            { baseAngle: 1.2, speed: -0.16, color: '#ee8855' },
+            { baseAngle: 3.0, speed: 0.13, color: '#dd7744' },
+            { baseAngle: 4.6, speed: -0.17, color: '#ee8855' },
+            { baseAngle: 6.0, speed: 0.11, color: '#dd7744' },
+        ];
 
         // Prophase: nucleus swollen, CDK1 driving condensation
         var growthRate = 0.8;
@@ -610,14 +627,23 @@
                         if (ea % 8 !== 0) continue;
                         var flickerT = Math.sin(t * 2 * Math.PI * 4 + ea * 1.2);
                         if (flickerT > -0.4) continue;
-                    } else if (isProphase && (ea % 4 === 0 || ea % 6 === 2)) {
+                    } else if (isProphase && cell.prophase.laminPhospho > 0) {
+                        // Lamin phosphorylation: envelope flickers more as CDK1 weakens lamina
                         var flickerT = Math.sin(t * 2 * Math.PI * 3 + ea * 0.8);
-                        if (flickerT > -0.1) continue;
+                        var laminThresh = -0.3 + cell.prophase.laminPhospho * 0.6;
+                        if ((ea % 4 === 0 || ea % 6 === 2) && flickerT > laminThresh) continue;
+                    } else if (isProphase) {
+                        var flickerT = Math.sin(t * 2 * Math.PI * 3 + ea * 0.8);
+                        if ((ea % 4 === 0 || ea % 6 === 2) && flickerT > -0.1) continue;
                     }
                     var ex = Math.round(cell.cx + Math.cos(eAngle) * unifiedNucR);
                     var ey = Math.round(cell.cy + Math.sin(eAngle) * unifiedNucR);
                     if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
-                        envPixels[ex + ',' + ey] = isProphase ? '#ddaa33' : cell.nucleusEdge;
+                        // Lamin phosphorylation dims envelope — CDK1 weakening the lamina meshwork
+                        var envColor = isProphase
+                            ? (cell.prophase.laminPhospho > 0.1 ? '#cc9933' : '#ddaa33')
+                            : cell.nucleusEdge;
+                        envPixels[ex + ',' + ey] = envColor;
                     }
                 }
                 nucPixels[cell.cx + ',' + cell.cy] = cell.nucleolusColor;
@@ -783,6 +809,26 @@
                         var sDriftX = Math.round(pole1.x + Math.cos(diffAngle2) * diffR2);
                         var sDriftY = Math.round(pole1.y + Math.sin(diffAngle2) * diffR2);
                         chrPixels[sDriftX + ',' + sDriftY] = '#c08050';
+                    }
+                }
+            }
+
+            // Condensin complexes: visible as bright dots co-localizing with condensing chromosomes
+            var condensinPixels = {};
+            if (cell.condensins && cell.prophase && cell.prophase.condensation > 0.3) {
+                var tCond = (t * 8000 / 7000) % 1.0;
+                var allChr = cell.chromatin.concat(cell.sisterChromatin || []);
+                for (var coni = 0; coni < cell.condensins.length; coni++) {
+                    var con = cell.condensins[coni];
+                    // Condensin tracks along chromosomes — orbits near nucleus center
+                    var conAngle = con.baseAngle + con.speed * tOrbit;
+                    var conR = 0.3 + cell.prophase.condensation * 0.4;
+                    var conX = Math.round(cell.cx + Math.cos(conAngle) * conR);
+                    var conY = Math.round(cell.cy + Math.sin(conAngle) * conR);
+                    if (conX >= 0 && conX < size && conY >= 0 && conY < size) {
+                        var conPulse = Math.sin(tCond * 2 * Math.PI + coni * 1.5);
+                        // Condensin glows as it extrudes chromatin loops
+                        condensinPixels[conX + ',' + conY] = conPulse > 0 ? '#ffaa66' : con.color;
                     }
                 }
             }
@@ -1742,7 +1788,7 @@
             return {
                 maxR: maxR, nucR: nucR, elongation: elongation, cytoConstriction: cytoConstriction,
                 mitoPixels: mitoPixels, envPixels: envPixels,
-                nucPixels: nucPixels, chrPixels: chrPixels,
+                nucPixels: nucPixels, chrPixels: chrPixels, condensinPixels: condensinPixels,
                 cilPixels: cilPixels, recPixels: recPixels,
                 vesPixels: vesPixels, atpPixels: atpPixels,
                 centPixels: centPixels, furrowPixels: furrowPixels,
@@ -2091,6 +2137,8 @@
                                 color = dd.genomePixels[key];
                             } else if (dd.chrPixels[key]) {
                                 color = dd.chrPixels[key];
+                            } else if (dd.condensinPixels && dd.condensinPixels[key]) {
+                                color = dd.condensinPixels[key];
                             } else if (dd.recPixels[key]) {
                                 color = dd.recPixels[key];
                             } else if (cc.golgiPixels[key]) {
