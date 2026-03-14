@@ -477,6 +477,44 @@
             }
         }
 
+        // CD36/FATP4 fatty acid transporters on enterocyte apical membrane
+        // Long-chain fatty acids (C16-C18) cross the membrane via CD36 scavenger receptor
+        // and FATP4 acyl-CoA synthetase; internalized FAs traffic to ER for re-esterification
+        // into triglycerides, then packaged into chylomicrons for basolateral secretion
+        for (var fai = 0; fai < granddaughterNuclei.length; fai++) {
+            var fan = granddaughterNuclei[fai];
+            if (fan.cellType !== 'enterocyte') continue;
+            var faBlCenter = { x: 16, y: 22 };
+            var faApicalAngle = Math.atan2(fan.y - faBlCenter.y, fan.x - faBlCenter.x);
+            var faBasalAngle = Math.atan2(faBlCenter.y - fan.y, faBlCenter.x - fan.x);
+            // CD36 on apical membrane (fatty acid uptake from lumen)
+            fan.cd36 = [];
+            var cd36Count = 2;
+            for (var cdj = 0; cdj < cd36Count; cdj++) {
+                var cdSpread = (cdj - (cd36Count - 1) / 2) * 0.50;
+                fan.cd36.push({
+                    angle: faApicalAngle + cdSpread + 0.30, // offset from other transporters
+                    phase: fai * 0.6 + cdj * 1.9,
+                    receptorColor: '#dd9944',     // CD36 scavenger receptor (amber-brown)
+                    faColor: '#eebb55',            // fatty acid chain (golden yellow)
+                    restColor: '#aa7733',          // resting receptor
+                });
+            }
+            // Chylomicron assembly: large lipoprotein particles bud from ER toward basolateral
+            // Triglycerides + apoB-48 coat → secreted via exocytosis into interstitial space
+            fan.chylomicrons = [];
+            var cmCount = 1 + (fai % 2);
+            for (var cmj = 0; cmj < cmCount; cmj++) {
+                fan.chylomicrons.push({
+                    angle: faBasalAngle + (cmj - (cmCount - 1) / 2) * 0.55,
+                    phase: fai * 0.5 + cmj * 1.7,
+                    coreColor: '#eedd66',          // triglyceride-rich core (bright yellow)
+                    coatColor: '#ccbb55',           // apoB-48 phospholipid coat
+                    speed: 0.20,
+                });
+            }
+        }
+
         // Aquaporin water channels: AQP1/AQP2 tetramers embedded in granddaughter membranes
         // Selective water transport across the sealed epithelium — osmotic homeostasis
         // Water molecules (small blue dots) transit through channels on both apical and basal faces
@@ -2037,6 +2075,52 @@
                         var hX = Math.round(ptG.x + Math.cos(pt.angle + hSpread) * hR);
                         var hY = Math.round(ptG.y + Math.sin(pt.angle + hSpread) * hR);
                         if (hPhase > 0.03) set(hX, hY, pt.hColor);
+                    }
+                }
+            }
+            // CD36/FATP4 fatty acid transport: enterocytes absorb long-chain fatty acids
+            var tFA = (now % 11000) / 11000;
+            for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {
+                var faG = granddaughterNuclei[fai2];
+                if (!faG.cd36) continue;
+                var faBR = faG.bodyRadius;
+                // CD36 receptors: apical fatty acid uptake
+                for (var cdj2 = 0; cdj2 < faG.cd36.length; cdj2++) {
+                    var cd = faG.cd36[cdj2];
+                    var cdPx2 = Math.round(faG.x + Math.cos(cd.angle) * faBR);
+                    var cdPy2 = Math.round(faG.y + Math.sin(cd.angle) * faBR);
+                    var cdCycle = (tFA * 1.8 + cd.phase * 0.3) % 1.0;
+                    var cdActive = Math.sin(tFA * 2 * Math.PI * 2.0 + cd.phase);
+                    set(cdPx2, cdPy2, cdActive > 0 ? cd.receptorColor : cd.restColor);
+                    // Fatty acid chain entering from lumen (zigzag motion simulating lipid tail)
+                    if (cdCycle < 0.5) {
+                        var faInR = faBR + 1.3 - cdCycle * 3.2;
+                        var faWiggle = Math.sin(cdCycle * 12 + cdj2 * 2.0) * 0.12;
+                        var faInX = Math.round(faG.x + Math.cos(cd.angle + faWiggle) * faInR);
+                        var faInY = Math.round(faG.y + Math.sin(cd.angle + faWiggle) * faInR);
+                        if (cdCycle > 0.04 && cdCycle < 0.46) set(faInX, faInY, cd.faColor);
+                    }
+                }
+                // Chylomicrons: large lipoprotein particles budding from ER toward basolateral exit
+                if (faG.chylomicrons) {
+                    for (var cmj2 = 0; cmj2 < faG.chylomicrons.length; cmj2++) {
+                        var cm = faG.chylomicrons[cmj2];
+                        var cmCycle = (tFA * cm.speed + cm.phase * 0.3) % 1.0;
+                        // Chylomicron assembles inside cell then exits basolateral
+                        var cmInR = faBR * 0.45 + cmCycle * (faBR * 0.7);
+                        var cmX = Math.round(faG.x + Math.cos(cm.angle) * cmInR);
+                        var cmY = Math.round(faG.y + Math.sin(cm.angle) * cmInR);
+                        var cmPulse = Math.sin(tFA * 2 * Math.PI * 1.5 + cm.phase);
+                        // Inside cell: assembling; outside: secreted particle
+                        if (cmCycle < 0.7) {
+                            setR(cmX, cmY, cmPulse > 0 ? cm.coreColor : cm.coatColor, faG.x, faG.y, faBR);
+                        } else {
+                            // Secreted into extracellular space
+                            var cmOutR = faBR + 0.4 + (cmCycle - 0.7) * 4.0;
+                            var cmOutX = Math.round(faG.x + Math.cos(cm.angle) * cmOutR);
+                            var cmOutY = Math.round(faG.y + Math.sin(cm.angle) * cmOutR);
+                            set(cmOutX, cmOutY, cmPulse > 0 ? cm.coreColor : cm.coatColor);
+                        }
                     }
                 }
             }
