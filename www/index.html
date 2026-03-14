@@ -283,6 +283,31 @@
             });
         }
 
+        // Adherens junctions: E-cadherin adhesion belt connecting the two cells
+        // The fourth and final major junction type, linking to actin cytoskeleton
+        var adherensJunctions = [];
+        var ajCount = 4;
+        for (var aji = 0; aji < ajCount; aji++) {
+            var baseA2 = Math.atan2(cellB.cy - cellA.cy, cellB.cx - cellA.cx);
+            var baseB2 = Math.atan2(cellA.cy - cellB.cy, cellA.cx - cellB.cx);
+            var ajSpread = (aji - (ajCount - 1) / 2) * 0.25;
+            adherensJunctions.push({
+                angleA: baseA2 + ajSpread,
+                angleB: baseB2 + ajSpread,
+                phase: aji * 1.2,
+            });
+        }
+
+        // Actin stress fibers: cytoskeletal cables inside each cell
+        // Connect from adherens junction sites inward toward the nucleus
+        cellA.actinFibers = [];
+        cellB.actinFibers = [];
+        for (var afi = 0; afi < ajCount; afi++) {
+            var ajA = adherensJunctions[afi];
+            cellA.actinFibers.push({ junctionAngle: ajA.angleA, length: 3.5, phase: afi * 0.7 });
+            cellB.actinFibers.push({ junctionAngle: ajA.angleB, length: 3.5, phase: afi * 0.7 + 1.0 });
+        }
+
         // Smooth ER: lipid synthesis tubules, distinct from rough ER (no ribosomes)
         cellA.smoothER = [
             { cx: 24, cy: 11, rx: 1.5, ry: 0.8, angle: 0.4 },
@@ -608,6 +633,33 @@
                 }
             }
 
+            // Actin stress fibers: cables from junction sites inward toward nucleus
+            var actinPixels = {};
+            if (cell.actinFibers) {
+                var tActin = (t * 8000 / 9000) % 1.0;
+                for (var afi = 0; afi < cell.actinFibers.length; afi++) {
+                    var af = cell.actinFibers[afi];
+                    // Start at junction site on membrane, extend inward
+                    var startR = maxR - 0.8;
+                    var endR = startR - af.length;
+                    if (endR < 0.5) endR = 0.5;
+                    // Actin fiber tension pulse
+                    var actPulse = Math.sin(tActin * 2 * Math.PI + af.phase);
+                    for (var al = 0; al <= Math.ceil(af.length); al++) {
+                        var ar = startR - al;
+                        var ax2 = Math.round(cell.cx + Math.cos(af.junctionAngle) * ar);
+                        var ay2 = Math.round(cell.cy + Math.sin(af.junctionAngle) * ar);
+                        if (ax2 >= 0 && ax2 < size && ay2 >= 0 && ay2 < size) {
+                            // Myosin contraction pulse travels along the fiber
+                            var myosinPos = (tActin + af.phase * 0.3) % 1.0;
+                            var fiberPos = al / af.length;
+                            var nearMyosin = Math.abs(fiberPos - myosinPos) < 0.25;
+                            actinPixels[ax2 + ',' + ay2] = nearMyosin && actPulse > 0 ? '#cc6655' : '#aa5544';
+                        }
+                    }
+                }
+            }
+
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
             if (cell.filopodia) {
@@ -637,7 +689,7 @@
                 centPixels: centPixels, furrowPixels: furrowPixels,
                 lysoPixels: lysoPixels, filoPixels: filoPixels,
                 riboPixels: riboPixels, peroxPixels: peroxPixels,
-                serPixels: serPixels
+                serPixels: serPixels, actinPixels: actinPixels
             };
         }
 
@@ -804,6 +856,37 @@
                 }
             }
 
+            // Adherens junction pixels: E-cadherin adhesion belt between cells
+            var ajPx = {};
+            var tAJ = (Date.now() % 7000) / 7000;
+            for (var aji = 0; aji < adherensJunctions.length; aji++) {
+                var aj = adherensJunctions[aji];
+                // Cadherin dimers extend from each cell's membrane into the intercellular space
+                var ajAxR = dA.maxR + 0.5;
+                var ajAx = cellA.cx + Math.cos(aj.angleA) * ajAxR;
+                var ajAy = cellA.cy + Math.sin(aj.angleA) * ajAxR;
+                var ajBxR = dB.maxR + 0.5;
+                var ajBx = cellB.cx + Math.cos(aj.angleB) * ajBxR;
+                var ajBy = cellB.cy + Math.sin(aj.angleB) * ajBxR;
+                // Draw cadherin bridge between the two cells
+                var ajMx = (ajAx + ajBx) / 2;
+                var ajMy = (ajAy + ajBy) / 2;
+                // Three points: near A, midpoint, near B
+                var ajPts = [
+                    { x: Math.round(ajAx), y: Math.round(ajAy) },
+                    { x: Math.round(ajMx), y: Math.round(ajMy) },
+                    { x: Math.round(ajBx), y: Math.round(ajBy) },
+                ];
+                // Calcium-dependent adhesion pulse
+                var ajPulse = Math.sin(tAJ * 2 * Math.PI + aj.phase);
+                for (var ajp = 0; ajp < ajPts.length; ajp++) {
+                    var pt = ajPts[ajp];
+                    if (pt.x >= 0 && pt.x < size && pt.y >= 0 && pt.y < size) {
+                        ajPx[pt.x + ',' + pt.y] = ajPulse > 0.2 ? '#ee8866' : '#cc7755';
+                    }
+                }
+            }
+
             // Signal molecule positions
             var signalPx = {};
             var tSig = Date.now();
@@ -896,6 +979,8 @@
                                 var mi = Math.floor(shell * cc.membraneColors.length / 1.2);
                                 if (mi >= cc.membraneColors.length) mi = cc.membraneColors.length - 1;
                                 color = cc.membraneColors[mi];
+                            } else if (dd.actinPixels && dd.actinPixels[key]) {
+                                color = dd.actinPixels[key];
                             } else if (dd.riboPixels && dd.riboPixels[key]) {
                                 color = dd.riboPixels[key];
                             } else if (dd.serPixels && dd.serPixels[key]) {
@@ -945,6 +1030,10 @@
                         }
                         if (!drawn && tjPx[key]) {
                             color = tjPx[key];
+                            drawn = true;
+                        }
+                        if (!drawn && ajPx[key]) {
+                            color = ajPx[key];
                             drawn = true;
                         }
                         if (!drawn && signalPx[key]) {
