@@ -398,6 +398,10 @@
             {transporterColor:'#cc6633',feColor:'#ee8844',hColor:'#ff6655',restColor:'#993311'},'enterocyte');
         initTransporters('ferroportin','basal',2,0.48,0.08,0.7,1.7,
             {channelColor:'#bb5522',feColor:'#ff9944',hephColor:'#dd7733',restColor:'#882211'},'enterocyte');
+        initTransporters('asbt','apical',2,0.38,-0.35,0.8,1.6,
+            {transporterColor:'#88aa44',bileColor:'#ccdd55',naCoColor:'#ffbb44',restColor:'#668833'},'enterocyte');
+        initTransporters('ost','basal',2,0.52,0.18,0.6,1.9,
+            {channelColor:'#779933',bileColor:'#bbcc44',restColor:'#557722'},'enterocyte');
         for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
             var aqn = granddaughterNuclei[aqi];
             aqn.aquaporins = [];
@@ -1125,47 +1129,16 @@
                         set(Math.round(g.x + Math.cos(beA) * beR2), Math.round(g.y + Math.sin(beA) * beR2), beP > 0 ? '#eedd77' : be.color);
                     }
                 }
-                if (g.chromaffinGranules) {
-                    var tCG = (now % 13000) / 13000 * 2 * Math.PI;
-                    for (var cgi2 = 0; cgi2 < g.chromaffinGranules.length; cgi2++) {
-                        var cg = g.chromaffinGranules[cgi2];
-                        var cgP = Math.sin(tCG * 1.2 + cg.phase);
-                        var cgA = cg.angle + Math.sin(tCG * 0.5 + cg.phase * 0.7) * 0.08;
-                        var cgR = cg.dist + Math.sin(tCG * 0.8 + cg.phase) * 0.15;
-                        var cgX = Math.round(g.x + Math.cos(cgA) * cgR);
-                        var cgY = Math.round(g.y + Math.sin(cgA) * cgR);
-                        setR(cgX, cgY, cgP > 0.3 ? cg.releaseColor : (cgP > -0.3 ? cg.granuleColor : cg.coreColor), g.x, g.y, bR);
-                    }
-                }
-                if (g.serotoninRelease) {
-                    var t5HT = (now % 19000) / 19000;
-                    for (var sri2 = 0; sri2 < g.serotoninRelease.length; sri2++) {
-                        var sr = g.serotoninRelease[sri2];
-                        var srProg = (t5HT * sr.speed + sr.phase) % 1.0;
-                        var srDR = bR + 0.3 + srProg * 3.0;
-                        var srA = sr.angle + Math.sin(t5HT * 2 * Math.PI + sr.phase) * 0.12;
-                        var srPulse = Math.sin(t5HT * 2 * Math.PI * 3 + sri2 * 2.3 + i * 1.5);
-                        var srX = Math.round(g.x + Math.cos(srA) * srDR);
-                        var srY = Math.round(g.y + Math.sin(srA) * srDR);
-                        set(srX, srY, srPulse > 0 ? sr.htColor : sr.htDimColor);
-                        if (srProg > 0.3 && srProg < 0.7) {
-                            var trX = Math.round(g.x + Math.cos(srA) * (srDR - 1.2));
-                            var trY = Math.round(g.y + Math.sin(srA) * (srDR - 1.2));
-                            set(trX, trY, sr.trailColor);
-                        }
-                    }
-                }
-                var tExo = (now % 16000) / 16000;
-                if (g.exosomes) {
-                    for (var exi = 0; exi < g.exosomes.length; exi++) {
-                        var exo = g.exosomes[exi];
-                        var exP = (tExo * exo.speed + exo.phase) % 1.0;
-                        var exDR = g.bodyRadius + 0.5 + exP * 3.5;
-                        var exA = exo.releaseAngle + exP * (exo.driftAngle - exo.releaseAngle) * 0.3;
-                        var exPulse = Math.sin(tExo * 2 * Math.PI * 4 + exi * 2.1 + i * 1.7);
-                        set(Math.round(g.x+Math.cos(exA)*exDR), Math.round(g.y+Math.sin(exA)*exDR), exPulse>0?'#ddaaee':exo.color);
-                    }
-                }
+                if(g.chromaffinGranules){var tCG=(now%13000)/13000*2*Math.PI;
+                    for(var cgi2=0;cgi2<g.chromaffinGranules.length;cgi2++){var cg=g.chromaffinGranules[cgi2],cgP=Math.sin(tCG*1.2+cg.phase),cgA=cg.angle+Math.sin(tCG*0.5+cg.phase*0.7)*0.08,cgR=cg.dist+Math.sin(tCG*0.8+cg.phase)*0.15;
+                    setR(Math.round(g.x+Math.cos(cgA)*cgR),Math.round(g.y+Math.sin(cgA)*cgR),cgP>0.3?cg.releaseColor:(cgP>-0.3?cg.granuleColor:cg.coreColor),g.x,g.y,bR);}}
+                if(g.serotoninRelease){var t5HT=(now%19000)/19000;
+                    for(var sri2=0;sri2<g.serotoninRelease.length;sri2++){var sr=g.serotoninRelease[sri2],srProg=(t5HT*sr.speed+sr.phase)%1.0,srDR=bR+0.3+srProg*3.0,srA=sr.angle+Math.sin(t5HT*2*Math.PI+sr.phase)*0.12,srPulse=Math.sin(t5HT*2*Math.PI*3+sri2*2.3+i*1.5);
+                    set(Math.round(g.x+Math.cos(srA)*srDR),Math.round(g.y+Math.sin(srA)*srDR),srPulse>0?sr.htColor:sr.htDimColor);
+                    if(srProg>0.3&&srProg<0.7)set(Math.round(g.x+Math.cos(srA)*(srDR-1.2)),Math.round(g.y+Math.sin(srA)*(srDR-1.2)),sr.trailColor);}}
+                if(g.exosomes){var tExo=(now%16000)/16000;
+                    for(var exi=0;exi<g.exosomes.length;exi++){var exo=g.exosomes[exi],exP=(tExo*exo.speed+exo.phase)%1.0,exDR=g.bodyRadius+0.5+exP*3.5,exA=exo.releaseAngle+exP*(exo.driftAngle-exo.releaseAngle)*0.3;
+                    set(Math.round(g.x+Math.cos(exA)*exDR),Math.round(g.y+Math.sin(exA)*exDR),Math.sin(tExo*2*Math.PI*4+exi*2.1+i*1.7)>0?'#ddaaee':exo.color);}}
                 var tMV2 = (now % 8000) / 8000 * 2 * Math.PI;
                 if (g.microvilli) {
                     for (var mvi2 = 0; mvi2 < g.microvilli.length; mvi2++) {
@@ -1346,6 +1319,10 @@
                     substrates:[{key:'feColor', dir:'in', startR:1.2, range:3.0},{key:'hColor', dir:'in', startR:0.7, range:2.2, phaseOff:0.08, spread:0.13}]},
                 {field:'ferroportin', period:10500, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
                     substrates:[{key:'feColor', dir:'out', range:2.2, phaseOff:0.5},{key:'hephColor', dir:'out', range:1.5, phaseOff:0.3, spread:0.15}]},
+                {field:'asbt', period:11000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.2, cycleSpeed:1.8,
+                    substrates:[{key:'bileColor', dir:'in', startR:1.4, range:3.2, wiggleFreq:8},{key:'naCoColor', dir:'in', startR:0.8, range:2.4, phaseOff:0.06, spread:0.12}]},
+                {field:'ost', period:11500, activeKey:'channelColor', restKey:'restColor', pulseFreq:1.8, cycleSpeed:1.5,
+                    substrates:[{key:'bileColor', dir:'out', range:2.0, phaseOff:0.5}]},
             ]);
             var tFA = (now % 11000) / 11000;
             for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {
