@@ -7,9 +7,35 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; display: flex; align-items: center; justify-content: center; }
+        canvas { image-rendering: pixelated; }
     </style>
 </head>
 <body>
-    <div style="width:1px;height:1px;background:#000000;"></div>
+    <canvas id="c" width="5" height="5"></canvas>
+    <script>
+        var canvas = document.getElementById('c');
+        var ctx = canvas.getContext('2d');
+        var s = Math.min(window.innerWidth, window.innerHeight);
+        canvas.style.width = s + 'px';
+        canvas.style.height = s + 'px';
+
+        // The original pixel, now with four neighbors — a cross emerges
+        var cells = [
+                    [0,0,0,0,0],
+                    [0,0,1,0,0],
+                    [0,1,1,1,0],
+                    [0,0,1,0,0],
+                    [0,0,0,0,0]
+        ];
+
+        for (var y = 0; y < 5; y++) {
+            for (var x = 0; x < 5; x++) {
+                if (cells[y][x]) {
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+    </script>
 </body>
 </html>
