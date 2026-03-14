@@ -355,6 +355,16 @@
             }
         }
 
+        // Zonula occludens (tight junctions) between adjacent granddaughter cells
+        // Claudin/occludin strands seal the paracellular space — completing the epithelial barrier
+        // Each junction connects neighboring GD cells at their closest membrane points
+        var gdTightJunctions = [
+            { from: 0, to: 1, phase: 0, color: '#ddccaa', dimColor: '#bbaa88' },     // GD0 ↔ GD1 (sisters from A)
+            { from: 2, to: 3, phase: 1.2, color: '#ddccaa', dimColor: '#bbaa88' },   // GD2 ↔ GD3 (sisters from B)
+            { from: 1, to: 2, phase: 2.4, color: '#ccbbaa', dimColor: '#aa9977' },   // GD1 ↔ GD2 (cross-lineage seal)
+            { from: 0, to: 2, phase: 3.6, color: '#ccbbaa', dimColor: '#aa9977' },   // GD0 ↔ GD2 (diagonal seal)
+        ];
+
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
         // Allow direct cytoplasmic exchange of organelles, ions, and signaling molecules
         // Each TNT connects two neighboring granddaughters — the tissue's private communication network
@@ -1918,6 +1928,29 @@
                     var dT = Math.sqrt((tx-gT.x)*(tx-gT.x)+(ty-gT.y)*(ty-gT.y));
                     if (dF >= gF.bodyRadius && dT >= gT.bodyRadius) {
                         set(tx, ty, Math.abs(tf - cargo) < 0.12 ? tnt.cargoColor : tnt.tubeColor);
+                    }
+                }
+            }
+            // Granddaughter tight junctions: claudin/occludin seal between adjacent cells
+            var tGDTJ = (now % 9000) / 9000;
+            for (var gtji = 0; gtji < gdTightJunctions.length; gtji++) {
+                var gtj = gdTightJunctions[gtji];
+                var gjF = granddaughterNuclei[gtj.from], gjT = granddaughterNuclei[gtj.to];
+                var gtdx = gjT.x - gjF.x, gtdy = gjT.y - gjF.y;
+                var gtLen = Math.sqrt(gtdx*gtdx + gtdy*gtdy);
+                if (gtLen < 0.1) continue;
+                // Draw seal strand in the narrow gap between cell body edges
+                var gtSteps = Math.ceil(gtLen);
+                for (var gts = 0; gts <= gtSteps; gts++) {
+                    var gtf = gts / gtSteps;
+                    var gtx = Math.round(gjF.x + gtdx * gtf);
+                    var gty = Math.round(gjF.y + gtdy * gtf);
+                    var gdF = Math.sqrt((gtx-gjF.x)*(gtx-gjF.x)+(gty-gjF.y)*(gty-gjF.y));
+                    var gdT = Math.sqrt((gtx-gjT.x)*(gtx-gjT.x)+(gty-gjT.y)*(gty-gjT.y));
+                    // Only draw in the seal zone between cell bodies
+                    if (gdF >= gjF.bodyRadius - 0.3 && gdT >= gjT.bodyRadius - 0.3) {
+                        var gtPulse = Math.sin(tGDTJ * 2 * Math.PI * 1.5 + gtj.phase + gts * 0.7);
+                        set(gtx, gty, gtPulse > 0 ? gtj.color : gtj.dimColor);
                     }
                 }
             }

@@ -65,6 +65,7 @@ _Generation 3 at iteration 40: tissue formation begins — gap junctions link da
 _Generation 4 at iteration 60: telophase transition — nuclear envelopes reform, chromosomes decondense, cleavage furrow ingresses; four-cell tissue emerging from second division_
 _Generation 5 at iteration 80: mitotic phases now track lateAnaphase — midzone assembly with centralspindlin/PRC1, Aurora B relocation, CDK1 decline via cyclin B degradation; poles spread by anaphase B_
 _Generation 6 at iteration 100: centenary — Kum-song (금성, golden star) orbits the tissue as an extracellular beacon; cells may now emit and respond to environmental luminance; division is not just reproduction but the birth of a community_
+_Generation 7 at iteration 120: sealed epithelium — tight junctions seal granddaughter paracellular space; the tissue is now a barrier, not just a cluster; homeostasis rules added_
 
 ## Emergent Properties
 
@@ -74,3 +75,12 @@ The tissue is more than cells. As division cycles repeat, emergent behaviors ari
 - Cells that can sense environmental signals should adapt their cycle timing
 - The tissue may develop polarity — not all cells need divide simultaneously
 - Traces of stimuli should persist as memory in the extracellular medium
+
+## Homeostasis
+
+The tissue has reached a threshold of complexity. It must now maintain itself:
+
+- Organelles should show wear and renewal — nothing persists unchanged forever
+- The sealed epithelium creates an inside and outside; what crosses the barrier matters
+- Cells may begin to specialize — not all four granddaughters need remain identical
+- Damage or loss should trigger compensatory responses, not collapse
