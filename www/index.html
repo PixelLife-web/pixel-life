@@ -501,8 +501,13 @@
             // Post-abscission: cells relax back to spherical, gentle G1 growth
             var growthPulse = (1 + Math.sin(tGrowth * 2 * Math.PI)) * 0.5; // 0 to 1
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
-            // Separated cells: no more elongation, relaxing to round shape
-            var elongation = cell.separated ? 0.3 : 1.1;
+            // Telophase cells elongate along spindle axis as furrow constricts
+            var elongation = cell.separated ? (cell.prophase && cell.prophase.telophase ? 0.6 : 0.3) : 1.1;
+            // Cytokinesis constriction: cell pinches at equator perpendicular to spindle
+            var cytoConstriction = 0;
+            if (cell.separated && cell.prophase && cell.prophase.telophase) {
+                cytoConstriction = 0.35; // furrow depth fraction — how much the waist narrows
+            }
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
             // Cytokinesis: daughter nuclei fully reformed
@@ -1406,23 +1411,46 @@
                     // TELOPHASE: central spindle condenses into midbody at equator
                     var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
                     var perpAngle = spindleAngle + Math.PI / 2;
-                    // Midbody: dense bundle of antiparallel microtubules at the equator
+                    // Midbody: dense bundle compacting as furrow constricts — flemming body forming
                     var mbPulse = Math.sin(tSAC * 2 * Math.PI * 0.8);
-                    for (var mbI = -1; mbI <= 1; mbI++) {
-                        var mbX = Math.round(sacMidX + Math.cos(perpAngle) * mbI * 0.7);
-                        var mbY = Math.round(sacMidY + Math.sin(perpAngle) * mbI * 0.7);
-                        if (mbX >= 0 && mbX < size && mbY >= 0 && mbY < size) {
-                            sacPixels[mbX + ',' + mbY] = mbPulse > 0 ? '#99ccdd' : '#88bbcc';
+                    // Central dark ring of the midbody
+                    var mbCX = Math.round(sacMidX);
+                    var mbCY = Math.round(sacMidY);
+                    if (mbCX >= 0 && mbCX < size && mbCY >= 0 && mbCY < size) {
+                        sacPixels[mbCX + ',' + mbCY] = mbPulse > 0 ? '#aaddee' : '#99ccdd';
+                    }
+                    // Flanking dense regions (midbody arms)
+                    for (var mbI = -1; mbI <= 1; mbI += 2) {
+                        var mbArmX = Math.round(sacMidX + Math.cos(spindleAngle) * mbI * 1.0);
+                        var mbArmY = Math.round(sacMidY + Math.sin(spindleAngle) * mbI * 1.0);
+                        if (mbArmX >= 0 && mbArmX < size && mbArmY >= 0 && mbArmY < size) {
+                            sacPixels[mbArmX + ',' + mbArmY] = mbPulse > 0 ? '#88bbcc' : '#779aaa';
                         }
                     }
-                    // Cleavage furrow: contractile ring ingressing perpendicular to spindle axis
-                    var furrowDepth = 1.5; // early ingression
-                    for (var fI = -2; fI <= 2; fI++) {
-                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 1.2);
-                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 1.2);
+                    // Cleavage furrow: contractile ring constricting — deep ingression
+                    var furrowDepth = 2.5; // deepening ingression
+                    // Actomyosin ring tightens — two arcs pinch from both sides of the equator
+                    for (var fI = -3; fI <= 3; fI++) {
+                        var fR = Math.abs(fI) * 0.9;
+                        // Furrow constricts inward from both sides along the perpendicular
+                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.9);
+                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.9);
                         if (fX >= 0 && fX < size && fY >= 0 && fY < size) {
-                            var fPulse = Math.sin(tSAC * 2 * Math.PI + fI * 0.8);
-                            sacPixels[fX + ',' + fY] = fPulse > 0 ? '#885533' : '#774422';
+                            var fPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + fI * 0.6);
+                            // Inner furrow pixels are darker (deeper constriction)
+                            var fColor = Math.abs(fI) <= 1
+                                ? (fPulse > 0 ? '#663311' : '#552200')
+                                : (fPulse > 0 ? '#885533' : '#774422');
+                            sacPixels[fX + ',' + fY] = fColor;
+                        }
+                        // Second row offset along spindle axis — thicker furrow band
+                        for (var fOff = -1; fOff <= 1; fOff++) {
+                            if (fOff === 0) continue;
+                            var fX2 = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.9 + Math.cos(spindleAngle) * fOff * 0.6);
+                            var fY2 = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.9 + Math.sin(spindleAngle) * fOff * 0.6);
+                            if (fX2 >= 0 && fX2 < size && fY2 >= 0 && fY2 < size) {
+                                sacPixels[fX2 + ',' + fY2] = '#774422';
+                            }
                         }
                     }
                 } else {
@@ -1475,7 +1503,7 @@
             }
 
             return {
-                maxR: maxR, nucR: nucR, elongation: elongation,
+                maxR: maxR, nucR: nucR, elongation: elongation, cytoConstriction: cytoConstriction,
                 mitoPixels: mitoPixels, envPixels: envPixels,
                 nucPixels: nucPixels, chrPixels: chrPixels,
                 cilPixels: cilPixels, recPixels: recPixels,
@@ -1733,6 +1761,7 @@
                         // Anaphase elongation: use elliptical distance along spindle axis
                         var dist = Math.sqrt(dx * dx + dy * dy);
                         var elong = dd.elongation || 0;
+                        var constrict = dd.cytoConstriction || 0;
                         var effDist = dist;
                         if (elong > 0 && cc.centrosomes && cc.centrosomes.length >= 2) {
                             var eAxisX = cc.centrosomes[1].x - cc.centrosomes[0].x;
@@ -1744,7 +1773,16 @@
                                 var projAlong = dx * enx + dy * eny;
                                 var projPerp = dx * (-eny) + dy * enx;
                                 // Shrink along-axis component to make cell appear elongated
-                                effDist = Math.sqrt((projAlong / (1 + elong)) * (projAlong / (1 + elong)) + projPerp * projPerp);
+                                var baseEffDist = Math.sqrt((projAlong / (1 + elong)) * (projAlong / (1 + elong)) + projPerp * projPerp);
+                                // Cytokinesis constriction: narrow the cell at the equator (projAlong ≈ 0)
+                                if (constrict > 0) {
+                                    var equatorProximity = 1.0 - Math.min(1.0, Math.abs(projAlong) / (eAxisLen * 0.4));
+                                    equatorProximity = equatorProximity * equatorProximity; // sharpen the waist
+                                    // At equator, effective perpendicular distance is amplified (cell narrows)
+                                    effDist = Math.sqrt((projAlong / (1 + elong)) * (projAlong / (1 + elong)) + projPerp * projPerp * (1 + constrict * equatorProximity * 2));
+                                } else {
+                                    effDist = baseEffDist;
+                                }
                             }
                         }
 
