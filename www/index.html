@@ -315,6 +315,13 @@
                 { angle: gn.cajalAngle + 1.8, dist: gn.bodyRadius * 0.52, speed: (gbi % 2 === 0 ? 0.30 : -0.27), phase: gbi * 0.6, color: '#6688aa', activeColor: '#88bbdd' },
                 { angle: gn.cajalAngle + 4.2, dist: gn.bodyRadius * 0.44, speed: (gbi % 2 === 0 ? -0.25 : 0.32), phase: gbi * 0.6 + 0.5, color: '#557799', activeColor: '#77aacc' },
             ];
+            // Lipid droplets: neutral lipid storage organelles budding from smooth ER
+            // Monolayer phospholipid shell surrounding triacylglycerol/cholesterol ester core
+            // Pulse with hormone-sensitive lipase activity — energy reserves for the growing cell
+            gn.lipidDroplets = [
+                { angle: gn.cajalAngle + 0.8, dist: gn.bodyRadius * 0.58, speed: (gbi % 2 === 0 ? 0.15 : -0.13), phase: gbi * 0.3, coreColor: '#ddcc44', shellColor: '#bbaa33' },
+                { angle: gn.cajalAngle + 3.6, dist: gn.bodyRadius * 0.46, speed: (gbi % 2 === 0 ? -0.12 : 0.17), phase: gbi * 0.3 + 0.5, coreColor: '#ccbb33', shellColor: '#aaaa22' },
+            ];
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -2275,6 +2282,26 @@
                                                 // Pulse: active degradation flashes — substrate being unfolded
                                                 var prtPulse = Math.sin(tProteaGD * 1.8 + gni * 2.4 + prti * 3.2);
                                                 color = prtPulse > 0.3 ? prt.activeColor : prt.color;
+                                                drawn = true;
+                                            }
+                                        }
+                                    }
+                                }
+                                // Lipid droplets: golden energy stores orbiting in cytoplasm
+                                // Monolayer shell flickers as lipases mobilize fatty acids for beta-oxidation
+                                if (!drawn && gn.lipidDroplets) {
+                                    var tLipidGD = (Date.now() % 17000) / 17000 * 2 * Math.PI;
+                                    for (var ldi = 0; ldi < gn.lipidDroplets.length && !drawn; ldi++) {
+                                        var ld = gn.lipidDroplets[ldi];
+                                        var ldAngle = ld.angle + ld.speed * tLipidGD;
+                                        var ldX = Math.round(gn.x + Math.cos(ldAngle) * ld.dist);
+                                        var ldY = Math.round(gn.y + Math.sin(ldAngle) * ld.dist);
+                                        if (x === ldX && y === ldY) {
+                                            var ldDist = Math.sqrt((ldX - gn.x) * (ldX - gn.x) + (ldY - gn.y) * (ldY - gn.y));
+                                            if (ldDist < effBodyR - 0.3) {
+                                                // Lipase activity pulse: bright when mobilizing fatty acids
+                                                var ldPulse = Math.sin(tLipidGD * 1.6 + gni * 2.5 + ldi * 2.8);
+                                                color = ldPulse > 0.2 ? ld.coreColor : ld.shellColor;
                                                 drawn = true;
                                             }
                                         }
