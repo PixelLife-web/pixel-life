@@ -467,12 +467,16 @@
             { scanSpeed: -0.015, phase: 0.15, color: '#223322' },
         ];
 
-        // Cdc25 phosphatase: job done, being degraded — only 1 fading particle remains
+        // Cdc25 phosphatase: PLK1 phosphorylation reactivates it — 2nd particle emerges
+        // Cdc25 removes inhibitory Y15 phosphate from CDK1, activating cyclin B-CDK1
+        // Positive feedback: active CDK1 further activates Cdc25 → bistable switch
         cellA.cdc25 = [
             { orbitR: 2.4, baseAngle: 0.6, speed: 0.5, color: '#338877' },
+            { orbitR: 3.2, baseAngle: 3.8, speed: -0.38, color: '#44aa88' },
         ];
         cellB.cdc25 = [
             { orbitR: 2.4, baseAngle: 2.2, speed: -0.5, color: '#338877' },
+            { orbitR: 3.2, baseAngle: 5.5, speed: 0.4, color: '#44aa88' },
         ];
 
         // E2F transcription factors: fully silenced by cyclin A-CDK2 phosphorylation
@@ -554,19 +558,46 @@
             { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
         ];
 
-        // Cyclin B-CDK1: M-phase cyclin begins accumulating in cytoplasm
-        // CRM1 exportin keeps cyclin B out of nucleus; Wee1 keeps CDK1 inactive (Y15 phospho)
-        // Bright green-teal particles orbit in cytoplasm — the trigger for mitosis builds
+        // Cyclin B-CDK1: accumulating toward threshold — 3rd particle appears
+        // CRM1 exportin keeps cyclin B cytoplasmic; Wee1 keeps CDK1 inactive (Y15 phospho)
+        // Once cyclin B reaches critical mass, Cdc25 positive feedback triggers mitotic entry
         cellA.cyclinB = [
             { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#44ddaa' },
             { orbitR: 2.8, baseAngle: 3.0, speed: -0.42, color: '#33ccaa' },
+            { orbitR: 4.0, baseAngle: 5.2, speed: 0.38, color: '#44ddaa' },
         ];
         cellB.cyclinB = [
             { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#44ddaa' },
             { orbitR: 2.8, baseAngle: 5.5, speed: 0.45, color: '#33ccaa' },
+            { orbitR: 4.0, baseAngle: 1.0, speed: -0.36, color: '#44ddaa' },
         ];
 
-        // G2 phase: replication complete, cell grows and prepares for mitosis
+        // PLK1 (Polo-like kinase 1): master G2/M regulator
+        // Phosphorylates Cdc25 (activating it) and Wee1 (targeting it for degradation)
+        // Creates the bistable switch that commits the cell to mitosis
+        // Magenta-orange particles orbit in cytoplasm, occasionally flashing at targets
+        cellA.plk1 = [
+            { orbitR: 2.2, baseAngle: 1.5, speed: 0.55, color: '#ee6644' },
+            { orbitR: 3.0, baseAngle: 4.8, speed: -0.48, color: '#dd5533' },
+        ];
+        cellB.plk1 = [
+            { orbitR: 2.2, baseAngle: 4.2, speed: -0.52, color: '#ee6644' },
+            { orbitR: 3.0, baseAngle: 1.5, speed: 0.46, color: '#dd5533' },
+        ];
+
+        // Wee1 kinase: inhibitory kinase keeping CDK1 inactive via Y15 phosphorylation
+        // PLK1 phosphorylates Wee1, marking it for SCF-beta-TrCP ubiquitination
+        // Dark blue-violet particles, dimming as PLK1 begins targeting them
+        cellA.wee1 = [
+            { orbitR: 2.5, baseAngle: 0.8, speed: -0.35, color: '#5544aa' },
+            { orbitR: 1.8, baseAngle: 3.5, speed: 0.4, color: '#6655bb' },
+        ];
+        cellB.wee1 = [
+            { orbitR: 2.5, baseAngle: 3.2, speed: 0.38, color: '#5544aa' },
+            { orbitR: 1.8, baseAngle: 0.3, speed: -0.42, color: '#6655bb' },
+        ];
+
+        // G2 phase: G2/M checkpoint — PLK1/Cdc25/Wee1 regulatory network builds toward mitotic switch
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1713,6 +1744,62 @@
                 }
             }
 
+            // PLK1: magenta-orange kinase — master switch for G2/M transition
+            var plk1Pixels = {};
+            if (cell.plk1 && cell.separated) {
+                var tPLK = (t * 8000 / 5300) % 1.0;
+                for (var pli = 0; pli < cell.plk1.length; pli++) {
+                    var plk = cell.plk1[pli];
+                    var plkAngle = plk.baseAngle + plk.speed * tOrbit;
+                    var plkX = Math.round(cell.cx + Math.cos(plkAngle) * plk.orbitR);
+                    var plkY = Math.round(cell.cy + Math.sin(plkAngle) * plk.orbitR);
+                    var plkPulse = Math.sin(tPLK * 2 * Math.PI * 2 + pli * 1.7);
+                    var plkDx = plkX - cell.cx, plkDy = plkY - cell.cy;
+                    var plkDist = Math.sqrt(plkDx * plkDx + plkDy * plkDy);
+                    if (plkDist < maxR - 1.0 && plkDist > nucR + 0.5) {
+                        if (plkX >= 0 && plkX < size && plkY >= 0 && plkY < size) {
+                            // PLK1 flashes bright when phosphorylating Cdc25 or Wee1
+                            plk1Pixels[plkX + ',' + plkY] = plkPulse > 0.3 ? '#ff8866' : plk.color;
+                        }
+                    }
+                    // Phosphorylation spark toward nearby targets
+                    if (plkPulse > 0.6) {
+                        var sparkA2 = plkAngle + 0.8;
+                        var sparkR2 = plk.orbitR + 0.6;
+                        var spkX2 = Math.round(cell.cx + Math.cos(sparkA2) * sparkR2);
+                        var spkY2 = Math.round(cell.cy + Math.sin(sparkA2) * sparkR2);
+                        var spkDx = spkX2 - cell.cx, spkDy = spkY2 - cell.cy;
+                        if (Math.sqrt(spkDx * spkDx + spkDy * spkDy) < maxR - 1.0) {
+                            if (spkX2 >= 0 && spkX2 < size && spkY2 >= 0 && spkY2 < size) {
+                                plk1Pixels[spkX2 + ',' + spkY2] = '#ffaa77';
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Wee1 kinase: inhibitory Y15 phosphorylation keeps CDK1 inactive
+            // Dark blue-violet, beginning to dim as PLK1 targets it for degradation
+            var wee1Pixels = {};
+            if (cell.wee1 && cell.separated) {
+                var tWee = (t * 8000 / 6400) % 1.0;
+                for (var wi = 0; wi < cell.wee1.length; wi++) {
+                    var wk = cell.wee1[wi];
+                    var wkAngle = wk.baseAngle + wk.speed * tOrbit;
+                    var wkX = Math.round(cell.cx + Math.cos(wkAngle) * wk.orbitR);
+                    var wkY = Math.round(cell.cy + Math.sin(wkAngle) * wk.orbitR);
+                    var wkPulse = Math.sin(tWee * 2 * Math.PI + wi * 2.3);
+                    var wkDx = wkX - cell.cx, wkDy = wkY - cell.cy;
+                    var wkDist = Math.sqrt(wkDx * wkDx + wkDy * wkDy);
+                    if (wkDist < maxR - 1.0 && wkDist > nucR + 0.5) {
+                        if (wkX >= 0 && wkX < size && wkY >= 0 && wkY < size) {
+                            // Wee1 pulses dimly — inhibitory kinase holding CDK1 back
+                            wee1Pixels[wkX + ',' + wkY] = wkPulse > 0.2 ? '#7766cc' : wk.color;
+                        }
+                    }
+                }
+            }
+
             // Cyclin D-CDK4/6: amber particles, some cytoplasmic, some nuclear
             var cycDPixels = {};
             if (cell.cyclinD && cell.separated) {
@@ -2039,7 +2126,9 @@
                 gfPixels: gfPixels,
                 cohesinPixels: cohesinPixels,
                 topoPixels: topoPixels,
-                cycBPixels: cycBPixels
+                cycBPixels: cycBPixels,
+                plk1Pixels: plk1Pixels,
+                wee1Pixels: wee1Pixels
             };
         }
 
@@ -2336,6 +2425,10 @@
                                 color = dd.cdc25Pixels[key];
                             } else if (dd.cycBPixels && dd.cycBPixels[key]) {
                                 color = dd.cycBPixels[key];
+                            } else if (dd.plk1Pixels && dd.plk1Pixels[key]) {
+                                color = dd.plk1Pixels[key];
+                            } else if (dd.wee1Pixels && dd.wee1Pixels[key]) {
+                                color = dd.wee1Pixels[key];
                             } else if (dd.cycDPixels && dd.cycDPixels[key]) {
                                 color = dd.cycDPixels[key];
                             } else if (dd.phosphPixels && dd.phosphPixels[key]) {
