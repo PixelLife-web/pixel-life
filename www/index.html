@@ -440,16 +440,13 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // Cyclin E-CDK2: nearly gone — SCF-Skp2 ubiquitination almost complete
-        // Only one dim nuclear particle remains; cytoplasmic pool depleted
-        // CDK2 now predominantly bound to cyclin A
+        // Cyclin E-CDK2: fully degraded by SCF-Skp2 ubiquitination
+        // Only a dim cytoplasmic remnant detectable — CDK2 exclusively bound to cyclin A now
         cellA.cyclinE = [
-            { orbitR: 0.9, baseAngle: 2.1, speed: 0.9, color: '#228855', nuclear: true },
-            { orbitR: 2.4, baseAngle: 0.5, speed: 0.5, color: '#1a8855', nuclear: false },
+            { orbitR: 2.8, baseAngle: 0.5, speed: 0.35, color: '#155540', nuclear: false },
         ];
         cellB.cyclinE = [
-            { orbitR: 0.8, baseAngle: 0.7, speed: -0.85, color: '#228855', nuclear: true },
-            { orbitR: 2.4, baseAngle: 2.2, speed: -0.45, color: '#1a8855', nuclear: false },
+            { orbitR: 2.6, baseAngle: 2.2, speed: -0.32, color: '#155540', nuclear: false },
         ];
 
         // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
@@ -483,28 +480,25 @@
             { orbitR: 2.4, baseAngle: 2.2, speed: -0.5, color: '#338877' },
         ];
 
-        // E2F transcription factors: mostly degraded by cyclin A-CDK2 phosphorylation
-        // S-phase gene program fully established; E2F no longer needed
-        // Only one dim particle remains per cell — nearly silenced
-        cellA.e2fFactors = [
-            { orbitR: 0.6, baseAngle: 2.8, speed: -0.9, color: '#226677' },
-        ];
-        cellB.e2fFactors = [
-            { orbitR: 0.7, baseAngle: 1.2, speed: -1.0, color: '#226677' },
-        ];
+        // E2F transcription factors: fully silenced by cyclin A-CDK2 phosphorylation
+        // S-phase gene program self-sustaining; E2F completely degraded
+        cellA.e2fFactors = [];
+        cellB.e2fFactors = [];
 
-        // Cyclin A-CDK2: rising sharply in S phase — APC/C-Cdh1 inactivated by Emi1
-        // Cyclin A partners with CDK2, phosphorylates replication factors (Cdc6, E2F)
-        // Additional particle added as accumulation accelerates
+        // Cyclin A-CDK2: dominant S-phase kinase, now at high concentration
+        // Phosphorylates pre-RC components (Cdc6, Cdt1) preventing re-replication
+        // 4th particle: cyclin A continues accumulating toward G2 threshold
         cellA.cyclinA = [
             { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
             { orbitR: 3.4, baseAngle: 1.5, speed: 0.35, color: '#dd77aa' },
             { orbitR: 1.2, baseAngle: 0.3, speed: 0.65, color: '#ee88bb' },
+            { orbitR: 2.0, baseAngle: 5.5, speed: -0.5, color: '#dd88aa' },
         ];
         cellB.cyclinA = [
             { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
             { orbitR: 3.4, baseAngle: 4.3, speed: -0.38, color: '#dd77aa' },
             { orbitR: 1.2, baseAngle: 3.2, speed: -0.6, color: '#ee88bb' },
+            { orbitR: 2.0, baseAngle: 2.5, speed: 0.48, color: '#dd88aa' },
         ];
 
         // Cyclin D-CDK4/6: mitogen-responsive G1 cyclin, driven by MAPK/ERK cascade
@@ -521,9 +515,10 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // MID S PHASE: replication forks progress, late origins fire
-        // CAF-1 deposits H3-H4 histones behind each fork, restoring chromatin on daughter strands
-        // Cyclin E almost gone (SCF-Skp2), cyclin A-CDK2 dominates S-phase kinase activity
+        // LATE S PHASE: replication forks converge at termination zones
+        // Cohesin rings (Smc1/Smc3) established behind forks by Eco1 acetyltransferase
+        // Cyclin E fully degraded (SCF-Skp2 complete), cyclin A-CDK2 sole S-phase kinase
+        // Topoisomerase II resolves catenanes between newly replicated sister chromatids
         cellA.prophase = null;
         cellB.prophase = null;
 
@@ -549,7 +544,30 @@
         cellA.condensins = [];
         cellB.condensins = [];
 
-        // Mid S phase: forks extending, late origins firing, histones deposited behind forks
+        // Cohesin rings (Smc1/Smc3/Rad21): established behind replication forks
+        // Eco1 acetyltransferase acetylates Smc3, locking cohesins around sister chromatids
+        // These rings will hold sisters together until anaphase separase cleaves Rad21
+        cellA.cohesins = [
+            { baseAngle: 1.0, orbitR: 0.8, speed: 0.15, color: '#88aadd' },
+            { baseAngle: 2.8, orbitR: 0.6, speed: -0.12, color: '#7799cc' },
+            { baseAngle: 4.5, orbitR: 0.7, speed: 0.18, color: '#88aadd' },
+        ];
+        cellB.cohesins = [
+            { baseAngle: 1.8, orbitR: 0.7, speed: -0.14, color: '#88aadd' },
+            { baseAngle: 3.5, orbitR: 0.8, speed: 0.16, color: '#7799cc' },
+            { baseAngle: 5.2, orbitR: 0.6, speed: -0.13, color: '#88aadd' },
+        ];
+
+        // Topoisomerase II: resolves catenanes between newly replicated sisters
+        // Orange-red particle pulses as it decatenates intertwined DNA
+        cellA.topoII = [
+            { baseAngle: 1.5, orbitR: 1.0, speed: 0.3, color: '#dd6644' },
+        ];
+        cellB.topoII = [
+            { baseAngle: 4.2, orbitR: 1.0, speed: -0.28, color: '#dd6644' },
+        ];
+
+        // Late S phase: forks converging at termination zones, cohesins established
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1602,6 +1620,57 @@
                 }
             }
 
+            // Cohesin rings: blue-lavender dots inside nucleus, holding sister chromatids together
+            var cohesinPixels = {};
+            if (cell.cohesins && cell.separated) {
+                var tCoh = (t * 8000 / 7500) % 1.0;
+                for (var cohi = 0; cohi < cell.cohesins.length; cohi++) {
+                    var coh = cell.cohesins[cohi];
+                    var cohAngle = coh.baseAngle + coh.speed * tOrbit;
+                    var cohX = Math.round(cell.cx + Math.cos(cohAngle) * coh.orbitR);
+                    var cohY = Math.round(cell.cy + Math.sin(cohAngle) * coh.orbitR);
+                    var cohDx = cohX - cell.cx, cohDy = cohY - cell.cy;
+                    if (Math.sqrt(cohDx * cohDx + cohDy * cohDy) < nucR + 0.3) {
+                        if (cohX >= 0 && cohX < size && cohY >= 0 && cohY < size) {
+                            var cohPulse = Math.sin(tCoh * 2 * Math.PI + cohi * 2.1);
+                            // Eco1 acetylation flash: cohesin locks brighter when acetylated
+                            cohesinPixels[cohX + ',' + cohY] = cohPulse > 0.3 ? '#aaccee' : coh.color;
+                        }
+                    }
+                }
+            }
+
+            // Topoisomerase II: resolves catenanes, orange-red pulses inside nucleus
+            var topoPixels = {};
+            if (cell.topoII && cell.separated) {
+                var tTopo = (t * 8000 / 5500) % 1.0;
+                for (var tpi = 0; tpi < cell.topoII.length; tpi++) {
+                    var tp = cell.topoII[tpi];
+                    var tpAngle = tp.baseAngle + tp.speed * tOrbit;
+                    var tpX = Math.round(cell.cx + Math.cos(tpAngle) * tp.orbitR);
+                    var tpY = Math.round(cell.cy + Math.sin(tpAngle) * tp.orbitR);
+                    var tpDx = tpX - cell.cx, tpDy = tpY - cell.cy;
+                    if (Math.sqrt(tpDx * tpDx + tpDy * tpDy) < nucR + 0.3) {
+                        if (tpX >= 0 && tpX < size && tpY >= 0 && tpY < size) {
+                            var topoPulse = Math.sin(tTopo * 2 * Math.PI * 2 + tpi * 1.8);
+                            // Bright flash when cutting/passing DNA strand
+                            topoPixels[tpX + ',' + tpY] = topoPulse > 0.4 ? '#ff8866' : tp.color;
+                        }
+                    }
+                    // Decatenation spark: brief flicker near topoII when resolving
+                    var topoPulse2 = Math.sin(tTopo * 2 * Math.PI * 2 + tpi * 1.8);
+                    if (topoPulse2 > 0.6) {
+                        var sparkA = tpAngle + 0.7;
+                        var sparkR = tp.orbitR * 0.6;
+                        var spkX = Math.round(cell.cx + Math.cos(sparkA) * sparkR);
+                        var spkY = Math.round(cell.cy + Math.sin(sparkA) * sparkR);
+                        if (spkX >= 0 && spkX < size && spkY >= 0 && spkY < size) {
+                            topoPixels[spkX + ',' + spkY] = '#ffaa88';
+                        }
+                    }
+                }
+            }
+
             // Cyclin A-CDK2: rising in S phase, pink-magenta particles
             var cycAPixels = {};
             if (cell.cyclinA && cell.separated) {
@@ -1946,7 +2015,9 @@
                 cycEPixels: cycEPixels,
                 cycDPixels: cycDPixels,
                 phosphPixels: phosphPixels,
-                gfPixels: gfPixels
+                gfPixels: gfPixels,
+                cohesinPixels: cohesinPixels,
+                topoPixels: topoPixels
             };
         }
 
@@ -2259,6 +2330,10 @@
                                 color = dd.forkPixels[key];
                             } else if (dd.histonePixels && dd.histonePixels[key]) {
                                 color = dd.histonePixels[key];
+                            } else if (dd.cohesinPixels && dd.cohesinPixels[key]) {
+                                color = dd.cohesinPixels[key];
+                            } else if (dd.topoPixels && dd.topoPixels[key]) {
+                                color = dd.topoPixels[key];
                             } else if (dd.e2fPixels && dd.e2fPixels[key]) {
                                 color = dd.e2fPixels[key];
                             } else if (dd.checkPixels && dd.checkPixels[key]) {
