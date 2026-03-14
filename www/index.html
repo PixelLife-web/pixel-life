@@ -226,6 +226,30 @@
             });
         }
 
+        // Ribosomes: small dots on rough ER showing protein synthesis
+        cellA.ribosomes = [
+            { erIdx: 0, pos: 0.3, color: '#553322' },
+            { erIdx: 0, pos: 0.7, color: '#553322' },
+            { erIdx: 1, pos: 0.5, color: '#553322' },
+            { erIdx: 2, pos: 0.4, color: '#553322' },
+            { erIdx: 3, pos: 0.6, color: '#553322' },
+        ];
+        cellB.ribosomes = [
+            { erIdx: 0, pos: 0.4, color: '#553322' },
+            { erIdx: 1, pos: 0.3, color: '#553322' },
+            { erIdx: 1, pos: 0.8, color: '#553322' },
+            { erIdx: 2, pos: 0.5, color: '#553322' },
+            { erIdx: 3, pos: 0.4, color: '#553322' },
+        ];
+
+        // Gap junctions: direct connections where filopodia tips meet between cells
+        // These form channels for small molecule exchange (ions, metabolites)
+        var gapJunctions = [
+            { filoIdxA: 0, filoIdxB: 2, color: '#ddbb88', pulsePhase: 0 },
+            { filoIdxA: 1, filoIdxB: 1, color: '#ccaa77', pulsePhase: 1.5 },
+            { filoIdxA: 2, filoIdxB: 0, color: '#ddbb88', pulsePhase: 3.0 },
+        ];
+
         // Lysosomes: small digestive organelles orbiting in the cytoplasm
         cellA.lysosomes = [
             { orbitR: 2.5, baseAngle: 1.0, speed: 1.2, color: '#8855aa' },
@@ -472,6 +496,37 @@
                 }
             }
 
+            // Ribosomes on rough ER: small dots that pulse with protein synthesis
+            var riboPixels = {};
+            if (cell.ribosomes && cell.erPaths) {
+                var tRibo = (t * 8000 / 3000) % 1.0;
+                for (var rbi = 0; rbi < cell.ribosomes.length; rbi++) {
+                    var ribo = cell.ribosomes[rbi];
+                    if (ribo.erIdx < cell.erPaths.length) {
+                        var ePath = cell.erPaths[ribo.erIdx];
+                        var rIdx = Math.round(ribo.pos * (ePath.length - 1));
+                        if (rIdx >= 0 && rIdx < ePath.length) {
+                            var rp = ePath[rIdx];
+                            // Offset ribosome one pixel perpendicular to ER
+                            var rpNext = rIdx < ePath.length - 1 ? ePath[rIdx + 1] : ePath[rIdx - 1];
+                            var rdx = rpNext.x - rp.x;
+                            var rdy = rpNext.y - rp.y;
+                            // Perpendicular offset
+                            var offX = rp.x + (rbi % 2 === 0 ? -rdy : rdy);
+                            var offY = rp.y + (rbi % 2 === 0 ? rdx : -rdx);
+                            offX = Math.round(offX);
+                            offY = Math.round(offY);
+                            // Pulse: ribosome brightens when synthesizing
+                            var riboPulse = Math.sin(tRibo * 2 * Math.PI + rbi * 1.1);
+                            var riboColor = riboPulse > 0.2 ? '#776644' : ribo.color;
+                            if (offX >= 0 && offX < size && offY >= 0 && offY < size) {
+                                riboPixels[offX + ',' + offY] = riboColor;
+                            }
+                        }
+                    }
+                }
+            }
+
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
             if (cell.filopodia) {
@@ -499,7 +554,8 @@
                 cilPixels: cilPixels, recPixels: recPixels,
                 vesPixels: vesPixels, atpPixels: atpPixels,
                 centPixels: centPixels, furrowPixels: furrowPixels,
-                lysoPixels: lysoPixels, filoPixels: filoPixels
+                lysoPixels: lysoPixels, filoPixels: filoPixels,
+                riboPixels: riboPixels
             };
         }
 
@@ -578,6 +634,35 @@
                             }
                         }
                     }
+                }
+            }
+
+            // Gap junction pixels: where filopodia tips from both cells meet
+            var gapPx = {};
+            var tGap = (Date.now() % 6000) / 6000;
+            for (var gi = 0; gi < gapJunctions.length; gi++) {
+                var gj = gapJunctions[gi];
+                // Find the midpoint between the two cells along the filopodia angles
+                var fpA = cellA.filopodia[gj.filoIdxA];
+                var fpB = cellB.filopodia[gj.filoIdxB];
+                // Junction forms at the midpoint between cell surfaces along their filopodia
+                var jxA = cellA.cx + Math.cos(fpA.angle) * (dA.maxR + fpA.maxLength * 0.8);
+                var jyA = cellA.cy + Math.sin(fpA.angle) * (dA.maxR + fpA.maxLength * 0.8);
+                var jxB = cellB.cx + Math.cos(fpB.angle) * (dB.maxR + fpB.maxLength * 0.8);
+                var jyB = cellB.cy + Math.sin(fpB.angle) * (dB.maxR + fpB.maxLength * 0.8);
+                var jmx = Math.round((jxA + jxB) / 2);
+                var jmy = Math.round((jyA + jyB) / 2);
+                // Pulse: small molecules flowing through the junction
+                var gapPulse = Math.sin(tGap * 2 * Math.PI + gj.pulsePhase);
+                if (jmx >= 0 && jmx < size && jmy >= 0 && jmy < size) {
+                    gapPx[jmx + ',' + jmy] = gapPulse > 0 ? '#eedd99' : gj.color;
+                }
+                // Ion flowing through: one pixel offset toward whichever cell the pulse favors
+                var ionDir = gapPulse > 0 ? 1 : -1;
+                var ionX = Math.round(jmx + ionDir * (jxB - jxA) / (Math.abs(jxB - jxA) + Math.abs(jyB - jyA) + 0.1));
+                var ionY = Math.round(jmy + ionDir * (jyB - jyA) / (Math.abs(jxB - jxA) + Math.abs(jyB - jyA) + 0.1));
+                if (ionX >= 0 && ionX < size && ionY >= 0 && ionY < size) {
+                    gapPx[ionX + ',' + ionY] = gapPulse > 0 ? '#ffee55' : '#bbaa66';
                 }
             }
 
@@ -671,6 +756,8 @@
                                 var mi = Math.floor(shell * cc.membraneColors.length / 1.2);
                                 if (mi >= cc.membraneColors.length) mi = cc.membraneColors.length - 1;
                                 color = cc.membraneColors[mi];
+                            } else if (dd.riboPixels && dd.riboPixels[key]) {
+                                color = dd.riboPixels[key];
                             } else if (cc.erPixels[key]) {
                                 color = cc.erColor;
                             } else {
@@ -705,6 +792,10 @@
                                 color = cells[ci2].d.filoPixels[key];
                                 drawn = true;
                             }
+                        }
+                        if (!drawn && gapPx[key]) {
+                            color = gapPx[key];
+                            drawn = true;
                         }
                         if (!drawn && signalPx[key]) {
                             color = signalPx[key];
