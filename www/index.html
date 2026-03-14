@@ -1881,6 +1881,87 @@
                     s(Math.round(it.x+Math.cos(p2yA)*p2yR2),Math.round(it.y+Math.sin(p2yA)*p2yR2),'#eebb66');}}
                 }},
             ]);
+            // Meissner's (submucosal) plexus: enteric neuron ganglia
+            // Cholinergic neurons release ACh → epithelial secretion; VIPergic neurons → vasodilation
+            var tMeiss = (now % 29000) / 29000;
+            var meissnerNeurons = [
+                {x:22,y:19,type:'ACh',pair:1},{x:25,y:20,type:'VIP',pair:1},
+                {x:16,y:22,type:'ACh',pair:2},{x:14,y:24,type:'VIP',pair:2},
+                {x:20,y:27,type:'ACh',pair:3},{x:23,y:26,type:'VIP',pair:3},
+            ];
+            for (var mni = 0; mni < meissnerNeurons.length; mni++) {
+                var mn = meissnerNeurons[mni];
+                var mnPh = tMeiss * 2 * Math.PI + mni * 1.05;
+                var mnP = Math.sin(mnPh);
+                var isACh = mn.type === 'ACh';
+                // Neuron soma: pyramidal shape with Nissl bodies
+                if (inB(mn.x, mn.y)) set(mn.x, mn.y, mnP > 0 ? (isACh ? '#cc8833' : '#8833cc') : (isACh ? '#aa6622' : '#662299'));
+                // Nissl granules flanking soma
+                var nisslA = mnPh * 0.2 + mni * 1.3;
+                var nisslX = Math.round(mn.x + Math.cos(nisslA) * 0.7);
+                var nisslY = Math.round(mn.y + Math.sin(nisslA) * 0.7);
+                if (inB(nisslX, nisslY) && Math.sin(mnPh * 1.8 + mni * 2.0) > -0.3)
+                    set(nisslX, nisslY, isACh ? '#ddaa55' : '#aa55dd');
+                // Axonal projections: interneuronal connections within ganglia (pair linkage)
+                for (var mnj = 0; mnj < meissnerNeurons.length; mnj++) {
+                    if (mnj !== mni && meissnerNeurons[mnj].pair === mn.pair) {
+                        var mn2 = meissnerNeurons[mnj];
+                        var midX = Math.round((mn.x + mn2.x) / 2), midY = Math.round((mn.y + mn2.y) / 2);
+                        if (inB(midX, midY) && mnP > -0.2) {
+                            var axPulse = Math.sin(mnPh * 2.5 + mni * 0.8);
+                            set(midX, midY, axPulse > 0 ? '#eecc88' : '#bbaa66');
+                        }
+                        break;
+                    }
+                }
+                // ACh release toward epithelium (inward): stimulates Cl⁻/H₂O secretion
+                if (isACh && mnP > 0.1) {
+                    var achA = Math.atan2(16 - mn.y, 16 - mn.x);
+                    var achPh = (tMeiss * 2.4 + mni * 0.35) % 1.0;
+                    if (achPh < 0.5) {
+                        var achR = 1.2 + achPh * 3.0;
+                        var achX = Math.round(mn.x + Math.cos(achA) * achR);
+                        var achY = Math.round(mn.y + Math.sin(achA) * achR);
+                        if (inB(achX, achY)) set(achX, achY, achPh < 0.2 ? '#ffdd44' : '#eebb33');
+                    }
+                    // Muscarinic receptor activation: M3 receptor glow at epithelial target
+                    if (mnP > 0.5) {
+                        var m3R = 2.5 + mnP * 0.5;
+                        var m3X = Math.round(mn.x + Math.cos(achA) * m3R);
+                        var m3Y = Math.round(mn.y + Math.sin(achA) * m3R);
+                        if (inB(m3X, m3Y)) set(m3X, m3Y, '#ffee77');
+                    }
+                }
+                // VIP release toward vasculature (outward): vasodilatory peptide
+                if (!isACh && mnP > 0.0) {
+                    var vipA = Math.atan2(mn.y - 16, mn.x - 16);
+                    var vipPh = (tMeiss * 1.8 + mni * 0.4) % 1.0;
+                    if (vipPh < 0.55) {
+                        var vipR = 1.0 + vipPh * 2.8;
+                        var vipX = Math.round(mn.x + Math.cos(vipA) * vipR);
+                        var vipY = Math.round(mn.y + Math.sin(vipA) * vipR);
+                        if (inB(vipX, vipY)) set(vipX, vipY, vipPh < 0.25 ? '#bb66ff' : '#9944dd');
+                    }
+                    // cAMP cascade at vascular target: endothelial relaxation
+                    if (mnP > 0.4) {
+                        var campR = 2.2 + mnP * 0.4;
+                        var campX = Math.round(mn.x + Math.cos(vipA) * campR);
+                        var campY = Math.round(mn.y + Math.sin(vipA) * campR);
+                        if (inB(campX, campY)) set(campX, campY, '#dd99ff');
+                    }
+                }
+                // Dendritic arbor: sensory dendrites sampling local environment
+                if (mnP > -0.5) {
+                    for (var di = 0; di < 3; di++) {
+                        var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9;
+                        var dSway = Math.sin(mnPh * 0.7 + di * 1.6) * 0.1;
+                        var dX = Math.round(mn.x + Math.cos(dA + dSway) * 1.3);
+                        var dY = Math.round(mn.y + Math.sin(dA + dSway) * 1.3);
+                        if (inB(dX, dY) && Math.sin(mnPh * 1.5 + di * 2.3) > -0.4)
+                            set(dX, dY, isACh ? '#bb9944' : '#7744aa');
+                    }
+                }
+            }
             var tFlum = (now % 31000) / 31000;
             var cox2Sites = [
                 {x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9},
