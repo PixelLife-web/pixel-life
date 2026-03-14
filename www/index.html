@@ -481,29 +481,25 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // ANAPHASE ONSET: APC/C-Cdc20 active, securin destroyed, separase cleaves cohesin
+        // LATE ANAPHASE: sisters near poles, midzone assembles, anaphase B elongates spindle
         cellA.prophase = {
             condensation: 0.8, laminPhospho: 0.8, npcDisassembly: 0.9,
-            envelopeVesicles: true, asterCount: 12, spindleForming: true,
-            prometaphase: true, metaphase: true, anaphase: true,
+            envelopeVesicles: true, asterCount: 14, spindleForming: true,
+            prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
-            pole1Target: { x: 19, y: 7 }, pole2Target: { x: 23, y: 11 },
+            pole1Target: { x: 18, y: 6 }, pole2Target: { x: 24, y: 12 },
         };
         cellB.prophase = {
             condensation: 0.8, laminPhospho: 0.8, npcDisassembly: 0.9,
-            envelopeVesicles: true, asterCount: 12, spindleForming: true,
-            prometaphase: true, metaphase: true, anaphase: true,
+            envelopeVesicles: true, asterCount: 14, spindleForming: true,
+            prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
-            pole1Target: { x: 9, y: 21 }, pole2Target: { x: 13, y: 25 },
+            pole1Target: { x: 8, y: 20 }, pole2Target: { x: 14, y: 26 },
         };
 
-        // Cohesin rings: separase has cleaved centromeric cohesin — only fragments remain
-        cellA.cohesins = [
-            { baseAngle: 1.0, orbitR: 1.2, speed: 0.3, color: '#667799' },
-        ];
-        cellB.cohesins = [
-            { baseAngle: 3.5, orbitR: 1.2, speed: -0.28, color: '#667799' },
-        ];
+        // Cohesin rings: fully cleaved by separase — fragments dispersed
+        cellA.cohesins = [];
+        cellB.cohesins = [];
 
         // Topoisomerase II: resolves catenanes
         cellA.topoII = [
@@ -515,22 +511,16 @@
             { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
         ];
 
-        // Cyclin B-CDK1: nuclear import complete, driving mitosis
+        // Cyclin B-CDK1: APC/C-Cdc20 degrading cyclin B — CDK1 activity declining
         cellA.cyclinB = [
-            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#44ddaa', nuclear: false },
-            { orbitR: 2.8, baseAngle: 3.0, speed: -0.42, color: '#33ccaa', nuclear: false },
-            { orbitR: 4.0, baseAngle: 5.2, speed: 0.38, color: '#44ddaa', nuclear: false },
-            { orbitR: 2.2, baseAngle: 1.8, speed: 0.55, color: '#55eebb', nuclear: false },
-            { orbitR: 1.0, baseAngle: 0.0, speed: 0.7, color: '#66ffcc', nuclear: true },
-            { orbitR: 0.7, baseAngle: 2.5, speed: -0.6, color: '#77ffdd', nuclear: true },
+            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#33bb88', nuclear: false },
+            { orbitR: 2.2, baseAngle: 1.8, speed: 0.55, color: '#44cc99', nuclear: false },
+            { orbitR: 0.7, baseAngle: 2.5, speed: -0.6, color: '#55ddaa', nuclear: true },
         ];
         cellB.cyclinB = [
-            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#44ddaa', nuclear: false },
-            { orbitR: 2.8, baseAngle: 5.5, speed: 0.45, color: '#33ccaa', nuclear: false },
-            { orbitR: 4.0, baseAngle: 1.0, speed: -0.36, color: '#44ddaa', nuclear: false },
-            { orbitR: 2.2, baseAngle: 4.5, speed: -0.52, color: '#55eebb', nuclear: false },
-            { orbitR: 1.0, baseAngle: 3.14, speed: -0.65, color: '#66ffcc', nuclear: true },
-            { orbitR: 0.7, baseAngle: 5.6, speed: 0.58, color: '#77ffdd', nuclear: true },
+            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#33bb88', nuclear: false },
+            { orbitR: 2.2, baseAngle: 4.5, speed: -0.52, color: '#44cc99', nuclear: false },
+            { orbitR: 0.7, baseAngle: 5.6, speed: 0.58, color: '#55ddaa', nuclear: true },
         ];
 
         // PLK1: master G2/M regulator
