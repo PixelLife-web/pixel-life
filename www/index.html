@@ -511,26 +511,34 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // PROPHASE ONSET: CDK1 fully active — Wee1 gone, Cdc25 positive feedback complete
-        // Cyclin B-CDK1 floods nucleus, phosphorylates condensins → chromatin condensation begins
-        // Centrosomes begin separating along nuclear envelope, pushed by Eg5 kinesin
+        // PROMETAPHASE: NEB complete — envelope fragmented, spindle captures kinetochores
+        // Chromosomes congress toward metaphase plate, Aurora B corrects attachment errors
+        // SAC (spindle assembly checkpoint) monitors bi-orientation of all kinetochores
         cellA.prophase = {
-            condensation: 0.5, // condensation deepening — individual chromosomes becoming visible
-            laminPhospho: 0.35, // CDK1 phosphorylation spreading — lamina meshwork dissolving
-            npcDisassembly: 0.15, // Nup98/Nup153 released first — nuclear transport slowing
-            envelopeVesicles: true, // membrane fragments beginning to bud off
-            asterCount: 10, // gamma-TuRC saturating centrosomes — asters lengthening
-            spindleForming: true, // early interpolar MTs probing between separating centrosomes
+            condensation: 0.7, // chromosomes individualized — thick rods visible
+            laminPhospho: 0.75, // lamina fully dissolved — soluble lamin dimers in cytoplasm
+            npcDisassembly: 0.8, // most NPCs dispersed — Nup proteins scattered
+            envelopeVesicles: true, // NE fragmented into ER-derived vesicles
+            asterCount: 12, // full asters — gamma-TuRC nucleating maximum MTs
+            spindleForming: true, // bipolar spindle established
+            prometaphase: true, // NEB complete — open mitosis begins
+            congressProgress: 0.3, // chromosomes captured, beginning to congress toward plate
+            auroraBActive: true, // Aurora B correcting merotelic attachments at kinetochores
+            sacSatisfaction: 0.15, // SAC still active — not all kinetochores bi-oriented yet
             pole1Target: { x: 19, y: 7 },
             pole2Target: { x: 23, y: 11 },
         };
         cellB.prophase = {
-            condensation: 0.5,
-            laminPhospho: 0.35,
-            npcDisassembly: 0.15,
+            condensation: 0.7,
+            laminPhospho: 0.75,
+            npcDisassembly: 0.8,
             envelopeVesicles: true,
-            asterCount: 10,
+            asterCount: 12,
             spindleForming: true,
+            prometaphase: true,
+            congressProgress: 0.3,
+            auroraBActive: true,
+            sacSatisfaction: 0.15,
             pole1Target: { x: 9, y: 21 },
             pole2Target: { x: 13, y: 25 },
         };
@@ -612,8 +620,8 @@
         cellA.wee1 = [];
         cellB.wee1 = [];
 
-        // LATE PROPHASE: chromosomes individualize, lamina dissolving, NPCs releasing
-        // Asters lengthen, early spindle MTs probe, envelope vesiculating
+        // PROMETAPHASE: NEB complete, spindle captures kinetochores, chromosomes congress
+        // Lamina fully dissolved, NPCs dispersed, envelope fragmented into vesicles
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
