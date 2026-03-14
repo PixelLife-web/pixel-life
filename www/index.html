@@ -259,6 +259,17 @@
             // Golgi ministacks: small trans-Golgi cisternae assembling near ER exit sites
             gn.golgiAngle = gn.cajalAngle + 2.3;
             gn.golgiDist = gn.bodyRadius * 0.55;
+            // Free ribosomes (polyribosomes): clusters in cytoplasm for cap-dependent translation
+            // 3 polyribosome clusters per granddaughter, positioned between ER and membrane
+            gn.freeRibosomes = [
+                { angle: gn.cajalAngle + 0.5, dist: gn.bodyRadius * 0.45, phase: gbi * 0.7 },
+                { angle: gn.cajalAngle + 2.0, dist: gn.bodyRadius * 0.55, phase: gbi * 0.7 + 1.2 },
+                { angle: gn.cajalAngle + 4.5, dist: gn.bodyRadius * 0.40, phase: gbi * 0.7 + 2.4 },
+            ];
+            // Peroxisome: single small organelle budding from ER, catalase/oxidase activity
+            gn.peroxAngle = gn.cajalAngle + 3.0;
+            gn.peroxDist = gn.bodyRadius * 0.50;
+            gn.peroxSpeed = (gbi % 2 === 0 ? 0.4 : -0.35);
         }
 
         // Calcium waves: tissue-level signaling between granddaughter nuclei
@@ -2380,6 +2391,33 @@
                                     var golg2Y = Math.round(gn.y + Math.sin(gn.golgiAngle + 0.5) * (gn.golgiDist + 0.4));
                                     if (!drawn && x === golg2X && y === golg2Y) {
                                         color = '#ccaa55';
+                                        drawn = true;
+                                    }
+                                }
+                                // Free ribosomes (polyribosomes): small dots pulsing with translation
+                                if (!drawn && gn.freeRibosomes) {
+                                    var tRiboFree = (Date.now() % 5000) / 5000;
+                                    for (var fri = 0; fri < gn.freeRibosomes.length && !drawn; fri++) {
+                                        var fr = gn.freeRibosomes[fri];
+                                        var frX = Math.round(gn.x + Math.cos(fr.angle) * fr.dist);
+                                        var frY = Math.round(gn.y + Math.sin(fr.angle) * fr.dist);
+                                        if (x === frX && y === frY) {
+                                            var frPulse = Math.sin(tRiboFree * 2 * Math.PI * 1.8 + fr.phase);
+                                            // Brightens during active translation, dims between rounds
+                                            color = frPulse > 0.2 ? '#776644' : '#553322';
+                                            drawn = true;
+                                        }
+                                    }
+                                }
+                                // Peroxisome: orbits slowly in cytoplasm, catalase flicker
+                                if (!drawn) {
+                                    var tPeroxGD = (Date.now() % 11000) / 11000 * 2 * Math.PI;
+                                    var pxAngle = gn.peroxAngle + gn.peroxSpeed * tPeroxGD;
+                                    var pxX = Math.round(gn.x + Math.cos(pxAngle) * gn.peroxDist);
+                                    var pxY = Math.round(gn.y + Math.sin(pxAngle) * gn.peroxDist);
+                                    if (x === pxX && y === pxY) {
+                                        var pxPulse = Math.sin(tPeroxGD * 1.5 + gni * 2.0);
+                                        color = pxPulse > 0 ? '#77bb88' : '#55aa77';
                                         drawn = true;
                                     }
                                 }
