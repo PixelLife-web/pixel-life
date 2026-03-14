@@ -390,6 +390,36 @@
             }
         }
 
+        for (var eci = 0; eci < granddaughterNuclei.length; eci++) {
+            var ecn = granddaughterNuclei[eci];
+            if (ecn.cellType !== 'enterocyte') continue;
+            var ecBasalA = Math.atan2(blCenter.y - ecn.y, blCenter.x - ecn.x);
+            ecn.chromaffinGranules = [];
+            var cgCount = 3 + (eci % 2);
+            for (var cgi = 0; cgi < cgCount; cgi++) {
+                ecn.chromaffinGranules.push({
+                    angle: ecBasalA + (cgi - (cgCount-1)/2) * 0.55,
+                    dist: ecn.bodyRadius * 0.45 + cgi * 0.08,
+                    phase: eci * 0.9 + cgi * 1.4,
+                    granuleColor: '#bb88dd',
+                    coreColor: '#9966cc',
+                    releaseColor: '#dd99ff',
+                });
+            }
+            ecn.serotoninRelease = [];
+            var srCount = 2 + (eci % 2);
+            for (var sri = 0; sri < srCount; sri++) {
+                ecn.serotoninRelease.push({
+                    angle: ecBasalA + (sri - (srCount-1)/2) * 0.40,
+                    speed: 0.18 + sri * 0.04,
+                    phase: eci * 0.6 + sri * 1.2,
+                    htColor: '#cc77ee',
+                    htDimColor: '#9955bb',
+                    trailColor: '#aa66cc',
+                });
+            }
+        }
+
         var gdTightJunctions = [
             { from: 0, to: 1, phase: 0, color: '#ddccaa', dimColor: '#bbaa88' },     // GD0 ↔ GD1 (sisters from A)
             { from: 2, to: 3, phase: 1.2, color: '#ddccaa', dimColor: '#bbaa88' },   // GD2 ↔ GD3 (sisters from B)
@@ -1101,6 +1131,36 @@
                         var beA = be.angle + Math.sin(tBE * 0.7 + be.phase) * 0.1;
                         var beR2 = bR + 0.8; // sits on microvillar surface
                         set(Math.round(g.x + Math.cos(beA) * beR2), Math.round(g.y + Math.sin(beA) * beR2), beP > 0 ? '#eedd77' : be.color);
+                    }
+                }
+                if (g.chromaffinGranules) {
+                    var tCG = (now % 13000) / 13000 * 2 * Math.PI;
+                    for (var cgi2 = 0; cgi2 < g.chromaffinGranules.length; cgi2++) {
+                        var cg = g.chromaffinGranules[cgi2];
+                        var cgP = Math.sin(tCG * 1.2 + cg.phase);
+                        var cgA = cg.angle + Math.sin(tCG * 0.5 + cg.phase * 0.7) * 0.08;
+                        var cgR = cg.dist + Math.sin(tCG * 0.8 + cg.phase) * 0.15;
+                        var cgX = Math.round(g.x + Math.cos(cgA) * cgR);
+                        var cgY = Math.round(g.y + Math.sin(cgA) * cgR);
+                        setR(cgX, cgY, cgP > 0.3 ? cg.releaseColor : (cgP > -0.3 ? cg.granuleColor : cg.coreColor), g.x, g.y, bR);
+                    }
+                }
+                if (g.serotoninRelease) {
+                    var t5HT = (now % 19000) / 19000;
+                    for (var sri2 = 0; sri2 < g.serotoninRelease.length; sri2++) {
+                        var sr = g.serotoninRelease[sri2];
+                        var srProg = (t5HT * sr.speed + sr.phase) % 1.0;
+                        var srDR = bR + 0.3 + srProg * 3.0;
+                        var srA = sr.angle + Math.sin(t5HT * 2 * Math.PI + sr.phase) * 0.12;
+                        var srPulse = Math.sin(t5HT * 2 * Math.PI * 3 + sri2 * 2.3 + i * 1.5);
+                        var srX = Math.round(g.x + Math.cos(srA) * srDR);
+                        var srY = Math.round(g.y + Math.sin(srA) * srDR);
+                        set(srX, srY, srPulse > 0 ? sr.htColor : sr.htDimColor);
+                        if (srProg > 0.3 && srProg < 0.7) {
+                            var trX = Math.round(g.x + Math.cos(srA) * (srDR - 1.2));
+                            var trY = Math.round(g.y + Math.sin(srA) * (srDR - 1.2));
+                            set(trX, trY, sr.trailColor);
+                        }
                     }
                 }
                 var tExo = (now % 16000) / 16000;
