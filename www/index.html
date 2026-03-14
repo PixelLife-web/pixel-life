@@ -277,6 +277,12 @@
             // Centrosome: single centriole pair establishing MTOC for cytoskeletal organization
             gn.centrosomeAngle = gn.cajalAngle + 5.5;
             gn.centrosomeDist = 1.0 + gn.nucleolusSize * 0.3;
+            // Primary cilium: single non-motile sensory antenna extending from mother centriole
+            // Grows during G1 — detects extracellular signals (Hedgehog, Wnt, PDGF)
+            // Axoneme extends 2-3 pixels outward from centrosome through membrane into ECM
+            gn.ciliumAngle = gn.centrosomeAngle + 0.15; // nearly aligned with centrosome
+            gn.ciliumLength = 2.5 + gn.nucleolusSize * 0.5; // grows with cell maturity
+            gn.ciliumPhase = gbi * 1.3; // slight sway phase offset per cell
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -2172,6 +2178,36 @@
                                                     drawn = true;
                                                 }
                                             }
+                                        }
+                                    }
+                                }
+                                // Primary cilium: single sensory antenna extending from centrosome outward
+                                // 9+0 axoneme (non-motile), sways gently in extracellular medium
+                                if (!drawn && gn.ciliumLength) {
+                                    var tCilGD = (Date.now() % 6000) / 6000 * 2 * Math.PI;
+                                    var cilSway = Math.sin(tCilGD + gn.ciliumPhase) * 0.12;
+                                    var cilBaseAngle = gn.ciliumAngle + cilSway;
+                                    // Cilium extends from centrosome position outward through membrane
+                                    var cilBaseX = gn.x + Math.cos(gn.centrosomeAngle) * gn.centrosomeDist;
+                                    var cilBaseY = gn.y + Math.sin(gn.centrosomeAngle) * gn.centrosomeDist;
+                                    for (var cil = 0; cil <= Math.ceil(gn.ciliumLength * 2); cil++) {
+                                        var cilR = cil * 0.5;
+                                        if (cilR > gn.ciliumLength) break;
+                                        var cilPx = Math.round(cilBaseX + Math.cos(cilBaseAngle) * cilR);
+                                        var cilPy = Math.round(cilBaseY + Math.sin(cilBaseAngle) * cilR);
+                                        if (x === cilPx && y === cilPy) {
+                                            // Tip bulges with signaling receptors (IFT particles)
+                                            var isTip = cilR > gn.ciliumLength - 0.6;
+                                            var cilPulse = Math.sin(tCilGD * 1.5 + gni * 2.0 + cilR * 1.2);
+                                            if (isTip) {
+                                                // Ciliary tip: IFT particles accumulate, brighter
+                                                color = cilPulse > 0 ? '#eedd88' : '#ddcc66';
+                                            } else {
+                                                // Axoneme shaft: tubulin doublets
+                                                color = cilPulse > 0.3 ? '#bbaa77' : '#aa9966';
+                                            }
+                                            drawn = true;
+                                            break;
                                         }
                                     }
                                 }
