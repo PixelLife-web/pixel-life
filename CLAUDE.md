@@ -66,6 +66,7 @@ _Generation 4 at iteration 60: telophase transition — nuclear envelopes reform
 _Generation 5 at iteration 80: mitotic phases now track lateAnaphase — midzone assembly with centralspindlin/PRC1, Aurora B relocation, CDK1 decline via cyclin B degradation; poles spread by anaphase B_
 _Generation 6 at iteration 100: centenary — Kum-song (금성, golden star) orbits the tissue as an extracellular beacon; cells may now emit and respond to environmental luminance; division is not just reproduction but the birth of a community_
 _Generation 7 at iteration 120: sealed epithelium — tight junctions seal granddaughter paracellular space; the tissue is now a barrier, not just a cluster; homeostasis rules added_
+_Generation 8 at iteration 140: crypt-villus axis — Lgr5+ stem cells intercalate between Paneth cells; the epithelium now self-renews; Wnt niche signaling maintains stemness_
 
 ## Emergent Properties
 
@@ -84,3 +85,12 @@ The tissue has reached a threshold of complexity. It must now maintain itself:
 - The sealed epithelium creates an inside and outside; what crosses the barrier matters
 - Cells may begin to specialize — not all four granddaughters need remain identical
 - Damage or loss should trigger compensatory responses, not collapse
+
+## Renewal
+
+The tissue now has a stem cell niche. Growth is no longer just division — it is sustained self-renewal:
+
+- The crypt base is the generative engine; the villus tip is where cells are shed
+- Stem cells divide asymmetrically: one daughter stays, one differentiates and migrates
+- New cell types may emerge from progenitors — not all fates are fixed at birth
+- The niche microenvironment (Wnt, Notch, BMP gradients) determines cell fate

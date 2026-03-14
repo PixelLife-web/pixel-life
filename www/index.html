@@ -2145,6 +2145,43 @@
                     }
                 }
             }
+            // Lgr5+ intestinal stem cells (ISCs): self-renewing crypt base columnar cells
+            // Slender cells intercalated between Paneth cells, driven by Wnt/R-spondin signaling
+            // Express Lgr5 receptor; asymmetric division yields transit-amplifying progenitors
+            // Wnt ligands from Paneth cells maintain stemness — the crypt niche in miniature
+            var tISC = (now % 28000) / 28000;
+            var stemCells = [
+                {x:16, y:20, color:'#33bb66', dimColor:'#228844', wntColor:'#55dd88', divColor:'#88ffbb'},
+                {x:21, y:23, color:'#33bb66', dimColor:'#228844', wntColor:'#55dd88', divColor:'#88ffbb'},
+                {x:12, y:18, color:'#2aaa55', dimColor:'#1d8844', wntColor:'#44cc77', divColor:'#77eeaa'},
+            ];
+            for (var isci = 0; isci < stemCells.length; isci++) {
+                var isc = stemCells[isci];
+                var iscPhase = tISC * 2 * Math.PI + isci * 2.09;
+                var iscPulse = Math.sin(iscPhase);
+                // Slender cell body: crypt base columnar shape
+                if (inB(isc.x, isc.y)) set(isc.x, isc.y, iscPulse > 0 ? isc.color : isc.dimColor);
+                // Lgr5 receptor: bright dot on basal surface responding to Wnt
+                var wntAngle = Math.atan2(isc.y - 16, isc.x - 16); // toward basal lamina
+                var wntX = Math.round(isc.x + Math.cos(wntAngle) * 0.9);
+                var wntY = Math.round(isc.y + Math.sin(wntAngle) * 0.9);
+                var wntPulse = Math.sin(iscPhase * 1.7 + isci * 1.2);
+                if (inB(wntX, wntY)) set(wntX, wntY, wntPulse > 0 ? isc.wntColor : isc.dimColor);
+                // Asymmetric division: transit-amplifying daughter cell budding toward villus tip
+                if (iscPulse > 0.5) {
+                    var divAngle = wntAngle + Math.PI; // toward lumen (villus axis)
+                    var divR = 1.3 + iscPulse * 0.4;
+                    var divX = Math.round(isc.x + Math.cos(divAngle) * divR);
+                    var divY = Math.round(isc.y + Math.sin(divAngle) * divR);
+                    if (inB(divX, divY)) set(divX, divY, isc.divColor);
+                    // Mitotic spindle flicker during division
+                    if (iscPulse > 0.75) {
+                        var spnX = Math.round(isc.x + Math.cos(divAngle) * 0.6);
+                        var spnY = Math.round(isc.y + Math.sin(divAngle) * 0.6);
+                        if (inB(spnX, spnY)) set(spnX, spnY, '#aaffcc');
+                    }
+                }
+            }
             return px;
         }
 
