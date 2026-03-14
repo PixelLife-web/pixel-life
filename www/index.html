@@ -85,6 +85,36 @@
             '8,14': '#eebb66',
         };
 
+        // Chromatin: dark speckles inside the nucleus that condense/decondense
+        // Fixed angular positions relative to nucleus center
+        var chromatinSpots = [
+            { angle: 0.4, rFrac: 0.6 },
+            { angle: 1.5, rFrac: 0.45 },
+            { angle: 2.8, rFrac: 0.7 },
+            { angle: 3.9, rFrac: 0.5 },
+            { angle: 5.2, rFrac: 0.65 },
+        ];
+        var chromatinColor = '#aa5500';
+        var chromatinCondensed = '#883300';
+
+        // Ribosomes: small dots along the ER channels (rough ER)
+        var ribosomePositions = [];
+        for (var ri = 0; ri < erSegments.length; ri++) {
+            var seg = erSegments[ri];
+            // Place a ribosome near the midpoint of each segment, offset by 1px
+            var mx = Math.round((seg.x1 + seg.x2) / 2);
+            var my = Math.round((seg.y1 + seg.y2) / 2);
+            // Offset perpendicular to the segment direction
+            var ddx = seg.y2 - seg.y1;
+            var ddy = -(seg.x2 - seg.x1);
+            var dlen = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (dlen > 0) {
+                var offx = Math.round(ddx / dlen);
+                var offy = Math.round(ddy / dlen);
+                ribosomePositions.push({ x: mx + offx, y: my + offy });
+            }
+        }
+
         // Precompute ER pixel set and ordered paths for vesicle transport
         var erPixels = {};
         var erPaths = []; // each path is an array of {x,y} points
@@ -167,6 +197,30 @@
                 }
             }
 
+            // Compute chromatin visibility (15-second condensation cycle)
+            var tChromatin = (Date.now() % 15000) / 15000 * 2 * Math.PI;
+            var chromatinPixels = {};
+            for (var chi = 0; chi < chromatinSpots.length; chi++) {
+                var cs = chromatinSpots[chi];
+                // Chromatin condenses and relaxes; when condensed, more visible
+                var condensation = Math.sin(tChromatin + chi * 1.2);
+                var cr = cs.rFrac * nucleusRadius;
+                var cx = Math.round(center + Math.cos(cs.angle) * cr);
+                var cy = Math.round(center + Math.sin(cs.angle) * cr);
+                if (cx >= 0 && cx < size && cy >= 0 && cy < size) {
+                    chromatinPixels[cx + ',' + cy] = condensation > 0 ? chromatinCondensed : chromatinColor;
+                }
+            }
+
+            // Compute ribosome visibility (ribosomes pulse gently, 7-second cycle)
+            var tRibo = (Date.now() % 7000) / 7000 * 2 * Math.PI;
+            var ribosomePixels = {};
+            for (var ri = 0; ri < ribosomePositions.length; ri++) {
+                var rp = ribosomePositions[ri];
+                var riboPulse = Math.sin(tRibo + ri * 0.9);
+                ribosomePixels[rp.x + ',' + rp.y] = riboPulse > 0 ? '#6655aa' : '#7766bb';
+            }
+
             // Compute nutrient drift (slow 20-second cycle, small oscillation)
             var tNutrient = (Date.now() % 20000) / 20000 * 2 * Math.PI;
             var nutrientPixels = {};
@@ -219,14 +273,21 @@
 
                         if (!isSpecial) {
                             if (dist <= nucleusRadius) {
-                                var nci = Math.floor(dist * nucleusColors.length / (nucleusRadius + 0.3));
-                                if (nci >= nucleusColors.length) nci = nucleusColors.length - 1;
-                                color = nucleusColors[nci];
+                                // Check for chromatin inside the nucleus
+                                if (chromatinPixels[x + ',' + y]) {
+                                    color = chromatinPixels[x + ',' + y];
+                                } else {
+                                    var nci = Math.floor(dist * nucleusColors.length / (nucleusRadius + 0.3));
+                                    if (nci >= nucleusColors.length) nci = nucleusColors.length - 1;
+                                    color = nucleusColors[nci];
+                                }
                             } else if (dist > maxRadius - 1.5) {
                                 var shell = maxRadius - dist;
                                 var mi = Math.floor(shell * membraneColors.length / 1.5);
                                 if (mi >= membraneColors.length) mi = membraneColors.length - 1;
                                 color = membraneColors[mi];
+                            } else if (ribosomePixels[x + ',' + y]) {
+                                color = ribosomePixels[x + ',' + y];
                             } else if (erPixels[x + ',' + y]) {
                                 color = erColor;
                             } else {
