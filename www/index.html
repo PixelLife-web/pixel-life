@@ -11,7 +11,7 @@
     </style>
 </head>
 <body>
-    <canvas id="c" width="9" height="9"></canvas>
+    <canvas id="c" width="11" height="11"></canvas>
     <script>
         var canvas = document.getElementById('c');
         var ctx = canvas.getContext('2d');
@@ -19,17 +19,17 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The diamond expands and differentiates — concentric rings emerge
-        var size = 9;
-        var center = 4;
-        var radius = 3;
-        var shades = ['#000000', '#333333', '#777777', '#bbbbbb'];
+        // The diamond reaches further; warmth stirs at its core
+        var size = 11;
+        var center = 5;
+        var radius = 4;
+        var colors = ['#4a1a00', '#331100', '#555555', '#888888', '#bbbbbb'];
 
         for (var y = 0; y < size; y++) {
             for (var x = 0; x < size; x++) {
                 var dist = Math.abs(x - center) + Math.abs(y - center);
                 if (dist <= radius) {
-                    ctx.fillStyle = shades[dist];
+                    ctx.fillStyle = colors[dist];
                     ctx.fillRect(x, y, 1, 1);
                 }
             }
