@@ -47,6 +47,7 @@
             erColor: '#884422',
             mitochondria: [
                 { radius: 3.0, baseAngle: 0.5, speed: 0.8, bodyColor: '#44aa66', cristaeColor: '#2d7a48' },
+                { radius: 3.5, baseAngle: 3.2, speed: -0.6, bodyColor: '#3d9960', cristaeColor: '#287042' },
             ],
             golgiPixels: { '18,11': '#cc9944', '18,12': '#cc9944', '17,11': '#ddaa55' },
             chromatin: [
@@ -79,6 +80,7 @@
             erColor: '#884422',
             mitochondria: [
                 { radius: 3.0, baseAngle: 2.5, speed: -0.7, bodyColor: '#44aa66', cristaeColor: '#2d7a48' },
+                { radius: 3.5, baseAngle: 5.8, speed: 0.5, bodyColor: '#3d9960', cristaeColor: '#287042' },
             ],
             golgiPixels: { '10,23': '#cc9944', '10,24': '#cc9944', '9,23': '#ddaa55' },
             chromatin: [
@@ -245,6 +247,30 @@
                 }
             }
 
+            // ATP energy pulses radiating from mitochondria
+            var atpPixels = {};
+            var tATP = (t * 8000 / 5000) % 1.0;
+            for (var mi = 0; mi < cell.mitochondria.length; mi++) {
+                var m = cell.mitochondria[mi];
+                var mAngle = m.baseAngle + m.speed * tOrbit;
+                var mcx = cell.cx + Math.cos(mAngle) * m.radius;
+                var mcy = cell.cy + Math.sin(mAngle) * m.radius;
+                // Two ATP particles radiate outward from each mitochondrion
+                for (var ai = 0; ai < 2; ai++) {
+                    var atpPhase = (tATP + mi * 0.35 + ai * 0.5) % 1.0;
+                    var atpAngle = mAngle + Math.PI + (ai - 0.5) * 1.2; // radiate inward toward cell center
+                    var atpDist = atpPhase * 3.0;
+                    var ax = Math.round(mcx + Math.cos(atpAngle) * atpDist);
+                    var ay = Math.round(mcy + Math.sin(atpAngle) * atpDist);
+                    // Only draw within cell bounds
+                    var adx = ax - cell.cx;
+                    var ady = ay - cell.cy;
+                    if (Math.sqrt(adx * adx + ady * ady) < maxR - 1.0) {
+                        atpPixels[ax + ',' + ay] = atpPhase < 0.5 ? '#ffff44' : '#dddd22';
+                    }
+                }
+            }
+
             // Vesicles along ER
             var tVes = (t * 8000 / 6000) % 1.0;
             var vesPixels = {};
@@ -262,7 +288,7 @@
                 mitoPixels: mitoPixels, envPixels: envPixels,
                 nucPixels: nucPixels, chrPixels: chrPixels,
                 cilPixels: cilPixels, recPixels: recPixels,
-                vesPixels: vesPixels
+                vesPixels: vesPixels, atpPixels: atpPixels
             };
         }
 
@@ -353,9 +379,11 @@
 
                         if (dist <= dd.maxR) {
                             inAnyCell = true;
-                            // Layer priority: vesicles > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
+                            // Layer priority: vesicles > atp > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
                             if (dd.vesPixels[key]) {
                                 color = dd.vesPixels[key];
+                            } else if (dd.atpPixels[key]) {
+                                color = dd.atpPixels[key];
                             } else if (dd.mitoPixels[key]) {
                                 color = dd.mitoPixels[key];
                             } else if (dd.nucPixels[key]) {
