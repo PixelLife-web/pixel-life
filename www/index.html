@@ -468,27 +468,29 @@
             { scanSpeed: -0.4, phase: 0.7, color: '#22ee99' },
         ];
 
-        // ANAPHASE: separase cleaves cohesin, sister chromatids pulled to poles
-        // APC/C activated → securin degraded → separase active → chromatids separate
+        // TELOPHASE: chromatids at poles, nuclear envelopes reform, chromosomes decondense
+        // Cleavage furrow begins ingressing at the cell equator
         cellA.prophase = {
-            condensation: 1.0,
-            pole1Target: { x: 24, y: 5 },  // poles spread further apart (anaphase B)
+            condensation: 0.6, // chromosomes beginning to decondense
+            pole1Target: { x: 24, y: 5 },
             pole2Target: { x: 18, y: 13 },
-            asterCount: 8,
-            spindleForming: true,
-            prometaphase: true,
-            metaphase: true,
-            anaphase: true, // sister chromatids separating, moving to poles
-        };
-        cellB.prophase = {
-            condensation: 1.0,
-            pole1Target: { x: 14, y: 19 },
-            pole2Target: { x: 8, y: 27 },
-            asterCount: 8,
+            asterCount: 6, // asters diminishing
             spindleForming: true,
             prometaphase: true,
             metaphase: true,
             anaphase: true,
+            telophase: true, // nuclear envelopes reforming, chromosomes decondensing
+        };
+        cellB.prophase = {
+            condensation: 0.6,
+            pole1Target: { x: 14, y: 19 },
+            pole2Target: { x: 8, y: 27 },
+            asterCount: 6,
+            spindleForming: true,
+            prometaphase: true,
+            metaphase: true,
+            anaphase: true,
+            telophase: true,
         };
 
         // G2 growth: cells grow larger than S phase as they prepare for division
@@ -532,16 +534,36 @@
             var nucPixels = {};
             var envPulse = Math.sin(t * 2 * Math.PI * 1.3) * 0.08;
             var envR = nucR * 1.0 + envPulse;
-            if (cell.separated) {
+            if (cell.separated && cell.prophase && cell.prophase.telophase) {
+                // TELOPHASE: nuclear envelopes reform around each pole's chromatid cluster
+                var teleNucR = 1.2;
+                var poles = [cell.prophase.pole1Target, cell.prophase.pole2Target];
+                for (var pi2 = 0; pi2 < poles.length; pi2++) {
+                    var pole = poles[pi2];
+                    for (var ea = 0; ea < 16; ea++) {
+                        var eAngle = ea * 2 * Math.PI / 16;
+                        // Envelope reassembles gradually — some gaps still closing
+                        var reformPulse = Math.sin(t * 2 * Math.PI * 2 + ea * 0.7 + pi2 * 3);
+                        if (ea % 5 === 0 && reformPulse > 0.3) continue;
+                        var ex = Math.round(pole.x + Math.cos(eAngle) * teleNucR);
+                        var ey = Math.round(pole.y + Math.sin(eAngle) * teleNucR);
+                        if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
+                            envPixels[ex + ',' + ey] = reformPulse > 0 ? '#eebb55' : cell.nucleusEdge;
+                        }
+                    }
+                    // Nucleolus reforms at each pole
+                    if (pole.x >= 0 && pole.x < size && pole.y >= 0 && pole.y < size) {
+                        nucPixels[pole.x + ',' + pole.y] = cell.nucleolusColor;
+                    }
+                }
+            } else if (cell.separated) {
                 // Nucleus — in prophase, envelope starts to become discontinuous
                 var unifiedNucR = nucR + 0.9;
                 var isProphase = cell.prophase ? true : false;
                 var isPrometa = cell.prophase && cell.prophase.prometaphase;
                 for (var ea = 0; ea < 24; ea++) {
                     var eAngle = ea * 2 * Math.PI / 24;
-                    // Prometaphase: nuclear envelope fully dissolved — only faint remnant fragments
                     if (isPrometa) {
-                        // Only 2-3 fragments remain, flickering as they dissolve into ER
                         if (ea % 8 !== 0) continue;
                         var flickerT = Math.sin(t * 2 * Math.PI * 4 + ea * 1.2);
                         if (flickerT > -0.4) continue;
@@ -555,7 +577,6 @@
                         envPixels[ex + ',' + ey] = isProphase ? '#ddaa33' : cell.nucleusEdge;
                     }
                 }
-                // Single nucleolus at center
                 nucPixels[cell.cx + ',' + cell.cy] = cell.nucleolusColor;
                 nucPixels[(cell.cx + 1) + ',' + cell.cy] = cell.nucleusColor;
                 nucPixels[(cell.cx - 1) + ',' + cell.cy] = cell.nucleusColor;
@@ -590,6 +611,7 @@
                 var isPrometa = cell.prophase && cell.prophase.prometaphase;
                 var isMeta = cell.prophase && cell.prophase.metaphase;
                 var isAnaphase = cell.prophase && cell.prophase.anaphase;
+                var isTelophase = cell.prophase && cell.prophase.telophase;
                 // Metaphase plate: midpoint between the two poles
                 var plateX = cell.cx;
                 var plateY = cell.cy;
@@ -599,9 +621,19 @@
                 }
                 for (var chi = 0; chi < allChromatin.length; chi++) {
                     var diffuseR, diffAngle, driftX, driftY;
-                    if (isAnaphase) {
+                    if (isTelophase) {
+                        // TELOPHASE: chromatids arrived at poles, clustered tightly, decondensing
+                        var halfLen = Math.floor(allChromatin.length / 2);
+                        var goesToPole1 = chi < halfLen;
+                        var targetPole = goesToPole1 ? cell.prophase.pole1Target : cell.prophase.pole2Target;
+                        var localIdx = goesToPole1 ? chi : (chi - halfLen);
+                        // Tight cluster at pole — slight diffuse wobble as they decondense
+                        var deconAngle = localIdx * 2 * Math.PI / halfLen + tChromatin * 0.03;
+                        var deconR = 0.5 + Math.sin(tChromatin * 0.05 + chi * 0.8) * 0.3;
+                        driftX = Math.round(targetPole.x + Math.cos(deconAngle) * deconR);
+                        driftY = Math.round(targetPole.y + Math.sin(deconAngle) * deconR);
+                    } else if (isAnaphase) {
                         // ANAPHASE: sister chromatids separate and move toward poles
-                        // First half goes to pole1, second half to pole2
                         var halfLen = Math.floor(allChromatin.length / 2);
                         var goesToPole1 = chi < halfLen;
                         var targetPole = goesToPole1 ? cell.prophase.pole1Target : cell.prophase.pole2Target;
@@ -653,8 +685,11 @@
                     // Condensed chromosomes are brighter, thicker — condensin complexes glow
                     var condPulse = Math.sin(tChromatin * 0.15 + chi * 0.7);
                     var chrColor = cond > 0.5 ? (condPulse > 0 ? '#e0a070' : '#d09060') : (condPulse > 0.3 ? '#d09060' : '#c08050');
-                    // Anaphase: separated chromatids glow with poleward movement energy
-                    if (isAnaphase) {
+                    // Telophase: chromatids decondensing — softer, diffusing color
+                    if (isTelophase) {
+                        var deconGlow = Math.sin(tChromatin * 0.08 + chi * 0.5);
+                        chrColor = deconGlow > 0 ? '#d8b888' : '#c8a878';
+                    } else if (isAnaphase) {
                         var halfLen2 = Math.floor(allChromatin.length / 2);
                         var anaGlow = Math.sin(tChromatin * 0.1 + chi * 0.6);
                         // Chromatids heading to pole1 vs pole2 get subtly different hues
@@ -771,7 +806,7 @@
                     }
                     // SPINDLE MICROTUBULES: fully formed between the two poles
                     if (cell.prophase.spindleForming) {
-                        var spindleCount = cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4));
+                        var spindleCount = cell.prophase.telophase ? 6 : (cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4)));
                         for (var spi = 0; spi < spindleCount; spi++) {
                             var spFrac = (spi + 1) / (spindleCount + 1);
                             var spx = p1x + (p2x - p1x) * spFrac;
@@ -785,7 +820,9 @@
                             if (spxF >= 0 && spxF < size && spyF >= 0 && spyF < size) {
                                 var spPulse = Math.sin(tCentMig * 2 * Math.PI + spi * 0.9);
                                 // Anaphase: interpolar MTs glow as they push poles apart
-                                centPixels[spxF + ',' + spyF] = cell.prophase.anaphase
+                                centPixels[spxF + ',' + spyF] = cell.prophase.telophase
+                                    ? (spPulse > 0 ? '#557799' : '#446688') // fading spindle
+                                    : cell.prophase.anaphase
                                     ? (spPulse > 0 ? '#77bbdd' : '#66aacc')
                                     : cell.prophase.metaphase
                                         ? (spPulse > 0 ? '#66aacc' : '#5599bb')
@@ -1356,8 +1393,8 @@
                 }
             }
 
-            // Anaphase: separase active — cohesin cleavage flashes along spindle axis
-            // Remnant APC/C signal still pulses as it drives cyclin B destruction
+            // Telophase: central spindle / midbody forms at equator, cleavage furrow ingresses
+            // Anaphase remnant: separase flashes fade
             var sacPixels = {};
             if (cell.prophase && cell.prophase.anaphase && cell.separated) {
                 var tSAC = (t * 8000 / 5000) % 1.0;
@@ -1365,28 +1402,53 @@
                 var p2 = cell.prophase.pole2Target;
                 var sacMidX = (p1.x + p2.x) / 2;
                 var sacMidY = (p1.y + p2.y) / 2;
-                // Separase flashes: bright yellow-white sparks at the separation zone
-                var sepPulse = Math.sin(tSAC * 2 * Math.PI * 1.2);
-                if (sepPulse > 0.2) {
-                    var sepAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x) + Math.PI / 2;
-                    for (var sepI = -1; sepI <= 1; sepI++) {
-                        var sepX = Math.round(sacMidX + Math.cos(sepAngle) * sepI * 0.8);
-                        var sepY = Math.round(sacMidY + Math.sin(sepAngle) * sepI * 0.8);
-                        if (sepX >= 0 && sepX < size && sepY >= 0 && sepY < size) {
-                            sacPixels[sepX + ',' + sepY] = sepPulse > 0.6 ? '#ffffaa' : '#ddddaa';
+                if (cell.prophase.telophase) {
+                    // TELOPHASE: central spindle condenses into midbody at equator
+                    var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                    var perpAngle = spindleAngle + Math.PI / 2;
+                    // Midbody: dense bundle of antiparallel microtubules at the equator
+                    var mbPulse = Math.sin(tSAC * 2 * Math.PI * 0.8);
+                    for (var mbI = -1; mbI <= 1; mbI++) {
+                        var mbX = Math.round(sacMidX + Math.cos(perpAngle) * mbI * 0.7);
+                        var mbY = Math.round(sacMidY + Math.sin(perpAngle) * mbI * 0.7);
+                        if (mbX >= 0 && mbX < size && mbY >= 0 && mbY < size) {
+                            sacPixels[mbX + ',' + mbY] = mbPulse > 0 ? '#99ccdd' : '#88bbcc';
                         }
                     }
-                }
-                // APC/C degradation wave: cyclin B being destroyed (fading pink flashes)
-                var apcPulse = Math.sin(tSAC * 2 * Math.PI * 0.5 + 1.0);
-                if (apcPulse > 0.4) {
-                    for (var apcI = 0; apcI < 4; apcI++) {
-                        var apcAngle = apcI * Math.PI / 2 + tSAC * 0.8;
-                        var apcR = 1.5 + apcPulse * 0.8;
-                        var apcX = Math.round(sacMidX + Math.cos(apcAngle) * apcR);
-                        var apcY = Math.round(sacMidY + Math.sin(apcAngle) * apcR);
-                        if (apcX >= 0 && apcX < size && apcY >= 0 && apcY < size) {
-                            sacPixels[apcX + ',' + apcY] = '#cc88aa'; // fading cyclin B
+                    // Cleavage furrow: contractile ring ingressing perpendicular to spindle axis
+                    var furrowDepth = 1.5; // early ingression
+                    for (var fI = -2; fI <= 2; fI++) {
+                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 1.2);
+                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 1.2);
+                        if (fX >= 0 && fX < size && fY >= 0 && fY < size) {
+                            var fPulse = Math.sin(tSAC * 2 * Math.PI + fI * 0.8);
+                            sacPixels[fX + ',' + fY] = fPulse > 0 ? '#885533' : '#774422';
+                        }
+                    }
+                } else {
+                    // Separase flashes
+                    var sepPulse = Math.sin(tSAC * 2 * Math.PI * 1.2);
+                    if (sepPulse > 0.2) {
+                        var sepAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x) + Math.PI / 2;
+                        for (var sepI = -1; sepI <= 1; sepI++) {
+                            var sepX = Math.round(sacMidX + Math.cos(sepAngle) * sepI * 0.8);
+                            var sepY = Math.round(sacMidY + Math.sin(sepAngle) * sepI * 0.8);
+                            if (sepX >= 0 && sepX < size && sepY >= 0 && sepY < size) {
+                                sacPixels[sepX + ',' + sepY] = sepPulse > 0.6 ? '#ffffaa' : '#ddddaa';
+                            }
+                        }
+                    }
+                    // APC/C degradation wave
+                    var apcPulse = Math.sin(tSAC * 2 * Math.PI * 0.5 + 1.0);
+                    if (apcPulse > 0.4) {
+                        for (var apcI = 0; apcI < 4; apcI++) {
+                            var apcAngle = apcI * Math.PI / 2 + tSAC * 0.8;
+                            var apcR = 1.5 + apcPulse * 0.8;
+                            var apcX = Math.round(sacMidX + Math.cos(apcAngle) * apcR);
+                            var apcY = Math.round(sacMidY + Math.sin(apcAngle) * apcR);
+                            if (apcX >= 0 && apcX < size && apcY >= 0 && apcY < size) {
+                                sacPixels[apcX + ',' + apcY] = '#cc88aa';
+                            }
                         }
                     }
                 }
