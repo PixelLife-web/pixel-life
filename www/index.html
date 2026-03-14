@@ -83,20 +83,26 @@
             '8,14': '#eebb66',
         };
 
-        // Chromosomes: chromatin has condensed into visible chromosomes (prophase)
-        // They cluster near the center of the nucleus, preparing to align
+        // Prometaphase: nuclear envelope dissolving, chromosomes migrating to metaphase plate
+        // Chromosomes move from nucleus toward the midline between centrosomes
+        // Metaphase plate is the midpoint between centrosome1 and centrosome2
+        var metaphasePlateX = (centrosome1.x + centrosome2.x) / 2; // 12.5
+        var metaphasePlateY = (centrosome1.y + centrosome2.y) / 2; // 12
+        // Chromosomes now positioned near the metaphase plate, spread along the perpendicular axis
         var chromatinSpots = [
-            { angle: 0.3, rFrac: 0.5 },
-            { angle: 1.0, rFrac: 0.4 },
-            { angle: 1.8, rFrac: 0.55 },
-            { angle: 2.6, rFrac: 0.45 },
-            { angle: 3.4, rFrac: 0.5 },
-            { angle: 4.2, rFrac: 0.4 },
-            { angle: 5.0, rFrac: 0.55 },
-            { angle: 5.8, rFrac: 0.45 },
+            { x: 11, y: 11 },
+            { x: 13, y: 11 },
+            { x: 11, y: 13 },
+            { x: 13, y: 13 },
+            { x: 12, y: 10 },
+            { x: 12, y: 14 },
+            { x: 14, y: 12 },
+            { x: 10, y: 12 },
         ];
-        var chromatinColor = '#993300'; // more condensed, darker
-        var chromatinCondensed = '#771100';
+        var chromatinColor = '#771100'; // fully condensed chromosomes
+        var chromatinCondensed = '#550800';
+        // Nuclear envelope is breaking down - shown as faded, fragmented ring
+        var envelopeBreaking = true;
 
         // Mitochondria with cristae: larger organelles with internal folds
         // Each has a center position (computed from orbit), and cristae drawn inside
@@ -295,19 +301,13 @@
                 }
             }
 
-            // Compute chromatin visibility (15-second condensation cycle)
-            var tChromatin = (Date.now() % 15000) / 15000 * 2 * Math.PI;
+            // Chromosomes at metaphase plate: pulse between condensed shades (10-second cycle)
+            var tChromatin = (Date.now() % 10000) / 10000 * 2 * Math.PI;
             var chromatinPixels = {};
             for (var chi = 0; chi < chromatinSpots.length; chi++) {
                 var cs = chromatinSpots[chi];
-                // Chromatin condenses and relaxes; when condensed, more visible
-                var condensation = Math.sin(tChromatin + chi * 1.2);
-                var cr = cs.rFrac * nucleusRadius;
-                var cx = Math.round(center + Math.cos(cs.angle) * cr);
-                var cy = Math.round(center + Math.sin(cs.angle) * cr);
-                if (cx >= 0 && cx < size && cy >= 0 && cy < size) {
-                    chromatinPixels[cx + ',' + cy] = condensation > 0 ? chromatinCondensed : chromatinColor;
-                }
+                var condensation = Math.sin(tChromatin + chi * 0.8);
+                chromatinPixels[cs.x + ',' + cs.y] = condensation > 0 ? chromatinCondensed : chromatinColor;
             }
 
             // Compute ribosome visibility (ribosomes pulse gently, 7-second cycle)
@@ -363,6 +363,22 @@
                 var spy = Math.round(centrosome1.y + (centrosome2.y - centrosome1.y) * frac);
                 if (spx >= 0 && spx < size && spy >= 0 && spy < size) {
                     mtPixels[spx + ',' + spy] = spCol;
+                }
+            }
+            // Kinetochore fibers: spindle fibers reach from each centrosome to nearby chromosomes
+            var kinetochoreColor = '#bb8833';
+            for (var ki = 0; ki < chromatinSpots.length; ki++) {
+                var chr = chromatinSpots[ki];
+                // Connect to nearest centrosome (first 4 to centrosome1, last 4 to centrosome2)
+                var pole = ki < 4 ? centrosome1 : centrosome2;
+                var kSteps = 4;
+                for (var ks = 1; ks < kSteps; ks++) {
+                    var kf = ks / kSteps;
+                    var kx = Math.round(pole.x + (chr.x - pole.x) * kf);
+                    var ky = Math.round(pole.y + (chr.y - pole.y) * kf);
+                    if (kx >= 0 && kx < size && ky >= 0 && ky < size) {
+                        mtPixels[kx + ',' + ky] = kinetochoreColor;
+                    }
                 }
             }
 
@@ -610,14 +626,20 @@
                         }
 
                         if (!isSpecial) {
-                            if (dist <= nucleusRadius) {
-                                // Check for chromatin inside the nucleus
-                                if (chromatinPixels[x + ',' + y]) {
-                                    color = chromatinPixels[x + ',' + y];
+                            // Check chromosomes at metaphase plate (drawn over everything internal)
+                            if (chromatinPixels[x + ',' + y]) {
+                                color = chromatinPixels[x + ',' + y];
+                                isSpecial = true;
+                            } else if (dist <= nucleusRadius) {
+                                // Nuclear envelope is dissolving: only fragments remain
+                                // Show the envelope as occasional edge pixels (every other pixel)
+                                var atEdge = dist > nucleusRadius - 0.8;
+                                var fragmentVisible = ((x + y) % 3 === 0); // fragmented pattern
+                                if (atEdge && fragmentVisible) {
+                                    color = '#d4740e'; // faint envelope remnant
                                 } else {
-                                    var nci = Math.floor(dist * nucleusColors.length / (nucleusRadius + 0.3));
-                                    if (nci >= nucleusColors.length) nci = nucleusColors.length - 1;
-                                    color = nucleusColors[nci];
+                                    // Interior is now merging with cytoplasm
+                                    color = cytoColor;
                                 }
                             } else if (dist > maxRadius - 1.5) {
                                 var shell = maxRadius - dist;
