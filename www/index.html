@@ -456,8 +456,20 @@
             { orbitR: 4.2, baseAngle: 0.6, speed: -0.75, color: '#dd66aa' },
         ];
 
+        // G2 DNA damage checkpoint: ATM/ATR kinases scan chromatin for replication errors
+        // Checkpoint proteins orbit inside the nucleus, sampling each chromatin locus
+        // Once all loci verified, a green "checkpoint passed" signal pulses outward
+        cellA.checkpointKinases = [
+            { scanSpeed: 0.45, phase: 0, color: '#33ffaa' },
+            { scanSpeed: -0.38, phase: 0.5, color: '#22ee99' },
+        ];
+        cellB.checkpointKinases = [
+            { scanSpeed: 0.42, phase: 0.2, color: '#33ffaa' },
+            { scanSpeed: -0.4, phase: 0.7, color: '#22ee99' },
+        ];
+
         // G2 growth: cells grow larger than S phase as they prepare for division
-        var growthRate = 0.55; // increased from 0.4 — G2 cells are bigger
+        var growthRate = 0.6; // increased from 0.55 — G2 cells swell further
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -538,14 +550,17 @@
             // Post-abscission: diffuse chromatin orbits gently inside unified nucleus
             var chrPixels = {};
             if (cell.separated) {
-                // All chromatin orbits the cell center as diffuse interphase chromatin
+                // G2 chromatin: beginning to condense — tighter orbits, brighter color
                 var allChromatin = cell.chromatin.concat(cell.sisterChromatin || []);
                 for (var chi = 0; chi < allChromatin.length; chi++) {
-                    var diffuseR = 0.6 + Math.sin(tChromatin * 0.3 + chi * 1.2) * 0.3;
-                    var diffAngle = chi * 2 * Math.PI / allChromatin.length + tChromatin * 0.05;
+                    // Condensing: radius shrinks from 0.6 to 0.4 range (tighter than interphase)
+                    var diffuseR = 0.45 + Math.sin(tChromatin * 0.3 + chi * 1.2) * 0.2;
+                    var diffAngle = chi * 2 * Math.PI / allChromatin.length + tChromatin * 0.04;
                     var driftX = Math.round(cell.cx + Math.cos(diffAngle) * diffuseR);
                     var driftY = Math.round(cell.cy + Math.sin(diffAngle) * diffuseR);
-                    chrPixels[driftX + ',' + driftY] = '#c08050';
+                    // Condensing chromatin appears slightly brighter/thicker
+                    var condPulse = Math.sin(tChromatin * 0.2 + chi * 0.9);
+                    chrPixels[driftX + ',' + driftY] = condPulse > 0.3 ? '#d09060' : '#c08050';
                 }
             } else if (cell.centrosomes && cell.centrosomes.length >= 2) {
                 var pole0 = cell.centrosomes[0];
@@ -1060,6 +1075,48 @@
                 }
             }
 
+            // G2 checkpoint kinases: scan chromatin inside the nucleus
+            var checkPixels = {};
+            if (cell.checkpointKinases && cell.separated) {
+                var tCheck = (t * 8000 / 4500) % 1.0;
+                var unifiedNucR3 = nucR + 0.9;
+                for (var cki = 0; cki < cell.checkpointKinases.length; cki++) {
+                    var ck = cell.checkpointKinases[cki];
+                    // Kinase orbits inside nucleus, scanning chromatin
+                    var ckAngle = tCheck * 2 * Math.PI * ck.scanSpeed + ck.phase * 6;
+                    var ckR = unifiedNucR3 * 0.5 + Math.sin(tCheck * 2 * Math.PI + cki * 2) * 0.3;
+                    var ckX = Math.round(cell.cx + Math.cos(ckAngle) * ckR);
+                    var ckY = Math.round(cell.cy + Math.sin(ckAngle) * ckR);
+                    if (ckX >= 0 && ckX < size && ckY >= 0 && ckY < size) {
+                        // Kinase glows green when sampling, dimmer between samples
+                        var samplePulse = Math.sin(tCheck * 2 * Math.PI * 3 + cki * 1.5);
+                        checkPixels[ckX + ',' + ckY] = samplePulse > 0.2 ? '#44ffbb' : ck.color;
+                    }
+                    // Checkpoint verification flash: brief radial pulse when kinase confirms a locus
+                    if (samplePulse > 0.7) {
+                        var verAngle = ckAngle + Math.PI; // flash opposite side
+                        var vx = Math.round(cell.cx + Math.cos(verAngle) * (unifiedNucR3 * 0.3));
+                        var vy = Math.round(cell.cy + Math.sin(verAngle) * (unifiedNucR3 * 0.3));
+                        if (vx >= 0 && vx < size && vy >= 0 && vy < size) {
+                            checkPixels[vx + ',' + vy] = '#aaffdd';
+                        }
+                    }
+                }
+                // Checkpoint passed signal: green pulse on nuclear envelope when kinases align
+                var alignPulse = Math.sin(tCheck * 2 * Math.PI * 0.5);
+                if (alignPulse > 0.6) {
+                    // Brief green flash on 4 envelope points = "all clear for mitosis"
+                    for (var cpe = 0; cpe < 4; cpe++) {
+                        var cpAngle = cpe * Math.PI / 2 + tCheck * 0.5;
+                        var cpx = Math.round(cell.cx + Math.cos(cpAngle) * unifiedNucR3);
+                        var cpy = Math.round(cell.cy + Math.sin(cpAngle) * unifiedNucR3);
+                        if (cpx >= 0 && cpx < size && cpy >= 0 && cpy < size) {
+                            checkPixels[cpx + ',' + cpy] = '#88ffcc';
+                        }
+                    }
+                }
+            }
+
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
             if (cell.filopodia) {
@@ -1094,7 +1151,8 @@
                 porePixels: porePixels, secVesPixels: secVesPixels,
                 endoPixels: endoPixels, replPixels: replPixels,
                 genomePixels: genomePixels, cyclinPixels: cyclinPixels,
-                cycBPixels: cycBPixels
+                cycBPixels: cycBPixels,
+                checkPixels: checkPixels
             };
         }
 
@@ -1385,6 +1443,8 @@
                                 color = dd.envPixels[key];
                             } else if (dd.replPixels && dd.replPixels[key]) {
                                 color = dd.replPixels[key];
+                            } else if (dd.checkPixels && dd.checkPixels[key]) {
+                                color = dd.checkPixels[key];
                             } else if (dd.genomePixels && dd.genomePixels[key]) {
                                 color = dd.genomePixels[key];
                             } else if (dd.chrPixels[key]) {
