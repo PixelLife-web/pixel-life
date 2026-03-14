@@ -1983,6 +1983,61 @@
                     if(inB(dbX,dbY))s(dbX,dbY,'#996655');}
                 }},
             ]);
+            // Submucosal arterioles: resistance vessels with endothelial NO signaling
+            // Vascular smooth muscle maintains myogenic tone; VIP from Meissner's plexus dilates
+            var tArt = (now % 27000) / 27000;
+            var arterioles = [
+                {x:19,y:17,ex:21,ey:16,ang:0.3},{x:23,y:21,ex:22,ey:23,ang:2.1},
+                {x:12,y:26,ex:14,ey:25,ang:5.5},{x:8,y:21,ex:9,ey:19,ang:4.8},
+            ];
+            for (var ari = 0; ari < arterioles.length; ari++) {
+                var art = arterioles[ari];
+                var artPh = tArt * 2 * Math.PI + ari * 1.57;
+                var myoTone = Math.sin(artPh); // myogenic oscillation
+                // Endothelial cells: thin lining of the arteriolar lumen
+                if (inB(art.ex, art.ey)) set(art.ex, art.ey, myoTone > -0.2 ? '#cc4444' : '#aa3333');
+                // Vascular smooth muscle wrapping arteriole: α₁-adrenergic contraction
+                var vsmA = art.ang + myoTone * 0.15; // tone shifts wrap angle
+                var vsmR = 1.0 + myoTone * 0.15; // constriction/dilation
+                var vsmX = Math.round(art.x + Math.cos(vsmA) * vsmR);
+                var vsmY = Math.round(art.y + Math.sin(vsmA) * vsmR);
+                if (inB(vsmX, vsmY)) set(vsmX, vsmY, myoTone > 0.2 ? '#bb6677' : '#996655');
+                var vsm2A = vsmA + Math.PI;
+                var vsm2X = Math.round(art.x + Math.cos(vsm2A) * vsmR);
+                var vsm2Y = Math.round(art.y + Math.sin(vsm2A) * vsmR);
+                if (inB(vsm2X, vsm2Y)) set(vsm2X, vsm2Y, myoTone > 0.2 ? '#bb6677' : '#996655');
+                // Lumen with RBC transit: erythrocytes flowing through
+                var rbcPh = (tArt * 3.5 + ari * 0.8) % 1.0;
+                var rbcA = Math.atan2(art.ey - art.y, art.ex - art.x);
+                var rbcD = 0.4 + rbcPh * 1.2;
+                var rbcX = Math.round(art.x + Math.cos(rbcA) * rbcD);
+                var rbcY = Math.round(art.y + Math.sin(rbcA) * rbcD);
+                if (inB(rbcX, rbcY)) set(rbcX, rbcY, rbcPh < 0.6 ? '#dd3322' : '#cc2211');
+                // eNOS → NO release: endothelial nitric oxide synthase signals smooth muscle relaxation
+                if (myoTone < -0.3) {
+                    var noA = art.ang + Math.PI * 0.5;
+                    var noR = 1.3 + Math.sin(artPh * 2.2) * 0.4;
+                    var noX = Math.round(art.x + Math.cos(noA) * noR);
+                    var noY = Math.round(art.y + Math.sin(noA) * noR);
+                    if (inB(noX, noY)) set(noX, noY, '#88ddff');
+                    // NO diffusion to second smooth muscle cell
+                    if (myoTone < -0.5) {
+                        var no2R = noR + 0.8;
+                        var no2X = Math.round(art.x + Math.cos(noA) * no2R);
+                        var no2Y = Math.round(art.y + Math.sin(noA) * no2R);
+                        if (inB(no2X, no2Y)) set(no2X, no2Y, '#aaeeff');
+                    }
+                }
+                // Pericyte embrace: stabilizing cells from iter 155 wrap arteriolar branch points
+                if (ari % 2 === 0) {
+                    var periA = art.ang - Math.PI * 0.3;
+                    var periP = Math.sin(artPh * 0.7 + ari * 2.0);
+                    var periX = Math.round(art.x + Math.cos(periA) * 1.4);
+                    var periY = Math.round(art.y + Math.sin(periA) * 1.4);
+                    if (inB(periX, periY) && periP > -0.4) set(periX, periY, periP > 0.3 ? '#88aa77' : '#779966');
+                }
+            }
+
             // Meissner's (submucosal) plexus: enteric neuron ganglia
             // Cholinergic neurons release ACh → epithelial secretion; VIPergic neurons → vasodilation
             var tMeiss = (now % 29000) / 29000;
