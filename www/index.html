@@ -513,28 +513,30 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // NEB IMMINENT: condensation nearly complete, envelope fragmenting into vesicles
-        // CDK1 saturates lamin B phosphorylation — lamina meshwork dissolving into subunits
-        // NPCs mostly disassembled — Nup107/160 released, importin/exportin leak freely
-        // Envelope vesiculates: ER-derived membranes absorb nuclear membrane fragments
+        // NEB COMPLETE: nuclear envelope has broken down — prometaphase begins
+        // Lamina fully dissolved into soluble dimers, NPCs disassembled
+        // Spindle microtubules now invade the nuclear space, capturing kinetochores
+        // Chromosomes congress toward the forming metaphase plate
         cellA.prophase = {
-            condensation: 0.85, // chromosomes fully individualized, thick rods visible
+            condensation: 0.92, // chromosomes maximally condensed, discrete rods
             pole1Target: { x: 19, y: 7 },  // upper pole
             pole2Target: { x: 23, y: 11 }, // lower pole
-            spindleForming: false, // not yet — envelope must fully break before spindle captures
-            asterCount: 12, // asters maximal, gamma-tubulin ring complexes saturated
-            laminPhospho: 0.65, // critical threshold — lamina meshwork fragmenting into soluble dimers
-            npcDisassembly: 0.6, // most NPCs gone, only remnant scaffold clusters remain
-            envelopeVesicles: true, // nuclear membrane breaking into ER-absorbed vesicles
+            prometaphase: true, // NEB complete — spindle captures kinetochores
+            spindleForming: true, // spindle MTs now reach into nuclear space
+            asterCount: 12, // asters maximal
+            laminPhospho: 0.9, // lamina fully dissolved — only trace soluble dimers remain
+            npcDisassembly: 0.9, // NPCs completely disassembled
+            envelopeVesicles: true, // membrane vesicles absorbed into ER network
         };
         cellB.prophase = {
-            condensation: 0.85,
+            condensation: 0.92,
             pole1Target: { x: 9, y: 21 },  // upper pole
             pole2Target: { x: 13, y: 25 }, // lower pole
-            spindleForming: false,
+            prometaphase: true,
+            spindleForming: true,
             asterCount: 12,
-            laminPhospho: 0.65,
-            npcDisassembly: 0.6,
+            laminPhospho: 0.9,
+            npcDisassembly: 0.9,
             envelopeVesicles: true,
         };
 
