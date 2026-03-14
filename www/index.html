@@ -1951,93 +1951,37 @@
                 }},
             ]);
             var tArt = (now % 27000) / 27000;
-            var arterioles = [
-                {x:19,y:17,ex:21,ey:16,ang:0.3},{x:23,y:21,ex:22,ey:23,ang:2.1},
-                {x:12,y:26,ex:14,ey:25,ang:5.5},{x:8,y:21,ex:9,ey:19,ang:4.8},
-            ];
+            var arterioles = [{x:19,y:17,ex:21,ey:16,ang:0.3},{x:23,y:21,ex:22,ey:23,ang:2.1},{x:12,y:26,ex:14,ey:25,ang:5.5},{x:8,y:21,ex:9,ey:19,ang:4.8}];
             for (var ari = 0; ari < arterioles.length; ari++) {
-                var art = arterioles[ari];
-                var artPh = tArt * 2 * Math.PI + ari * 1.57;
-                var myoTone = Math.sin(artPh); // myogenic oscillation
+                var art = arterioles[ari], artPh = tArt * 2 * Math.PI + ari * 1.57, myoTone = Math.sin(artPh);
                 if (inB(art.ex, art.ey)) set(art.ex, art.ey, myoTone > -0.2 ? '#cc4444' : '#aa3333');
-                var vsmA = art.ang + myoTone * 0.15; // tone shifts wrap angle
-                var vsmR = 1.0 + myoTone * 0.15; // constriction/dilation
-                var vsmX = Math.round(art.x + Math.cos(vsmA) * vsmR);
-                var vsmY = Math.round(art.y + Math.sin(vsmA) * vsmR);
-                if (inB(vsmX, vsmY)) set(vsmX, vsmY, myoTone > 0.2 ? '#bb6677' : '#996655');
-                var vsm2A = vsmA + Math.PI;
-                var vsm2X = Math.round(art.x + Math.cos(vsm2A) * vsmR);
-                var vsm2Y = Math.round(art.y + Math.sin(vsm2A) * vsmR);
-                if (inB(vsm2X, vsm2Y)) set(vsm2X, vsm2Y, myoTone > 0.2 ? '#bb6677' : '#996655');
-                var rbcPh = (tArt * 3.5 + ari * 0.8) % 1.0;
-                var rbcA = Math.atan2(art.ey - art.y, art.ex - art.x);
-                var rbcD = 0.4 + rbcPh * 1.2;
-                var rbcX = Math.round(art.x + Math.cos(rbcA) * rbcD);
-                var rbcY = Math.round(art.y + Math.sin(rbcA) * rbcD);
-                if (inB(rbcX, rbcY)) set(rbcX, rbcY, rbcPh < 0.6 ? '#dd3322' : '#cc2211');
-                if (myoTone < -0.3) {
-                    var noA = art.ang + Math.PI * 0.5;
-                    var noR = 1.3 + Math.sin(artPh * 2.2) * 0.4;
-                    var noX = Math.round(art.x + Math.cos(noA) * noR);
-                    var noY = Math.round(art.y + Math.sin(noA) * noR);
-                    if (inB(noX, noY)) set(noX, noY, '#88ddff');
-                    if (myoTone < -0.5) {
-                        var no2R = noR + 0.8;
-                        var no2X = Math.round(art.x + Math.cos(noA) * no2R);
-                        var no2Y = Math.round(art.y + Math.sin(noA) * no2R);
-                        if (inB(no2X, no2Y)) set(no2X, no2Y, '#aaeeff');
-                    }
-                }
-                if (ari % 2 === 0) {
-                    var periA = art.ang - Math.PI * 0.3;
-                    var periP = Math.sin(artPh * 0.7 + ari * 2.0);
-                    var periX = Math.round(art.x + Math.cos(periA) * 1.4);
-                    var periY = Math.round(art.y + Math.sin(periA) * 1.4);
-                    if (inB(periX, periY) && periP > -0.4) set(periX, periY, periP > 0.3 ? '#88aa77' : '#779966');
-                }
+                var vsmA = art.ang + myoTone * 0.15, vsmR = 1.0 + myoTone * 0.15;
+                set(Math.round(art.x+Math.cos(vsmA)*vsmR),Math.round(art.y+Math.sin(vsmA)*vsmR),myoTone>0.2?'#bb6677':'#996655');
+                set(Math.round(art.x+Math.cos(vsmA+Math.PI)*vsmR),Math.round(art.y+Math.sin(vsmA+Math.PI)*vsmR),myoTone>0.2?'#bb6677':'#996655');
+                var rbcPh=(tArt*3.5+ari*0.8)%1.0,rbcA=Math.atan2(art.ey-art.y,art.ex-art.x),rbcD=0.4+rbcPh*1.2;
+                set(Math.round(art.x+Math.cos(rbcA)*rbcD),Math.round(art.y+Math.sin(rbcA)*rbcD),rbcPh<0.6?'#dd3322':'#cc2211');
+                if(myoTone<-0.3){var noA=art.ang+Math.PI*0.5,noR=1.3+Math.sin(artPh*2.2)*0.4;
+                if(inB(Math.round(art.x+Math.cos(noA)*noR),Math.round(art.y+Math.sin(noA)*noR)))set(Math.round(art.x+Math.cos(noA)*noR),Math.round(art.y+Math.sin(noA)*noR),'#88ddff');
+                if(myoTone<-0.5){var no2R=noR+0.8;if(inB(Math.round(art.x+Math.cos(noA)*no2R),Math.round(art.y+Math.sin(noA)*no2R)))set(Math.round(art.x+Math.cos(noA)*no2R),Math.round(art.y+Math.sin(noA)*no2R),'#aaeeff');}}
+                if(ari%2===0){var periA2=art.ang-Math.PI*0.3,periP2=Math.sin(artPh*0.7+ari*2.0),periX2=Math.round(art.x+Math.cos(periA2)*1.4),periY2=Math.round(art.y+Math.sin(periA2)*1.4);
+                if(inB(periX2,periY2)&&periP2>-0.4)set(periX2,periY2,periP2>0.3?'#88aa77':'#779966');}
             }
-
             var tVen = (now % 31000) / 31000;
-            var venules = [
-                {x:17,y:19,ex:16,ey:18,ang:1.8},{x:21,y:24,ex:20,ey:23,ang:3.5},
-                {x:10,y:23,ex:11,ey:22,ang:5.0},{x:25,y:23,ex:24,ey:22,ang:0.8},
-            ];
+            var venules = [{x:17,y:19,ex:16,ey:18,ang:1.8},{x:21,y:24,ex:20,ey:23,ang:3.5},{x:10,y:23,ex:11,ey:22,ang:5.0},{x:25,y:23,ex:24,ey:22,ang:0.8}];
             for (var vni = 0; vni < venules.length; vni++) {
-                var ven = venules[vni];
-                var venPh = tVen * 2 * Math.PI + vni * 1.57;
-                var venP = Math.sin(venPh);
+                var ven = venules[vni], venPh = tVen * 2 * Math.PI + vni * 1.57, venP = Math.sin(venPh);
                 if (inB(ven.ex, ven.ey)) set(ven.ex, ven.ey, venP > -0.3 ? '#8855aa' : '#663388');
-                var vwA = ven.ang + venP * 0.10;
-                var vwR = 0.8 + venP * 0.08;
-                var vwX = Math.round(ven.x + Math.cos(vwA) * vwR);
-                var vwY = Math.round(ven.y + Math.sin(vwA) * vwR);
-                if (inB(vwX, vwY)) set(vwX, vwY, venP > 0.1 ? '#886699' : '#775588');
-                var rollPh = (tVen * 4.0 + vni * 0.25) % 1.0;
-                var rollA = Math.atan2(ven.ey - ven.y, ven.ex - ven.x);
-                var rollTangent = rollA + Math.PI * 0.5;
-                var rollX = Math.round(ven.ex + Math.cos(rollTangent) * (rollPh * 2.0 - 1.0));
-                var rollY = Math.round(ven.ey + Math.sin(rollTangent) * (rollPh * 2.0 - 1.0));
-                if (inB(rollX, rollY)) set(rollX, rollY, rollPh < 0.5 ? '#eedd55' : '#ddcc44');
-                var adhPh = (tVen * 2.2 + vni * 0.4) % 1.0;
-                if (adhPh > 0.3 && adhPh < 0.6) {
-                    var adhX = Math.round(ven.ex + Math.cos(rollTangent) * 0.3);
-                    var adhY = Math.round(ven.ey + Math.sin(rollTangent) * 0.3);
-                    if (inB(adhX, adhY)) set(adhX, adhY, '#ffee88');
-                }
-                var diapPh = (tVen * 1.5 + vni * 0.35) % 1.0;
-                if (diapPh < 0.6) {
-                    var diapA = Math.atan2(16 - ven.y, 16 - ven.x);
-                    var diapR = 0.5 + diapPh * 3.0;
-                    var diapX = Math.round(ven.x + Math.cos(diapA) * diapR);
-                    var diapY = Math.round(ven.y + Math.sin(diapA) * diapR);
-                    if (inB(diapX, diapY)) set(diapX, diapY, diapPh < 0.2 ? '#ffddaa' : (diapPh < 0.4 ? '#eebb77' : '#ccaa66'));
-                }
-                var vrbcPh = (tVen * 2.8 + vni * 0.6) % 1.0;
-                var vrbcA = Math.atan2(ven.ey - ven.y, ven.ex - ven.x);
-                var vrbcD = 0.3 + vrbcPh * 0.9;
-                var vrbcX = Math.round(ven.x + Math.cos(vrbcA) * vrbcD);
-                var vrbcY = Math.round(ven.y + Math.sin(vrbcA) * vrbcD);
-                if (inB(vrbcX, vrbcY)) set(vrbcX, vrbcY, vrbcPh < 0.5 ? '#993344' : '#882233');
+                var vwA = ven.ang + venP * 0.10, vwR = 0.8 + venP * 0.08;
+                set(Math.round(ven.x+Math.cos(vwA)*vwR),Math.round(ven.y+Math.sin(vwA)*vwR),venP>0.1?'#886699':'#775588');
+                var rollA2=Math.atan2(ven.ey-ven.y,ven.ex-ven.x)+Math.PI*0.5,rollPh2=(tVen*4.0+vni*0.25)%1.0;
+                set(Math.round(ven.ex+Math.cos(rollA2)*(rollPh2*2.0-1.0)),Math.round(ven.ey+Math.sin(rollA2)*(rollPh2*2.0-1.0)),rollPh2<0.5?'#eedd55':'#ddcc44');
+                var adhPh2=(tVen*2.2+vni*0.4)%1.0;
+                if(adhPh2>0.3&&adhPh2<0.6)set(Math.round(ven.ex+Math.cos(rollA2)*0.3),Math.round(ven.ey+Math.sin(rollA2)*0.3),'#ffee88');
+                var diapPh2=(tVen*1.5+vni*0.35)%1.0;
+                if(diapPh2<0.6){var diapA2=Math.atan2(16-ven.y,16-ven.x),diapR2=0.5+diapPh2*3.0;
+                set(Math.round(ven.x+Math.cos(diapA2)*diapR2),Math.round(ven.y+Math.sin(diapA2)*diapR2),diapPh2<0.2?'#ffddaa':(diapPh2<0.4?'#eebb77':'#ccaa66'));}
+                var vrbcPh2=(tVen*2.8+vni*0.6)%1.0,vrbcA2=Math.atan2(ven.ey-ven.y,ven.ex-ven.x),vrbcD2=0.3+vrbcPh2*0.9;
+                set(Math.round(ven.x+Math.cos(vrbcA2)*vrbcD2),Math.round(ven.y+Math.sin(vrbcA2)*vrbcD2),vrbcPh2<0.5?'#993344':'#882233');
             }
 
             var tMeiss = (now % 29000) / 29000;
@@ -2079,48 +2023,19 @@
                 }
             }
             var tFlum = (now % 31000) / 31000;
-            var cox2Sites = [
-                {x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9},
-            ];
+            var cox2Sites = [{x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9}];
             for (var ci3 = 0; ci3 < cox2Sites.length; ci3++) {
-                var cox = cox2Sites[ci3];
-                var coxPh = tFlum * 2 * Math.PI + cox.aa;
-                var coxP = Math.sin(coxPh);
-                var flumAngle = tFlum * 2 * Math.PI * 1.3 + ci3 * 1.57;
-                var flumR = 1.5 + Math.sin(coxPh * 0.7) * 0.5;
-                var flumX = Math.round(cox.x + Math.cos(flumAngle) * flumR);
-                var flumY = Math.round(cox.y + Math.sin(flumAngle) * flumR);
-                if (inB(flumX, flumY)) set(flumX, flumY, Math.sin(coxPh * 2.1 + ci3) > 0 ? '#33cccc' : '#229999');
+                var cox = cox2Sites[ci3], coxPh = tFlum * 2 * Math.PI + cox.aa, coxP = Math.sin(coxPh);
+                var flumAngle = tFlum * 2 * Math.PI * 1.3 + ci3 * 1.57, flumR = 1.5 + Math.sin(coxPh * 0.7) * 0.5;
                 var flumBound = Math.sin(coxPh * 1.5 + ci3 * 0.8) > 0.3;
-                if (inB(cox.x, cox.y)) set(cox.x, cox.y, flumBound ? '#667788' : '#cc6644');
-                if (!flumBound && coxP > -0.2) {
-                    var aaA = coxPh * 0.4 + ci3 * 2.1;
-                    var aaX = Math.round(cox.x + Math.cos(aaA) * 1.0);
-                    var aaY = Math.round(cox.y + Math.sin(aaA) * 1.0);
-                    if (inB(aaX, aaY)) set(aaX, aaY, '#eecc44');
-                }
-                if (!flumBound && coxP > 0.2) {
-                    var pgA = Math.atan2(cox.y - 16, cox.x - 16);
-                    var pgR = 1.2 + coxP * 0.6;
-                    var pgX = Math.round(cox.x + Math.cos(pgA) * pgR);
-                    var pgY = Math.round(cox.y + Math.sin(pgA) * pgR);
-                    if (inB(pgX, pgY)) set(pgX, pgY, coxP > 0.5 ? '#ff8866' : '#dd7755');
-                    if (coxP > 0.6) {
-                        var vdR = pgR + 1.0;
-                        var vdX = Math.round(cox.x + Math.cos(pgA) * vdR);
-                        var vdY = Math.round(cox.y + Math.sin(pgA) * vdR);
-                        if (inB(vdX, vdY)) set(vdX, vdY, '#ffaa88');
-                    }
-                }
-                if (flumBound) {
-                    for (var ihi = 0; ihi < 4; ihi++) {
-                        var ihA = ihi * 1.57 + coxPh * 0.2;
-                        var ihX = Math.round(cox.x + Math.cos(ihA) * 0.9);
-                        var ihY = Math.round(cox.y + Math.sin(ihA) * 0.9);
-                        if (inB(ihX, ihY) && Math.sin(coxPh * 3.0 + ihi * 1.5) > 0.1)
-                            set(ihX, ihY, '#88aaaa');
-                    }
-                }
+                set(Math.round(cox.x+Math.cos(flumAngle)*flumR),Math.round(cox.y+Math.sin(flumAngle)*flumR),Math.sin(coxPh*2.1+ci3)>0?'#33cccc':'#229999');
+                if(inB(cox.x,cox.y))set(cox.x,cox.y,flumBound?'#667788':'#cc6644');
+                if(!flumBound&&coxP>-0.2){var aaA2=coxPh*0.4+ci3*2.1;set(Math.round(cox.x+Math.cos(aaA2)),Math.round(cox.y+Math.sin(aaA2)),'#eecc44');}
+                if(!flumBound&&coxP>0.2){var pgA2=Math.atan2(cox.y-16,cox.x-16),pgR2=1.2+coxP*0.6;
+                set(Math.round(cox.x+Math.cos(pgA2)*pgR2),Math.round(cox.y+Math.sin(pgA2)*pgR2),coxP>0.5?'#ff8866':'#dd7755');
+                if(coxP>0.6){var vdR2=pgR2+1.0;set(Math.round(cox.x+Math.cos(pgA2)*vdR2),Math.round(cox.y+Math.sin(pgA2)*vdR2),'#ffaa88');}}
+                if(flumBound){for(var ihi=0;ihi<4;ihi++){var ihA2=ihi*1.57+coxPh*0.2,ihX2=Math.round(cox.x+Math.cos(ihA2)*0.9),ihY2=Math.round(cox.y+Math.sin(ihA2)*0.9);
+                if(inB(ihX2,ihY2)&&Math.sin(coxPh*3.0+ihi*1.5)>0.1)set(ihX2,ihY2,'#88aaaa');}}
             }
             var tNotch = (now % 22000) / 22000;
             var progenitors = [
@@ -2223,6 +2138,32 @@
                     var bmpLX = Math.round(bs.x + Math.cos(bmpLat) * 1.0);
                     var bmpLY = Math.round(bs.y + Math.sin(bmpLat) * 1.0);
                     if (inB(bmpLX, bmpLY)) set(bmpLX, bmpLY, bmpP > 0.7 ? '#ffaacc' : '#ee8899');
+                }
+            }
+            var tNotch = (now % 31000) / 31000;
+            var notchPairs = [[0,1],[1,2],[2,3],[0,2],[1,3]];
+            for (var ni = 0; ni < notchPairs.length; ni++) {
+                var nFrom = granddaughterNuclei[notchPairs[ni][0]], nTo = granddaughterNuclei[notchPairs[ni][1]];
+                var nPh = tNotch * 2 * Math.PI + ni * 1.26;
+                var nP = Math.sin(nPh);
+                var deltaA = Math.atan2(nTo.y - nFrom.y, nTo.x - nFrom.x);
+                var deltaX = Math.round(nFrom.x + Math.cos(deltaA) * (nFrom.bodyRadius + 0.3));
+                var deltaY = Math.round(nFrom.y + Math.sin(deltaA) * (nFrom.bodyRadius + 0.3));
+                if (inB(deltaX, deltaY)) set(deltaX, deltaY, nP > 0 ? '#ee44aa' : '#bb2288');
+                var notchX = Math.round(nTo.x + Math.cos(deltaA + Math.PI) * (nTo.bodyRadius + 0.3));
+                var notchY = Math.round(nTo.y + Math.sin(deltaA + Math.PI) * (nTo.bodyRadius + 0.3));
+                if (inB(notchX, notchY)) set(notchX, notchY, nP > 0.2 ? '#44aaee' : '#2288bb');
+                var nicdPh = (tNotch * 2.5 + ni * 0.35) % 1.0;
+                if (nicdPh < 0.6 && nP > -0.2) {
+                    var nicdR = nTo.bodyRadius * (1.0 - nicdPh * 1.4);
+                    var nicdA = deltaA + Math.PI + Math.sin(nPh * 0.7) * 0.3;
+                    var nicdX = Math.round(nTo.x + Math.cos(nicdA) * nicdR);
+                    var nicdY = Math.round(nTo.y + Math.sin(nicdA) * nicdR);
+                    if (inB(nicdX, nicdY)) set(nicdX, nicdY, nicdPh < 0.25 ? '#77ccff' : '#55aadd');
+                }
+                if (nP > 0.5) {
+                    var clvX = Math.round((deltaX + notchX) / 2), clvY = Math.round((deltaY + notchY) / 2);
+                    if (inB(clvX, clvY)) set(clvX, clvY, nP > 0.7 ? '#ffddee' : '#eeccdd');
                 }
             }
             return px;
