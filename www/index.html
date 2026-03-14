@@ -83,8 +83,7 @@
             '8,14': '#eebb66',
         };
 
-        // Telophase: chromatids have reached the poles, decondensing
-        // Group A clustered near centrosome1 (upper-right), Group B near centrosome2 (lower-left)
+        // Cytokinesis: chromatids fully decondensed into chromatin within daughter nuclei
         var chromatidsA = [
             { x: 15, y: 9 },
             { x: 16, y: 9 },
@@ -97,12 +96,14 @@
             { x: 9, y: 16 },
             { x: 10, y: 15 },
         ];
-        var chromatinColor = '#993311';
-        var chromatinDecondensing = '#aa5533';
-        // Telophase: nuclear envelopes reforming around each chromosome group
-        var newNucleusRadius = 1.5;
+        var chromatinColor = '#aa5533';
+        var chromatinDecondensing = '#bb6644';
+        // Daughter nuclei fully reformed with complete envelopes
+        var newNucleusRadius = 2.2;
         var newNucleusColor = '#d4740e';
         var newNucleusEdge = '#ffbb44';
+        // Nucleoli re-forming inside each daughter nucleus
+        var nucleolusColor = '#ff9933';
 
         // Mitochondria with cristae: larger organelles with internal folds
         // Each has a center position (computed from orbit), and cristae drawn inside
@@ -131,11 +132,11 @@
             { angle: 5.0, color: '#cc9933', signalColor: '#eebb55' },
         ];
 
-        // Telophase: centrosomes at maximal separation, cleavage furrow forming
-        var centrosome1 = { x: 17, y: 7 };  // upper-right pole (furthest)
-        var centrosome2 = { x: 8, y: 17 };  // lower-left pole (furthest)
-        // Cleavage furrow: membrane pinches inward at the equator
-        var cleavageFurrowDepth = 1.2; // pixels of inward pinch
+        // Cytokinesis: centrosomes at poles, cleavage furrow nearly complete
+        var centrosome1 = { x: 17, y: 7 };  // upper-right pole
+        var centrosome2 = { x: 8, y: 17 };  // lower-left pole
+        // Cleavage furrow: membrane deeply constricted, nearly severing the cell
+        var cleavageFurrowDepth = 3.2; // deep pinch, cell almost divided
         var centrosomeColor = '#ffcc33';
         // Aster microtubules radiate from each centrosome
         var aster1Tubules = [
@@ -208,9 +209,8 @@
             var t = (Date.now() % 8000) / 8000;
             var breath = Math.sin(t * 2 * Math.PI);
             var maxRadius = 6.5 + breath * 0.4;
-            // Telophase elongation: cell maximally stretched before cytokinesis
-            // Pole axis runs from centrosome1 (17,7) to centrosome2 (8,17): roughly diagonal
-            var elongation = 1.2; // pixels of extra stretch along pole axis
+            // Cytokinesis elongation: cell fully stretched, furrow cutting through
+            var elongation = 1.8; // maximal stretch along pole axis
 
             // Nucleus pulse: faster counter-rhythm (5-second cycle)
             var t2 = (Date.now() % 5000) / 5000;
@@ -315,17 +315,18 @@
                 chromatinPixels[csA.x + ',' + csA.y] = condensation > 0 ? chromatinDecondensing : chromatinColor;
                 chromatinPixels[csB.x + ',' + csB.y] = condensation > 0 ? chromatinColor : chromatinDecondensing;
             }
-            // Reforming nuclear envelopes: glowing rings around each chromatid cluster
+            // Daughter nuclear envelopes: fully formed, pulsing gently
             var tEnvelope = (Date.now() % 6000) / 6000 * 2 * Math.PI;
             var envelopePixels = {};
-            // Center of each chromatid group
+            var nucleolusPixels = {};
+            // Center of each daughter nucleus
             var nucleusCenterA = { x: 15.5, y: 8.5 };
             var nucleusCenterB = { x: 9.5, y: 15.5 };
-            var envPulse = Math.sin(tEnvelope) * 0.2;
+            var envPulse = Math.sin(tEnvelope) * 0.15;
             var envRadius = newNucleusRadius + envPulse;
-            // Draw envelope pixels around each new nucleus
-            for (var ea = 0; ea < 16; ea++) {
-                var eAngle = ea * 2 * Math.PI / 16;
+            // Draw envelope pixels around each daughter nucleus
+            for (var ea = 0; ea < 24; ea++) {
+                var eAngle = ea * 2 * Math.PI / 24;
                 var eax = Math.round(nucleusCenterA.x + Math.cos(eAngle) * envRadius);
                 var eay = Math.round(nucleusCenterA.y + Math.sin(eAngle) * envRadius);
                 if (eax >= 0 && eax < size && eay >= 0 && eay < size) {
@@ -337,6 +338,9 @@
                     envelopePixels[ebx + ',' + eby] = newNucleusEdge;
                 }
             }
+            // Nucleoli re-forming: bright spot at center of each daughter nucleus
+            nucleolusPixels[Math.round(nucleusCenterA.x) + ',' + Math.round(nucleusCenterA.y)] = nucleolusColor;
+            nucleolusPixels[Math.round(nucleusCenterB.x) + ',' + Math.round(nucleusCenterB.y)] = nucleolusColor;
 
             // Compute ribosome visibility (ribosomes pulse gently, 7-second cycle)
             var tRibo = (Date.now() % 7000) / 7000 * 2 * Math.PI;
@@ -381,20 +385,22 @@
                     }
                 }
             }
-            // Central spindle remnant: only middle portion still visible, fading
-            var spindleSteps = 10;
-            var spindlePulse = Math.sin(tMT * 1.5);
-            var spCol = spindlePulse > 0 ? spindleColor : mtColor1;
-            for (var spi = 3; spi < spindleSteps - 2; spi++) {
-                var frac = spi / spindleSteps;
+            // Midbody: dense remnant at the center of the constriction, the last bridge
+            var midbodyX = Math.round((centrosome1.x + centrosome2.x) / 2);
+            var midbodyY = Math.round((centrosome1.y + centrosome2.y) / 2);
+            var midbodyPulse = Math.sin(tMT * 2);
+            var midbodyColor = midbodyPulse > 0 ? '#ddcc44' : '#ccbb33';
+            mtPixels[midbodyX + ',' + midbodyY] = midbodyColor;
+            // Short remnant fibers connecting midbody to each half
+            for (var spi = 4; spi < 7; spi++) {
+                var frac = spi / 10;
                 var spx = Math.round(centrosome1.x + (centrosome2.x - centrosome1.x) * frac);
                 var spy = Math.round(centrosome1.y + (centrosome2.y - centrosome1.y) * frac);
                 if (spx >= 0 && spx < size && spy >= 0 && spy < size) {
-                    mtPixels[spx + ',' + spy] = spCol;
+                    mtPixels[spx + ',' + spy] = mtColor1;
                 }
             }
-            // Telophase: spindle fibers disassembling, no more kinetochore fibers
-            // Central spindle remnant still visible but fading
+            // Cytokinesis: most spindle disassembled, only midbody bridge remains
 
             // mRNA transcripts: emerge from nucleus and travel to ribosomes on rough ER
         // Each transcript has a target ribosome and travels along a path
@@ -653,8 +659,11 @@
                         }
 
                         if (!isSpecial) {
-                            // Check reforming nuclear envelopes
-                            if (envelopePixels[x + ',' + y]) {
+                            // Check nucleoli in daughter nuclei
+                            if (nucleolusPixels[x + ',' + y]) {
+                                color = nucleolusPixels[x + ',' + y];
+                                isSpecial = true;
+                            } else if (envelopePixels[x + ',' + y]) {
                                 color = envelopePixels[x + ',' + y];
                                 isSpecial = true;
                             } else if (chromatinPixels[x + ',' + y]) {
