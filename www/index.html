@@ -270,6 +270,13 @@
             gn.peroxAngle = gn.cajalAngle + 3.0;
             gn.peroxDist = gn.bodyRadius * 0.50;
             gn.peroxSpeed = (gbi % 2 === 0 ? 0.4 : -0.35);
+            // Lysosome: acidic digestive organelle, degrades endocytosed material
+            gn.lysoAngle = gn.cajalAngle + 4.8;
+            gn.lysoDist = gn.bodyRadius * 0.48;
+            gn.lysoSpeed = (gbi % 2 === 0 ? -0.3 : 0.35);
+            // Centrosome: single centriole pair establishing MTOC for cytoskeletal organization
+            gn.centrosomeAngle = gn.cajalAngle + 5.5;
+            gn.centrosomeDist = 1.0 + gn.nucleolusSize * 0.3;
         }
 
         // Calcium waves: tissue-level signaling between granddaughter nuclei
@@ -2419,6 +2426,45 @@
                                         var pxPulse = Math.sin(tPeroxGD * 1.5 + gni * 2.0);
                                         color = pxPulse > 0 ? '#77bb88' : '#55aa77';
                                         drawn = true;
+                                    }
+                                }
+                                // Lysosome: acidic vesicle orbiting in cytoplasm, purple glow
+                                if (!drawn) {
+                                    var tLysoGD = (Date.now() % 13000) / 13000 * 2 * Math.PI;
+                                    var lyAngle = gn.lysoAngle + gn.lysoSpeed * tLysoGD;
+                                    var lyX = Math.round(gn.x + Math.cos(lyAngle) * gn.lysoDist);
+                                    var lyY = Math.round(gn.y + Math.sin(lyAngle) * gn.lysoDist);
+                                    if (x === lyX && y === lyY) {
+                                        var lyPulse = Math.sin(tLysoGD * 1.3 + gni * 1.8);
+                                        color = lyPulse > 0 ? '#9966bb' : '#8855aa';
+                                        drawn = true;
+                                    }
+                                }
+                                // Centrosome: single centriole pair near nucleus, bright yellow dot
+                                // Establishes MTOC — 2 short microtubule rays radiate outward
+                                if (!drawn) {
+                                    var centX = Math.round(gn.x + Math.cos(gn.centrosomeAngle) * gn.centrosomeDist);
+                                    var centY = Math.round(gn.y + Math.sin(gn.centrosomeAngle) * gn.centrosomeDist);
+                                    if (x === centX && y === centY) {
+                                        var tCentGD = (Date.now() % 9000) / 9000;
+                                        var centPulse = Math.sin(tCentGD * 2 * Math.PI * 1.5 + gni * 2.2);
+                                        color = centPulse > 0 ? '#eedd55' : '#ddcc44';
+                                        drawn = true;
+                                    }
+                                    // Two short microtubule rays from centrosome
+                                    if (!drawn) {
+                                        for (var mtri = 0; mtri < 2 && !drawn; mtri++) {
+                                            var mtrAngle = gn.centrosomeAngle + (mtri === 0 ? 0.8 : -0.8);
+                                            var mtrX = Math.round(centX + Math.cos(mtrAngle) * 1.0);
+                                            var mtrY = Math.round(centY + Math.sin(mtrAngle) * 1.0);
+                                            if (x === mtrX && y === mtrY) {
+                                                var mtrDist = Math.sqrt((mtrX - gn.x) * (mtrX - gn.x) + (mtrY - gn.y) * (mtrY - gn.y));
+                                                if (mtrDist < effBodyR - 0.3) {
+                                                    color = '#556677';
+                                                    drawn = true;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 // Cytoplasm fill within body
