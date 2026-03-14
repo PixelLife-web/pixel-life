@@ -32,8 +32,6 @@
         var nucleusColors = ['#ffbb44', '#d4740e', '#ff9933'];
         // Organelle definitions: each orbits the nucleus at a fixed radius and speed
         var organelles = [
-            { radius: 3.8, baseAngle: 0,          speed: 1, color: '#44aa66' },  // mitochondrion
-            { radius: 4.2, baseAngle: Math.PI*0.7, speed: -0.7, color: '#44aa66' },  // mitochondrion
             { radius: 3.4, baseAngle: Math.PI*1.4, speed: 0.5, color: '#8866cc' },  // ribosome cluster
             { radius: 4.5, baseAngle: Math.PI*1.1, speed: 0.3, color: '#cc8844' },  // lysosome
         ];
@@ -96,6 +94,24 @@
         ];
         var chromatinColor = '#aa5500';
         var chromatinCondensed = '#883300';
+
+        // Mitochondria with cristae: larger organelles with internal folds
+        // Each has a center position (computed from orbit), and cristae drawn inside
+        var mitochondria = [
+            { radius: 3.8, baseAngle: 0, speed: 1, bodyColor: '#44aa66', cristaeColor: '#2d7a48', innerColor: '#55cc77' },
+            { radius: 4.2, baseAngle: Math.PI*0.7, speed: -0.7, bodyColor: '#44aa66', cristaeColor: '#2d7a48', innerColor: '#55cc77' },
+        ];
+
+        // ATP particles: energy dots that pulse outward from mitochondria
+        // Each ATP has a fixed angular offset from its source mitochondrion
+        var atpParticles = [
+            { mitoIdx: 0, angleOffset: 0.5, distOffset: 1.5 },
+            { mitoIdx: 0, angleOffset: -0.8, distOffset: 2.0 },
+            { mitoIdx: 1, angleOffset: 0.3, distOffset: 1.8 },
+            { mitoIdx: 1, angleOffset: -0.6, distOffset: 1.5 },
+            { mitoIdx: 0, angleOffset: 1.2, distOffset: 2.5 },
+            { mitoIdx: 1, angleOffset: 1.0, distOffset: 2.2 },
+        ];
 
         // Ribosomes: small dots along the ER channels (rough ER)
         var ribosomePositions = [];
@@ -163,6 +179,51 @@
                 var ox = Math.round(center + Math.cos(angle) * o.radius);
                 var oy = Math.round(center + Math.sin(angle) * o.radius);
                 organellePixels.push({ x: ox, y: oy, color: o.color });
+            }
+
+            // Compute mitochondria positions and their cristae pixels
+            var mitoPixels = {}; // key: 'x,y' -> color
+            var mitoCenters = [];
+            for (var mi = 0; mi < mitochondria.length; mi++) {
+                var m = mitochondria[mi];
+                var mAngle = m.baseAngle + m.speed * tOrbit;
+                var mcx = center + Math.cos(mAngle) * m.radius;
+                var mcy = center + Math.sin(mAngle) * m.radius;
+                mitoCenters.push({ x: mcx, y: mcy, angle: mAngle });
+                // Draw a 3-pixel body: center + two neighbors along orbit tangent
+                var tangent = mAngle + Math.PI / 2;
+                var pts = [
+                    { x: Math.round(mcx), y: Math.round(mcy) },
+                    { x: Math.round(mcx + Math.cos(tangent) * 0.8), y: Math.round(mcy + Math.sin(tangent) * 0.8) },
+                    { x: Math.round(mcx - Math.cos(tangent) * 0.8), y: Math.round(mcy - Math.sin(tangent) * 0.8) },
+                ];
+                // Center pixel gets cristae color (the internal fold), ends get body color
+                mitoPixels[pts[0].x + ',' + pts[0].y] = m.cristaeColor;
+                mitoPixels[pts[1].x + ',' + pts[1].y] = m.bodyColor;
+                mitoPixels[pts[2].x + ',' + pts[2].y] = m.bodyColor;
+            }
+
+            // Compute ATP particle positions (pulse outward, 3-second cycle)
+            var tATP = (Date.now() % 3000) / 3000;
+            var atpPixels = {};
+            for (var ai = 0; ai < atpParticles.length; ai++) {
+                var ap = atpParticles[ai];
+                var mc = mitoCenters[ap.mitoIdx];
+                // ATP pulses outward from mitochondrion, fading at distance
+                var atpDist = ap.distOffset + tATP * 2.0;
+                // Wrap around: disappear after traveling ~4 pixels
+                if (atpDist > 4.0) atpDist = atpDist % 4.0;
+                var atpAngle = mc.angle + ap.angleOffset;
+                var atpX = Math.round(mc.x + Math.cos(atpAngle) * atpDist);
+                var atpY = Math.round(mc.y + Math.sin(atpAngle) * atpDist);
+                if (atpX >= 0 && atpX < size && atpY >= 0 && atpY < size) {
+                    // Only draw ATP inside the cell
+                    var atpCellDist = Math.sqrt((atpX - center) * (atpX - center) + (atpY - center) * (atpY - center));
+                    if (atpCellDist < maxRadius - 1.5) {
+                        // Brighter when closer to source
+                        atpPixels[atpX + ',' + atpY] = atpDist < 2.0 ? '#eeff44' : '#ccdd55';
+                    }
+                }
             }
 
             // Compute vesicle positions along ER paths (6-second transit cycle)
@@ -252,6 +313,18 @@
                                 isSpecial = true;
                                 break;
                             }
+                        }
+
+                        // Check mitochondria (with cristae)
+                        if (!isSpecial && mitoPixels[x + ',' + y]) {
+                            color = mitoPixels[x + ',' + y];
+                            isSpecial = true;
+                        }
+
+                        // Check ATP energy particles
+                        if (!isSpecial && atpPixels[x + ',' + y]) {
+                            color = atpPixels[x + ',' + y];
+                            isSpecial = true;
                         }
 
                         // Check if this pixel is an organelle
