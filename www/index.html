@@ -308,6 +308,13 @@
                 { angle: gn.lysoAngle + 2.0, dist: gn.bodyRadius * 0.50, speed: (gbi % 2 === 0 ? 0.20 : -0.18), phase: gbi * 0.5, color: '#668844', matureColor: '#887744' },
                 { angle: gn.lysoAngle + 4.5, dist: gn.bodyRadius * 0.38, speed: (gbi % 2 === 0 ? -0.16 : 0.22), phase: gbi * 0.5 + 0.5, color: '#557733', matureColor: '#776633' },
             ];
+            // Proteasome: 26S barrel-shaped complex for ubiquitin-dependent protein degradation
+            // Complements autophagy — short-lived regulatory proteins (cyclins, p53, IκB) are tagged
+            // with polyubiquitin chains and fed into the proteasome's catalytic core
+            gn.proteasomes = [
+                { angle: gn.cajalAngle + 1.8, dist: gn.bodyRadius * 0.52, speed: (gbi % 2 === 0 ? 0.30 : -0.27), phase: gbi * 0.6, color: '#6688aa', activeColor: '#88bbdd' },
+                { angle: gn.cajalAngle + 4.2, dist: gn.bodyRadius * 0.44, speed: (gbi % 2 === 0 ? -0.25 : 0.32), phase: gbi * 0.6 + 0.5, color: '#557799', activeColor: '#77aacc' },
+            ];
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -2250,6 +2257,26 @@
                                                 color = aphPulse > 0 ? aph.matureColor : aph.color;
                                             }
                                             drawn = true;
+                                        }
+                                    }
+                                }
+                                // Proteasome: 26S complex orbits in cytoplasm, flashes when degrading substrates
+                                // Ubiquitinated proteins glow briefly as they're unfolded and threaded into the barrel
+                                if (!drawn && gn.proteasomes) {
+                                    var tProteaGD = (Date.now() % 11000) / 11000 * 2 * Math.PI;
+                                    for (var prti = 0; prti < gn.proteasomes.length && !drawn; prti++) {
+                                        var prt = gn.proteasomes[prti];
+                                        var prtAngle = prt.angle + prt.speed * tProteaGD;
+                                        var prtX = Math.round(gn.x + Math.cos(prtAngle) * prt.dist);
+                                        var prtY = Math.round(gn.y + Math.sin(prtAngle) * prt.dist);
+                                        if (x === prtX && y === prtY) {
+                                            var prtDist = Math.sqrt((prtX - gn.x) * (prtX - gn.x) + (prtY - gn.y) * (prtY - gn.y));
+                                            if (prtDist < effBodyR - 0.3) {
+                                                // Pulse: active degradation flashes — substrate being unfolded
+                                                var prtPulse = Math.sin(tProteaGD * 1.8 + gni * 2.4 + prti * 3.2);
+                                                color = prtPulse > 0.3 ? prt.activeColor : prt.color;
+                                                drawn = true;
+                                            }
                                         }
                                     }
                                 }
