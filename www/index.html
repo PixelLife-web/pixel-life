@@ -481,18 +481,20 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // LATE ANAPHASE: sisters near poles, midzone assembles, anaphase B elongates spindle
+        // TELOPHASE ONSET: envelopes reform, chromosomes decondense, furrow initiates
         cellA.prophase = {
-            condensation: 0.8, laminPhospho: 0.8, npcDisassembly: 0.9,
-            envelopeVesicles: true, asterCount: 14, spindleForming: true,
+            condensation: 0.6, laminPhospho: 0.5, npcDisassembly: 0.6,
+            envelopeVesicles: true, asterCount: 12, spindleForming: true,
             prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
+            telophase: true, furrowInitiation: 0.2,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
             pole1Target: { x: 18, y: 6 }, pole2Target: { x: 24, y: 12 },
         };
         cellB.prophase = {
-            condensation: 0.8, laminPhospho: 0.8, npcDisassembly: 0.9,
-            envelopeVesicles: true, asterCount: 14, spindleForming: true,
+            condensation: 0.6, laminPhospho: 0.5, npcDisassembly: 0.6,
+            envelopeVesicles: true, asterCount: 12, spindleForming: true,
             prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
+            telophase: true, furrowInitiation: 0.2,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
             pole1Target: { x: 8, y: 20 }, pole2Target: { x: 14, y: 26 },
         };
@@ -511,16 +513,12 @@
             { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
         ];
 
-        // Cyclin B-CDK1: APC/C-Cdc20 degrading cyclin B — CDK1 activity declining
+        // Cyclin B-CDK1: mostly degraded by APC/C — CDK1 activity near zero at telophase
         cellA.cyclinB = [
-            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#33bb88', nuclear: false },
-            { orbitR: 2.2, baseAngle: 1.8, speed: 0.55, color: '#44cc99', nuclear: false },
-            { orbitR: 0.7, baseAngle: 2.5, speed: -0.6, color: '#55ddaa', nuclear: true },
+            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#228866', nuclear: false },
         ];
         cellB.cyclinB = [
-            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#33bb88', nuclear: false },
-            { orbitR: 2.2, baseAngle: 4.5, speed: -0.52, color: '#44cc99', nuclear: false },
-            { orbitR: 0.7, baseAngle: 5.6, speed: 0.58, color: '#55ddaa', nuclear: true },
+            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#228866', nuclear: false },
         ];
 
         // PLK1: master G2/M regulator
@@ -545,7 +543,7 @@
 
         // Wee1: fully degraded (consolidated)
 
-        // ANAPHASE: APC/C active, cohesin cleaved, sisters separating toward poles
+        // TELOPHASE: envelopes reform, chromosomes decondense, furrow initiates, CDK1 collapses
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
