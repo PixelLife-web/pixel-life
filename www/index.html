@@ -199,6 +199,43 @@
             });
         }
 
+        // Filopodia: thin actin-based protrusions reaching toward the other cell
+        // Each cell extends 3 filopodia through the ECM
+        cellA.filopodia = [];
+        cellB.filopodia = [];
+        for (var fpi = 0; fpi < 3; fpi++) {
+            // Cell A reaches toward cell B
+            var baseAngleA = Math.atan2(cellB.cy - cellA.cy, cellB.cx - cellA.cx);
+            var spreadA = (fpi - 1) * 0.35;
+            cellA.filopodia.push({
+                angle: baseAngleA + spreadA,
+                maxLength: 4 + fpi * 0.5,
+                phase: fpi * 0.8,
+                tipColor: '#aa7755',
+                stalkColor: '#997766',
+            });
+            // Cell B reaches toward cell A
+            var baseAngleB = Math.atan2(cellA.cy - cellB.cy, cellA.cx - cellB.cx);
+            var spreadB = (fpi - 1) * 0.35;
+            cellB.filopodia.push({
+                angle: baseAngleB + spreadB,
+                maxLength: 4 + fpi * 0.5,
+                phase: fpi * 0.8 + 1.5,
+                tipColor: '#aa7755',
+                stalkColor: '#997766',
+            });
+        }
+
+        // Lysosomes: small digestive organelles orbiting in the cytoplasm
+        cellA.lysosomes = [
+            { orbitR: 2.5, baseAngle: 1.0, speed: 1.2, color: '#8855aa' },
+            { orbitR: 3.2, baseAngle: 4.0, speed: -0.9, color: '#9966bb' },
+        ];
+        cellB.lysosomes = [
+            { orbitR: 2.5, baseAngle: 2.5, speed: -1.1, color: '#8855aa' },
+            { orbitR: 3.2, baseAngle: 5.5, speed: 0.8, color: '#9966bb' },
+        ];
+
         // G1 growth: cells slowly grow as they absorb nutrients
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -423,13 +460,46 @@
                 vesPixels[path[idx].x + ',' + path[idx].y] = vc;
             }
 
+            // Lysosomes orbiting in cytoplasm
+            var lysoPixels = {};
+            if (cell.lysosomes) {
+                for (var li = 0; li < cell.lysosomes.length; li++) {
+                    var lyso = cell.lysosomes[li];
+                    var lysoAngle = lyso.baseAngle + lyso.speed * tOrbit;
+                    var lx = Math.round(cell.cx + Math.cos(lysoAngle) * lyso.orbitR);
+                    var ly = Math.round(cell.cy + Math.sin(lysoAngle) * lyso.orbitR);
+                    lysoPixels[lx + ',' + ly] = lyso.color;
+                }
+            }
+
+            // Filopodia: extending/retracting protrusions from the membrane
+            var filoPixels = {};
+            if (cell.filopodia) {
+                var tFilo = (t * 8000 / 10000) % 1.0;
+                for (var fpi = 0; fpi < cell.filopodia.length; fpi++) {
+                    var fp = cell.filopodia[fpi];
+                    // Extend and retract cyclically
+                    var extendFrac = (Math.sin(tFilo * 2 * Math.PI + fp.phase) + 1) * 0.5; // 0 to 1
+                    var curLength = fp.maxLength * (0.3 + extendFrac * 0.7);
+                    for (var fl = 0; fl <= Math.ceil(curLength); fl++) {
+                        var fr = maxR + fl * 0.9;
+                        var fx = Math.round(cell.cx + Math.cos(fp.angle) * fr);
+                        var fy = Math.round(cell.cy + Math.sin(fp.angle) * fr);
+                        if (fx >= 0 && fx < size && fy >= 0 && fy < size) {
+                            filoPixels[fx + ',' + fy] = fl >= Math.ceil(curLength) - 1 ? fp.tipColor : fp.stalkColor;
+                        }
+                    }
+                }
+            }
+
             return {
                 maxR: maxR, nucR: nucR, elongation: elongation,
                 mitoPixels: mitoPixels, envPixels: envPixels,
                 nucPixels: nucPixels, chrPixels: chrPixels,
                 cilPixels: cilPixels, recPixels: recPixels,
                 vesPixels: vesPixels, atpPixels: atpPixels,
-                centPixels: centPixels, furrowPixels: furrowPixels
+                centPixels: centPixels, furrowPixels: furrowPixels,
+                lysoPixels: lysoPixels, filoPixels: filoPixels
             };
         }
 
@@ -582,6 +652,8 @@
                                 color = dd.vesPixels[key];
                             } else if (dd.atpPixels[key]) {
                                 color = dd.atpPixels[key];
+                            } else if (dd.lysoPixels && dd.lysoPixels[key]) {
+                                color = dd.lysoPixels[key];
                             } else if (dd.mitoPixels[key]) {
                                 color = dd.mitoPixels[key];
                             } else if (dd.nucPixels[key]) {
@@ -624,6 +696,13 @@
                         for (var ci = 0; ci < cells.length && !drawn; ci++) {
                             if (cells[ci].d.cilPixels[key]) {
                                 color = cells[ci].d.cilPixels[key];
+                                drawn = true;
+                            }
+                        }
+                        // Check filopodia for both cells
+                        for (var ci2 = 0; ci2 < cells.length && !drawn; ci2++) {
+                            if (cells[ci2].d.filoPixels && cells[ci2].d.filoPixels[key]) {
+                                color = cells[ci2].d.filoPixels[key];
                                 drawn = true;
                             }
                         }
