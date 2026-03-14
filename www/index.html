@@ -1855,6 +1855,31 @@
                     var tryR=1.8+Math.sin(ph*1.2)*0.5;
                     s(Math.round(it.x+Math.cos(tryA)*tryR),Math.round(it.y+Math.sin(tryA)*tryR),'#ddcc55');}
                 }},
+                // Enteric glial cells: GFAP+ stellate glia in lamina propria
+                // Support enteric neurons, maintain barrier via GSNO, purinergic P2Y signaling
+                {period:32000, phaseStep:2.09, items:[
+                    {x:24,y:16,color:'#77aadd',dimColor:'#557799'},{x:19,y:26,color:'#6699cc',dimColor:'#447788'},
+                    {x:13,y:20,color:'#77aadd',dimColor:'#557799'},{x:26,y:22,color:'#6699cc',dimColor:'#447788'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // GFAP+ stellate processes radiating from soma
+                    for(var pi=0;pi<5;pi++){var pA=pi*1.257+ph*0.15+idx*0.6;
+                    var pSway=Math.sin(ph*0.6+pi*1.9)*0.08;
+                    for(var pl=1;pl<=2;pl++){
+                        var pX=Math.round(it.x+Math.cos(pA+pSway)*pl),pY=Math.round(it.y+Math.sin(pA+pSway)*pl);
+                        if(inB(pX,pY))s(pX,pY,Math.sin(ph*1.3+pi*2.1+pl*1.0)>0?'#88bbee':'#6699bb');}}
+                    // GSNO release toward epithelium: barrier-protective S-nitrosoglutathione
+                    var gsnoA=Math.atan2(16-it.y,16-it.x);
+                    var gsnoPh=(t*2.2+idx*0.3)%1.0;
+                    if(gsnoPh<0.45){var gsnoR=1.5+gsnoPh*3.5;
+                    var gsnoX=Math.round(it.x+Math.cos(gsnoA)*gsnoR),gsnoY=Math.round(it.y+Math.sin(gsnoA)*gsnoR);
+                    if(inB(gsnoX,gsnoY))s(gsnoX,gsnoY,gsnoPh<0.2?'#99eedd':'#77ccbb');}
+                    // Purinergic P2Y signaling: ATP pulses toward nearby enteric neurons
+                    if(p>0.2){var p2yA=Math.atan2(it.y-16,it.x-16)+0.4;
+                    var p2yR=1.2+Math.sin(ph*1.5)*0.3;
+                    s(Math.round(it.x+Math.cos(p2yA)*p2yR),Math.round(it.y+Math.sin(p2yA)*p2yR),Math.sin(ph*2.7+idx*1.4)>0?'#ffcc55':'#ddbb44');
+                    if(p>0.5){var p2yR2=p2yR+1.0;
+                    s(Math.round(it.x+Math.cos(p2yA)*p2yR2),Math.round(it.y+Math.sin(p2yA)*p2yR2),'#eebb66');}}
+                }},
             ]);
             var tFlum = (now % 31000) / 31000;
             var cox2Sites = [
