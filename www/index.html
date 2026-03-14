@@ -19,16 +19,22 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The diamond reaches further; warmth stirs at its core
+        // The diamond softens; corners fill, edges blur toward a circle
         var size = 11;
         var center = 5;
-        var radius = 4;
-        var colors = ['#4a1a00', '#331100', '#555555', '#888888', '#bbbbbb'];
+
+        // Layered palette: warm core fading outward
+        var colors = ['#6b2a00', '#4a1a00', '#331100', '#444444', '#777777', '#aaaaaa', '#cccccc'];
 
         for (var y = 0; y < size; y++) {
             for (var x = 0; x < size; x++) {
-                var dist = Math.abs(x - center) + Math.abs(y - center);
-                if (dist <= radius) {
+                var dx = Math.abs(x - center);
+                var dy = Math.abs(y - center);
+                var manhattan = dx + dy;
+                var euclidean = Math.sqrt(dx * dx + dy * dy);
+                // Blend manhattan and euclidean: the diamond rounds its edges
+                var dist = Math.floor(manhattan * 0.4 + euclidean * 0.6 + 0.5);
+                if (dist <= 5) {
                     ctx.fillStyle = colors[dist];
                     ctx.fillRect(x, y, 1, 1);
                 }
