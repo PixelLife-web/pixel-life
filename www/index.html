@@ -301,6 +301,13 @@
                 { releaseAngle: gn.mvbAngle + 0.5, driftAngle: gbi * 1.57 + 0.3, speed: 0.18, phase: gbi * 0.4, color: '#cc88dd' },
                 { releaseAngle: gn.mvbAngle + 2.8, driftAngle: gbi * 1.57 + 2.5, speed: 0.15, phase: gbi * 0.4 + 0.5, color: '#bb77cc' },
             ];
+            // Autophagosome: double-membrane vesicle engulfing cytoplasmic material for lysosomal degradation
+            // Phagophore nucleates from ER-mitochondria contact site, seals, then fuses with lysosome
+            // Each granddaughter has 2 autophagosomes at different maturation stages
+            gn.autophagosomes = [
+                { angle: gn.lysoAngle + 2.0, dist: gn.bodyRadius * 0.50, speed: (gbi % 2 === 0 ? 0.20 : -0.18), phase: gbi * 0.5, color: '#668844', matureColor: '#887744' },
+                { angle: gn.lysoAngle + 4.5, dist: gn.bodyRadius * 0.38, speed: (gbi % 2 === 0 ? -0.16 : 0.22), phase: gbi * 0.5 + 0.5, color: '#557733', matureColor: '#776633' },
+            ];
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -2216,6 +2223,34 @@
                                         var mvbPulse = Math.sin(tMVB * 1.5 + gni * 2.3);
                                         color = mvbPulse > 0 ? '#9955bb' : '#7744aa';
                                         drawn = true;
+                                    }
+                                }
+                                // Autophagosome: double-membrane vesicle orbiting between ER and lysosome
+                                // Green-brown body pulses as it engulfs cargo, brightens near lysosome fusion
+                                if (!drawn && gn.autophagosomes) {
+                                    var tAutoGD = (Date.now() % 15000) / 15000 * 2 * Math.PI;
+                                    for (var api = 0; api < gn.autophagosomes.length && !drawn; api++) {
+                                        var aph = gn.autophagosomes[api];
+                                        var aphAngle = aph.angle + aph.speed * tAutoGD;
+                                        var aphX = Math.round(gn.x + Math.cos(aphAngle) * aph.dist);
+                                        var aphY = Math.round(gn.y + Math.sin(aphAngle) * aph.dist);
+                                        if (x === aphX && y === aphY) {
+                                            // Maturation pulse: brightens as autophagosome approaches lysosome orbit
+                                            var aphPulse = Math.sin(tAutoGD * 1.4 + gni * 2.1 + api * 3.0);
+                                            // Check proximity to lysosome for fusion flash
+                                            var tLysoCheck = (Date.now() % 13000) / 13000 * 2 * Math.PI;
+                                            var lyCheckAngle = gn.lysoAngle + gn.lysoSpeed * tLysoCheck;
+                                            var lyCheckX = gn.x + Math.cos(lyCheckAngle) * gn.lysoDist;
+                                            var lyCheckY = gn.y + Math.sin(lyCheckAngle) * gn.lysoDist;
+                                            var fusionDist = Math.sqrt((aphX - lyCheckX) * (aphX - lyCheckX) + (aphY - lyCheckY) * (aphY - lyCheckY));
+                                            if (fusionDist < 1.5) {
+                                                // Autophagolysosome fusion: bright amber flash
+                                                color = '#ddbb44';
+                                            } else {
+                                                color = aphPulse > 0 ? aph.matureColor : aph.color;
+                                            }
+                                            drawn = true;
+                                        }
                                     }
                                 }
                                 // Centrosome: single centriole pair near nucleus, bright yellow dot
