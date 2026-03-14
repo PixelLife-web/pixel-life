@@ -411,6 +411,22 @@
             { chrIdx: 7, speed: 0.33, phase: 0.85, color: '#55ddee' },
         ];
 
+        // Genome: "PETAR RAKOVI" encoded as nucleotide colors — the cell's genetic identity
+        // Each letter maps to a base color; the sequence is read during S phase replication
+        var genomeStr = 'PETARRAKOVI';
+        var baseColors = {
+            'P': '#ff4466', 'E': '#44ff88', 'T': '#4488ff', 'A': '#ffaa22',
+            'R': '#dd44ff', 'K': '#44dddd', 'O': '#ff8844', 'V': '#88ff44',
+            'I': '#ff44aa'
+        };
+        var genomeSequence = [];
+        for (var gi = 0; gi < genomeStr.length; gi++) {
+            genomeSequence.push({
+                letter: genomeStr[gi],
+                color: baseColors[genomeStr[gi]] || '#ffffff'
+            });
+        }
+
         // S phase growth: cells slowly grow as they absorb nutrients and replicate DNA
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -896,6 +912,27 @@
                 }
             }
 
+            // Genome readout: nucleotide bases flash in sequence as replication reads the code
+            var genomePixels = {};
+            if (cell.replicationForks && cell.separated) {
+                var tGenome = (t * 8000 / 3500) % 1.0;
+                // Current base being read — cycles through the genome
+                var readIdx = Math.floor(tGenome * genomeSequence.length) % genomeSequence.length;
+                // Show 3 consecutive bases at different radii around nucleus center
+                for (var gbi = 0; gbi < 3; gbi++) {
+                    var baseIdx = (readIdx + gbi) % genomeSequence.length;
+                    var base = genomeSequence[baseIdx];
+                    // Position bases in a small arc inside the nucleus
+                    var baseAngle = tGenome * 2 * Math.PI + gbi * 0.8;
+                    var baseR = 0.3 + gbi * 0.4;
+                    var bx = Math.round(cell.cx + Math.cos(baseAngle) * baseR);
+                    var by = Math.round(cell.cy + Math.sin(baseAngle) * baseR);
+                    if (bx >= 0 && bx < size && by >= 0 && by < size) {
+                        genomePixels[bx + ',' + by] = base.color;
+                    }
+                }
+            }
+
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
             if (cell.microtubules && cell.centrosomes && cell.separated) {
@@ -965,7 +1002,8 @@
                 serPixels: serPixels, actinPixels: actinPixels,
                 mtPixels: mtPixels, ifPixels: ifPixels,
                 porePixels: porePixels, secVesPixels: secVesPixels,
-                endoPixels: endoPixels, replPixels: replPixels
+                endoPixels: endoPixels, replPixels: replPixels,
+                genomePixels: genomePixels
             };
         }
 
@@ -1252,6 +1290,8 @@
                                 color = dd.envPixels[key];
                             } else if (dd.replPixels && dd.replPixels[key]) {
                                 color = dd.replPixels[key];
+                            } else if (dd.genomePixels && dd.genomePixels[key]) {
+                                color = dd.genomePixels[key];
                             } else if (dd.chrPixels[key]) {
                                 color = dd.chrPixels[key];
                             } else if (dd.recPixels[key]) {
