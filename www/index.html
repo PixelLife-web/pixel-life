@@ -2112,6 +2112,74 @@
                     }
                 }
             }
+            // Luminal chyme: partially digested food particles drifting through the gut lumen
+            // Peristalsis pushes chyme aborally (upper-left region = lumen interior)
+            // Macronutrient particles: carbohydrate (amber), protein (pink), lipid (yellow) fragments
+            // Commensal bacteria: rod-shaped microbiome residents anchored in the mucus gel layer
+            var tChyme = (now % 20000) / 20000;
+            var chymeParticles = [
+                {x:2, y:2, color:'#cc9955', dimColor:'#aa7744', size:1},   // carb fragment
+                {x:6, y:1, color:'#dd8877', dimColor:'#bb6655', size:1},   // protein fragment
+                {x:1, y:7, color:'#ddbb55', dimColor:'#bbaa44', size:1},   // lipid micelle
+                {x:4, y:5, color:'#cc9955', dimColor:'#aa7744', size:1},   // carb
+                {x:9, y:2, color:'#dd8877', dimColor:'#bb6655', size:1},   // protein
+                {x:3, y:10, color:'#ddbb55', dimColor:'#bbaa44', size:1},  // lipid
+                {x:7, y:8, color:'#cc9955', dimColor:'#aa7744', size:1},   // carb
+                {x:12, y:4, color:'#dd8877', dimColor:'#bb6655', size:1},  // protein
+                {x:1, y:14, color:'#ddbb55', dimColor:'#bbaa44', size:1},  // lipid
+                {x:10, y:11, color:'#cc9955', dimColor:'#aa7744', size:1}, // carb
+            ];
+            // Peristaltic drift: chyme particles shift position with gut contraction cycle
+            var chymeWave = (tChyme * 1.2) % 1.0;
+            for (var chi = 0; chi < chymeParticles.length; chi++) {
+                var ch = chymeParticles[chi];
+                // Peristaltic displacement: particles drift along lumen axis
+                var chDrift = Math.sin(tChyme * 2 * Math.PI + chi * 0.7) * 1.2;
+                var chLat = Math.cos(tChyme * 2 * Math.PI * 0.6 + chi * 1.3) * 0.6;
+                var chX = Math.round(ch.x + chDrift);
+                var chY = Math.round(ch.y + chLat);
+                // Brownian jitter: thermal fluctuation
+                var chJit = Math.sin(tChyme * 2 * Math.PI * 3.5 + chi * 2.1);
+                if (chJit > 0.5) chX += Math.round(Math.sin(tChyme * 2 * Math.PI * 7 + chi * 4.3) * 0.5);
+                // Only render in lumen region (upper-left quadrant, away from tissue)
+                if (chX >= 0 && chX < 15 && chY >= 0 && chY < 16 && inB(chX, chY)) {
+                    var chPulse = Math.sin(tChyme * 2 * Math.PI * 1.5 + chi * 1.1);
+                    set(chX, chY, chPulse > 0 ? ch.color : ch.dimColor);
+                }
+            }
+            // Commensal bacteria: rod-shaped microbiome residents in the mucus gel layer
+            // Lactobacillus, Bacteroides, E. coli — anchored near epithelium, metabolizing chyme
+            // Produce short-chain fatty acids (butyrate) that nourish colonocytes
+            var tBact = (now % 16000) / 16000;
+            var bacteria = [
+                {x:13, y:8, angle:0.3, len:1, color:'#77aa55', dimColor:'#558833'},   // Lactobacillus
+                {x:8, y:14, angle:1.8, len:1, color:'#5588aa', dimColor:'#336688'},   // Bacteroides
+                {x:15, y:12, angle:2.5, len:1, color:'#aa8855', dimColor:'#886633'},  // E. coli
+                {x:5, y:16, angle:4.1, len:1, color:'#77aa55', dimColor:'#558833'},   // Lactobacillus
+                {x:11, y:15, angle:5.2, len:1, color:'#5588aa', dimColor:'#336688'},  // Bacteroides
+            ];
+            for (var bai = 0; bai < bacteria.length; bai++) {
+                var bact = bacteria[bai];
+                // Gentle tumble: bacteria rotate slowly in the mucus layer
+                var baTumble = Math.sin(tBact * 2 * Math.PI * 0.4 + bai * 1.7) * 0.3;
+                var baAngle = bact.angle + baTumble;
+                var baDrift = Math.sin(tBact * 2 * Math.PI * 0.7 + bai * 2.3) * 0.5;
+                var baCx = Math.round(bact.x + baDrift);
+                var baCy = Math.round(bact.y + Math.cos(tBact * 2 * Math.PI * 0.5 + bai * 1.9) * 0.4);
+                // Rod body: 2 pixels along angle axis
+                var baPulse = Math.sin(tBact * 2 * Math.PI * 1.2 + bai * 0.9);
+                if (inB(baCx, baCy)) set(baCx, baCy, baPulse > 0 ? bact.color : bact.dimColor);
+                var baTipX = Math.round(baCx + Math.cos(baAngle) * bact.len);
+                var baTipY = Math.round(baCy + Math.sin(baAngle) * bact.len);
+                if (inB(baTipX, baTipY)) set(baTipX, baTipY, baPulse > -0.3 ? bact.color : bact.dimColor);
+                // Metabolite release: short-chain fatty acid (butyrate) pulses toward epithelium
+                if (baPulse > 0.5) {
+                    var scfaAngle = Math.atan2(16 - baCy, 16 - baCx); // toward tissue center
+                    var scfaX = Math.round(baCx + Math.cos(scfaAngle) * 1.2);
+                    var scfaY = Math.round(baCy + Math.sin(scfaAngle) * 1.2);
+                    if (inB(scfaX, scfaY)) set(scfaX, scfaY, '#bbdd77');
+                }
+            }
             return px;
         }
 
