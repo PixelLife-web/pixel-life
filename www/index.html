@@ -567,6 +567,44 @@
             }
         }
 
+        // NHE3 (SLC9A3) Na+/H+ exchanger on enterocyte apical membrane
+        // Exchanges luminal Na+ for intracellular H+, major Na+ absorber coupled to Na+/K+ ATPase
+        // DRA (SLC26A3) Cl-/HCO3- exchanger works in parallel — net effect: NaCl absorption
+        for (var nhei = 0; nhei < granddaughterNuclei.length; nhei++) {
+            var nhen = granddaughterNuclei[nhei];
+            if (nhen.cellType !== 'enterocyte') continue;
+            var nheBlCenter = { x: 16, y: 22 };
+            var nheApicalAngle = Math.atan2(nhen.y - nheBlCenter.y, nhen.x - nheBlCenter.x);
+            // NHE3 exchangers on apical face
+            nhen.nhe3 = [];
+            var nheCount = 2 + (nhei % 2);
+            for (var nhej = 0; nhej < nheCount; nhej++) {
+                var nheSpread = (nhej - (nheCount - 1) / 2) * 0.44;
+                nhen.nhe3.push({
+                    angle: nheApicalAngle + nheSpread - 0.20, // offset from other transporters
+                    phase: nhei * 0.7 + nhej * 1.5,
+                    exchangerColor: '#dd5577',   // NHE3 protein (salmon-red)
+                    naInColor: '#ffbb44',         // Na+ entering cell (gold)
+                    hOutColor: '#ff5555',          // H+ expelled to lumen (red)
+                    restColor: '#aa3355',          // resting exchanger
+                });
+            }
+            // DRA Cl-/HCO3- exchangers (paired with NHE3)
+            nhen.dra = [];
+            var draCount = 2;
+            for (var draj = 0; draj < draCount; draj++) {
+                var draSpread = (draj - (draCount - 1) / 2) * 0.46;
+                nhen.dra.push({
+                    angle: nheApicalAngle + draSpread + 0.22, // slightly offset from NHE3
+                    phase: nhei * 0.6 + draj * 1.8,
+                    exchangerColor: '#55aa77',   // DRA protein (green)
+                    clInColor: '#55ddaa',          // Cl- entering cell (teal)
+                    hco3OutColor: '#88ccee',        // HCO3- expelled to lumen (light blue)
+                    restColor: '#337755',          // resting exchanger
+                });
+            }
+        }
+
         // Aquaporin water channels: AQP1/AQP2 tetramers embedded in granddaughter membranes
         // Selective water transport across the sealed epithelium — osmotic homeostasis
         // Water molecules (small blue dots) transit through channels on both apical and basal faces
@@ -2123,6 +2161,66 @@
                         var clX = Math.round(cfG.x + Math.cos(cf.angle + clSpread) * clR);
                         var clY = Math.round(cfG.y + Math.sin(cf.angle + clSpread) * clR);
                         if (clCycle > 0.05 && clCycle < 0.45) set(clX, clY, cf.clColor);
+                    }
+                }
+            }
+            // NHE3 Na+/H+ exchange and DRA Cl-/HCO3- exchange on enterocytes
+            var tNHE = (now % 9500) / 9500;
+            for (var nhei2 = 0; nhei2 < granddaughterNuclei.length; nhei2++) {
+                var nheG = granddaughterNuclei[nhei2];
+                if (!nheG.nhe3) continue;
+                var nheBR = nheG.bodyRadius;
+                // NHE3: Na+ in, H+ out (apical)
+                for (var nhej2 = 0; nhej2 < nheG.nhe3.length; nhej2++) {
+                    var nhe = nheG.nhe3[nhej2];
+                    // Exchanger on apical membrane
+                    var nhePx2 = Math.round(nheG.x + Math.cos(nhe.angle) * nheBR);
+                    var nhePy2 = Math.round(nheG.y + Math.sin(nhe.angle) * nheBR);
+                    var nheCycle = (tNHE * 2.0 + nhe.phase * 0.3) % 1.0;
+                    var nheActive = Math.sin(tNHE * 2 * Math.PI * 2.8 + nhe.phase);
+                    set(nhePx2, nhePy2, nheActive > 0 ? nhe.exchangerColor : nhe.restColor);
+                    // Na+ entering from lumen (moves inward)
+                    if (nheCycle < 0.5) {
+                        var naInR = nheBR + 1.0 - nheCycle * 2.6;
+                        var naInX = Math.round(nheG.x + Math.cos(nhe.angle) * naInR);
+                        var naInY = Math.round(nheG.y + Math.sin(nhe.angle) * naInR);
+                        if (nheCycle > 0.05 && nheCycle < 0.45) set(naInX, naInY, nhe.naInColor);
+                    }
+                    // H+ expelled outward to lumen (counter-transported)
+                    var hOutPhase = (nheCycle + 0.5) % 1.0;
+                    if (hOutPhase < 0.5) {
+                        var hOutR = nheBR + 0.3 + hOutPhase * 2.0;
+                        var hOutSpread = 0.12;
+                        var hOutX = Math.round(nheG.x + Math.cos(nhe.angle + hOutSpread) * hOutR);
+                        var hOutY = Math.round(nheG.y + Math.sin(nhe.angle + hOutSpread) * hOutR);
+                        if (hOutPhase > 0.05 && hOutPhase < 0.42) set(hOutX, hOutY, nhe.hOutColor);
+                    }
+                }
+                // DRA: Cl- in, HCO3- out (apical, parallel to NHE3)
+                if (nheG.dra) {
+                    for (var draj2 = 0; draj2 < nheG.dra.length; draj2++) {
+                        var dra = nheG.dra[draj2];
+                        var draPx2 = Math.round(nheG.x + Math.cos(dra.angle) * nheBR);
+                        var draPy2 = Math.round(nheG.y + Math.sin(dra.angle) * nheBR);
+                        var draCycle = (tNHE * 1.8 + dra.phase * 0.3) % 1.0;
+                        var draActive = Math.sin(tNHE * 2 * Math.PI * 2.5 + dra.phase);
+                        set(draPx2, draPy2, draActive > 0 ? dra.exchangerColor : dra.restColor);
+                        // Cl- entering from lumen
+                        if (draCycle < 0.5) {
+                            var clInR = nheBR + 1.1 - draCycle * 2.8;
+                            var clInX = Math.round(nheG.x + Math.cos(dra.angle) * clInR);
+                            var clInY = Math.round(nheG.y + Math.sin(dra.angle) * clInR);
+                            if (draCycle > 0.05 && draCycle < 0.45) set(clInX, clInY, dra.clInColor);
+                        }
+                        // HCO3- expelled to lumen (counter-transported)
+                        var hco3Phase = (draCycle + 0.5) % 1.0;
+                        if (hco3Phase < 0.5) {
+                            var hco3R = nheBR + 0.3 + hco3Phase * 1.8;
+                            var hco3Spread = -0.14;
+                            var hco3X = Math.round(nheG.x + Math.cos(dra.angle + hco3Spread) * hco3R);
+                            var hco3Y = Math.round(nheG.y + Math.sin(dra.angle + hco3Spread) * hco3R);
+                            if (hco3Phase > 0.05 && hco3Phase < 0.42) set(hco3X, hco3Y, dra.hco3OutColor);
+                        }
                     }
                 }
             }
