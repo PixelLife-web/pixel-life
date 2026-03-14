@@ -51,7 +51,11 @@
             ],
             golgiPixels: { '18,11': '#cc9944', '18,12': '#cc9944', '17,11': '#ddaa55' },
             chromatin: [
-                { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
+                { x: 20, y: 9, rep: 0 }, { x: 21, y: 10, rep: 0 }, { x: 20, y: 11, rep: 0 }, { x: 19, y: 10, rep: 0 },
+            ],
+            // S phase: replicated chromatin appears adjacent to originals
+            replicatedChromatin: [
+                { x: 21, y: 9 }, { x: 21, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 9 },
             ],
             cilia: [],
             receptors: [
@@ -84,7 +88,11 @@
             ],
             golgiPixels: { '10,23': '#cc9944', '10,24': '#cc9944', '9,23': '#ddaa55' },
             chromatin: [
-                { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
+                { x: 12, y: 21, rep: 0 }, { x: 13, y: 22, rep: 0 }, { x: 12, y: 23, rep: 0 }, { x: 11, y: 22, rep: 0 },
+            ],
+            // S phase: replicated chromatin appears adjacent to originals
+            replicatedChromatin: [
+                { x: 13, y: 21 }, { x: 13, y: 23 }, { x: 11, y: 23 }, { x: 11, y: 21 },
             ],
             cilia: [],
             receptors: [
@@ -165,7 +173,10 @@
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            var nucR = cell.nucleusRadius + nucleusPulse * 0.2;
+            // S phase: nucleus swells slightly as DNA content doubles
+            var tSphaseNuc = (t * 8000 / 14000) % 1.0;
+            var nucSwell = tSphaseNuc * 0.3; // gradual swelling during replication
+            var nucR = cell.nucleusRadius + nucleusPulse * 0.2 + nucSwell;
 
             // Compute mitochondria
             var mitoPixels = {};
@@ -203,12 +214,32 @@
             // Nucleolus
             nucPixels[cell.nucleusCx + ',' + cell.nucleusCy] = cell.nucleolusColor;
 
-            // Chromatin inside nucleus
+            // Chromatin inside nucleus — S phase DNA replication
             var chrPixels = {};
+            // S phase progress: slow cycle determines which chromatin has replicated
+            var tSphase = (t * 8000 / 14000) % 1.0; // 14-second S phase cycle
             for (var chi = 0; chi < cell.chromatin.length; chi++) {
                 var ch = cell.chromatin[chi];
                 var cPulse = Math.sin(tChromatin + chi * 0.8);
-                chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#bb6644' : '#aa5533';
+                // Replication fork: chromatin flickers bright when being copied
+                var replicating = (tSphase > chi * 0.2 && tSphase < chi * 0.2 + 0.15);
+                if (replicating) {
+                    chrPixels[ch.x + ',' + ch.y] = '#ffee88'; // bright replication fork
+                } else {
+                    chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#bb6644' : '#aa5533';
+                }
+            }
+            // Replicated sister chromatids appear progressively
+            if (cell.replicatedChromatin) {
+                for (var rci = 0; rci < cell.replicatedChromatin.length; rci++) {
+                    // Each replicated chromatin appears after its original is copied
+                    var repThreshold = rci * 0.2 + 0.15;
+                    if (tSphase > repThreshold) {
+                        var rc = cell.replicatedChromatin[rci];
+                        var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
+                        chrPixels[rc.x + ',' + rc.y] = rcPulse > 0 ? '#cc7755' : '#bb6644';
+                    }
+                }
             }
 
             // Cilia
