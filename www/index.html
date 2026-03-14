@@ -172,8 +172,7 @@
             { x: 8, y: 27, color: '#556677', glowColor: '#667788' },
         ];
 
-        // Growth factors: autocrine/paracrine EGFR-like signaling in G1
-        // Each cell secretes GFs that activate MAPK/ERK cascade toward restriction point
+        // Growth factors: autocrine/paracrine signaling
         cellA.growthFactors = [
             { secretAngle: 0.8, targetAngle: 2.5, speed: 0.3, phase: 0, color: '#55ff99' },
             { secretAngle: 4.2, targetAngle: 0.3, speed: 0.25, phase: 0.5, color: '#55ff99' },
@@ -194,8 +193,7 @@
             { fromCell: 'B', toCell: 'A', color: '#66aaff', speed: 0.0003, phase: 0.55 },
         ];
 
-        // Extracellular matrix (ECM): fibrous proteins secreted by both cells
-        // forming connective tissue between the daughter cells
+        // ECM fibers: connective tissue between cells
         var ecmFibers = [];
         // Build fibers connecting the two cells through the intercellular space
         var fiberCount = 5;
@@ -215,8 +213,7 @@
             });
         }
 
-        // Filopodia: thin actin-based protrusions reaching toward the other cell
-        // Each cell extends 3 filopodia through the ECM
+        // Filopodia: actin protrusions reaching toward other cell
         cellA.filopodia = [];
         cellB.filopodia = [];
         for (var fpi = 0; fpi < 3; fpi++) {
@@ -242,7 +239,7 @@
             });
         }
 
-        // Ribosomes: small dots on rough ER showing protein synthesis
+        // Ribosomes on rough ER
         cellA.ribosomes = [
             { erIdx: 0, pos: 0.3, color: '#553322' },
             { erIdx: 0, pos: 0.7, color: '#553322' },
@@ -258,15 +255,14 @@
             { erIdx: 3, pos: 0.4, color: '#553322' },
         ];
 
-        // Gap junctions: direct connections where filopodia tips meet between cells
-        // These form channels for small molecule exchange (ions, metabolites)
+        // Gap junctions: small molecule exchange channels
         var gapJunctions = [
             { filoIdxA: 0, filoIdxB: 2, color: '#ddbb88', pulsePhase: 0 },
             { filoIdxA: 1, filoIdxB: 1, color: '#ccaa77', pulsePhase: 1.5 },
             { filoIdxA: 2, filoIdxB: 0, color: '#ddbb88', pulsePhase: 3.0 },
         ];
 
-        // Peroxisomes: small detoxification organelles, slower orbit than lysosomes
+        // Peroxisomes
         cellA.peroxisomes = [
             { orbitR: 3.8, baseAngle: 0.3, speed: 0.6, color: '#66aa88' },
             { orbitR: 2.0, baseAngle: 3.5, speed: -0.5, color: '#55bb77' },
@@ -276,15 +272,13 @@
             { orbitR: 2.0, baseAngle: 5.0, speed: 0.5, color: '#55bb77' },
         ];
 
-        // Desmosomes: mechanical anchoring junctions (button-like spots on membranes)
-        // Unlike gap junctions which pass signals, desmosomes hold tissue together
+        // Desmosomes: mechanical anchoring junctions
         var desmosomes = [
             { angleA: 2.0, angleB: 5.2, color: '#bb8844', anchorColor: '#998866' },
             { angleA: 2.8, angleB: 5.9, color: '#bb8844', anchorColor: '#998866' },
         ];
 
-        // Tight junctions: continuous seal between cells, preventing molecules from
-        // passing between them — completes the junction trio (gap, desmosome, tight)
+        // Tight junctions: seal between cells
         var tightJunctions = [];
         var tjCount = 6;
         for (var tji = 0; tji < tjCount; tji++) {
@@ -412,10 +406,7 @@
             { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
         ];
 
-        // G2 PHASE: replication finished, genome fully duplicated — 4n DNA content
-
-        // Genome: "PETAR RAKOVI" encoded as nucleotide colors — the cell's genetic identity
-        // Each letter maps to a base color; the sequence is read during S phase replication
+        // Genome identity encoded as nucleotide colors
         var genomeStr = 'PETARRAKOVI';
         var baseColors = {
             'P': '#ff4466', 'E': '#44ff88', 'T': '#4488ff', 'A': '#ffaa22',
@@ -430,9 +421,7 @@
             });
         }
 
-        // RESTRICTION POINT CROSSED: cyclin E-CDK2 hyper-phosphorylates Rb
-        // E2F positive feedback loop: E2F → cyclin E → CDK2 → Rb hyper-P → more E2F
-        // Cyclin B (M-phase cyclin) still suppressed — only trace in cytoplasm
+        // Cyclin-CDK complexes
         cellA.cyclins = [
             { orbitR: 3.0, baseAngle: 1.2, speed: 0.6, color: '#44bbaa' },
         ];
@@ -440,10 +429,7 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // Cyclin E-CDK2: degraded in G2 (consolidated — no rendering)
-
-        // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
-        // They reverse CDK1 effects on lamins, condensins, NPCs — restoring interphase state
+        // PP1/PP2A phosphatases
         cellA.phosphatases = [
             { orbitR: 1.6, baseAngle: 0.9, speed: 0.7, color: '#44ddbb' },
             { orbitR: 2.4, baseAngle: 3.1, speed: -0.6, color: '#33ccaa' },
@@ -455,9 +441,7 @@
             { orbitR: 1.9, baseAngle: 0.6, speed: -0.52, color: '#44ddbb' },
         ];
 
-        // Rb hyper-phosphorylated: cyclin E-CDK2 completes multi-site phosphorylation
-        // Rb releases E2F completely — cell is now committed past restriction point
-        // Dim phospho-Rb remnant drifts inside nucleus (fully inactivated)
+        // Phospho-Rb (inactivated)
         cellA.checkpointKinases = [
             { scanSpeed: 0.015, phase: 0, color: '#223322' },
         ];
@@ -465,9 +449,7 @@
             { scanSpeed: -0.015, phase: 0.15, color: '#223322' },
         ];
 
-        // Cdc25 phosphatase: PLK1 phosphorylation reactivates it — 2nd particle emerges
-        // Cdc25 removes inhibitory Y15 phosphate from CDK1, activating cyclin B-CDK1
-        // Positive feedback: active CDK1 further activates Cdc25 → bistable switch
+        // Cdc25 phosphatase: activates CDK1
         cellA.cdc25 = [
             { orbitR: 2.4, baseAngle: 0.6, speed: 0.5, color: '#338877' },
             { orbitR: 3.2, baseAngle: 3.8, speed: -0.38, color: '#44aa88' },
@@ -477,29 +459,17 @@
             { orbitR: 3.2, baseAngle: 5.5, speed: 0.4, color: '#44aa88' },
         ];
 
-        // E2F: degraded in G2 (consolidated — no rendering)
-
-        // Cyclin A-CDK2: G2 peak — highest concentration before mitotic entry
-        // Prevents re-replication (Cdc6/Cdt1 phosphorylated), primes CDK1 activation
-        // 5th particle: cyclin A at G2 maximum, will be destroyed in prometaphase
+        // Cyclin A-CDK2: APC/C-Cdc20 degrades cyclin A at anaphase onset — mostly gone
         cellA.cyclinA = [
-            { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
-            { orbitR: 3.4, baseAngle: 1.5, speed: 0.35, color: '#dd77aa' },
-            { orbitR: 1.2, baseAngle: 0.3, speed: 0.65, color: '#ee88bb' },
-            { orbitR: 2.0, baseAngle: 5.5, speed: -0.5, color: '#dd88aa' },
-            { orbitR: 1.8, baseAngle: 2.8, speed: 0.48, color: '#dd6699' },
+            { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#996677' },
+            { orbitR: 1.2, baseAngle: 0.3, speed: 0.65, color: '#aa7788' },
         ];
         cellB.cyclinA = [
-            { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
-            { orbitR: 3.4, baseAngle: 4.3, speed: -0.38, color: '#dd77aa' },
-            { orbitR: 1.2, baseAngle: 3.2, speed: -0.6, color: '#ee88bb' },
-            { orbitR: 2.0, baseAngle: 2.5, speed: 0.48, color: '#dd88aa' },
-            { orbitR: 1.8, baseAngle: 5.8, speed: -0.45, color: '#dd6699' },
+            { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#996677' },
+            { orbitR: 1.2, baseAngle: 3.2, speed: -0.6, color: '#aa7788' },
         ];
 
-        // Cyclin D-CDK4/6: mitogen-responsive G1 cyclin, driven by MAPK/ERK cascade
-        // Accumulates in response to growth factor signaling, mono-phosphorylates Rb
-        // Amber/gold particles orbit in cytoplasm, some entering nucleus
+        // Cyclin D-CDK4/6: amber particles, some nuclear
         cellA.cyclinD = [
             { orbitR: 2.6, baseAngle: 0.9, speed: 0.45, color: '#ddaa33', nuclear: false },
             { orbitR: 3.2, baseAngle: 3.4, speed: -0.38, color: '#ccaa44', nuclear: false },
@@ -511,57 +481,31 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // PROMETAPHASE: NEB complete — envelope fragmented, spindle captures kinetochores
-        // Chromosomes congress toward metaphase plate, Aurora B corrects attachment errors
-        // SAC (spindle assembly checkpoint) monitors bi-orientation of all kinetochores
+        // ANAPHASE ONSET: APC/C-Cdc20 active, securin destroyed, separase cleaves cohesin
         cellA.prophase = {
-            condensation: 0.7, // chromosomes individualized — thick rods visible
-            laminPhospho: 0.75, // lamina fully dissolved — soluble lamin dimers in cytoplasm
-            npcDisassembly: 0.8, // most NPCs dispersed — Nup proteins scattered
-            envelopeVesicles: true, // NE fragmented into ER-derived vesicles
-            asterCount: 12, // full asters — gamma-TuRC nucleating maximum MTs
-            spindleForming: true, // bipolar spindle established
-            prometaphase: true, // NEB complete — open mitosis begins
-            congressProgress: 0.3, // chromosomes captured, beginning to congress toward plate
-            auroraBActive: true, // Aurora B correcting merotelic attachments at kinetochores
-            sacSatisfaction: 0.15, // SAC still active — not all kinetochores bi-oriented yet
-            pole1Target: { x: 19, y: 7 },
-            pole2Target: { x: 23, y: 11 },
+            condensation: 0.8, laminPhospho: 0.8, npcDisassembly: 0.9,
+            envelopeVesicles: true, asterCount: 12, spindleForming: true,
+            prometaphase: true, metaphase: true, anaphase: true,
+            congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
+            pole1Target: { x: 19, y: 7 }, pole2Target: { x: 23, y: 11 },
         };
         cellB.prophase = {
-            condensation: 0.7,
-            laminPhospho: 0.75,
-            npcDisassembly: 0.8,
-            envelopeVesicles: true,
-            asterCount: 12,
-            spindleForming: true,
-            prometaphase: true,
-            congressProgress: 0.3,
-            auroraBActive: true,
-            sacSatisfaction: 0.15,
-            pole1Target: { x: 9, y: 21 },
-            pole2Target: { x: 13, y: 25 },
+            condensation: 0.8, laminPhospho: 0.8, npcDisassembly: 0.9,
+            envelopeVesicles: true, asterCount: 12, spindleForming: true,
+            prometaphase: true, metaphase: true, anaphase: true,
+            congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
+            pole1Target: { x: 9, y: 21 }, pole2Target: { x: 13, y: 25 },
         };
 
-        // Replication forks + condensins: cleared in G2 (consolidated — no rendering)
-
-        // Cohesin rings (Smc1/Smc3/Rad21): established behind replication forks
-        // Eco1 acetyltransferase acetylates Smc3, locking cohesins around sister chromatids
-        // These rings will hold sisters together until anaphase separase cleaves Rad21
+        // Cohesin rings: separase has cleaved centromeric cohesin — only fragments remain
         cellA.cohesins = [
-            { baseAngle: 1.0, orbitR: 0.8, speed: 0.15, color: '#88aadd' },
-            { baseAngle: 2.8, orbitR: 0.6, speed: -0.12, color: '#7799cc' },
-            { baseAngle: 4.5, orbitR: 0.7, speed: 0.18, color: '#88aadd' },
+            { baseAngle: 1.0, orbitR: 1.2, speed: 0.3, color: '#667799' },
         ];
         cellB.cohesins = [
-            { baseAngle: 1.8, orbitR: 0.7, speed: -0.14, color: '#88aadd' },
-            { baseAngle: 3.5, orbitR: 0.8, speed: 0.16, color: '#7799cc' },
-            { baseAngle: 5.2, orbitR: 0.6, speed: -0.13, color: '#88aadd' },
+            { baseAngle: 3.5, orbitR: 1.2, speed: -0.28, color: '#667799' },
         ];
 
-        // Topoisomerase II: still resolving residual catenanes between sisters
-        // Decatenation checkpoint ensures sisters are fully separated before mitosis
-        // Second topoII molecule recruited for final decatenation pass
+        // Topoisomerase II: resolves catenanes
         cellA.topoII = [
             { baseAngle: 1.5, orbitR: 1.0, speed: 0.3, color: '#dd6644' },
             { baseAngle: 4.0, orbitR: 0.7, speed: -0.2, color: '#cc5533' },
@@ -571,8 +515,7 @@
             { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
         ];
 
-        // Cyclin B-CDK1: 6th particle — nuclear import accelerating, CRM1 export fully blocked
-        // Nuclear cyclin B-CDK1 phosphorylates condensins and lamins, driving prophase forward
+        // Cyclin B-CDK1: nuclear import complete, driving mitosis
         cellA.cyclinB = [
             { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#44ddaa', nuclear: false },
             { orbitR: 2.8, baseAngle: 3.0, speed: -0.42, color: '#33ccaa', nuclear: false },
@@ -590,10 +533,7 @@
             { orbitR: 0.7, baseAngle: 5.6, speed: 0.58, color: '#77ffdd', nuclear: true },
         ];
 
-        // PLK1 (Polo-like kinase 1): master G2/M regulator
-        // Phosphorylates Cdc25 (activating it) and Wee1 (targeting it for degradation)
-        // Creates the bistable switch that commits the cell to mitosis
-        // Magenta-orange particles orbit in cytoplasm, occasionally flashing at targets
+        // PLK1: master G2/M regulator
         cellA.plk1 = [
             { orbitR: 2.2, baseAngle: 1.5, speed: 0.55, color: '#ee6644' },
             { orbitR: 3.0, baseAngle: 4.8, speed: -0.48, color: '#dd5533' },
@@ -603,9 +543,7 @@
             { orbitR: 3.0, baseAngle: 1.5, speed: 0.46, color: '#dd5533' },
         ];
 
-        // Aurora A kinase: recruited to centrosomes during prophase
-        // Phosphorylates centrosomal substrates for PCM maturation and Eg5 activation
-        // Bright cyan-white flashes at centrosome positions
+        // Aurora A kinase: centrosome maturation
         cellA.auroraA = [
             { targetPole: 1, speed: 0.8, phase: 0, color: '#88ddff' },
             { targetPole: 2, speed: 0.75, phase: 0.5, color: '#99eeff' },
@@ -615,13 +553,9 @@
             { targetPole: 2, speed: -0.72, phase: 0.8, color: '#99eeff' },
         ];
 
-        // Wee1 kinase: fully degraded by SCF-beta-TrCP ubiquitin-proteasome pathway
-        // CDK1 inhibition completely lifted — the bistable switch has flipped
-        cellA.wee1 = [];
-        cellB.wee1 = [];
+        // Wee1: fully degraded (consolidated)
 
-        // PROMETAPHASE: NEB complete, spindle captures kinetochores, chromosomes congress
-        // Lamina fully dissolved, NPCs dispersed, envelope fragmented into vesicles
+        // ANAPHASE: APC/C active, cohesin cleaved, sisters separating toward poles
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1747,28 +1681,6 @@
                 }
             }
 
-            // Wee1 kinase: nearly degraded — SCF-beta-TrCP ubiquitination in progress
-            // Last particle flickers as proteasome digests it; CDK1 inhibition lifting
-            var wee1Pixels = {};
-            if (cell.wee1 && cell.separated) {
-                var tWee = (t * 8000 / 6400) % 1.0;
-                for (var wi = 0; wi < cell.wee1.length; wi++) {
-                    var wk = cell.wee1[wi];
-                    var wkAngle = wk.baseAngle + wk.speed * tOrbit;
-                    var wkX = Math.round(cell.cx + Math.cos(wkAngle) * wk.orbitR);
-                    var wkY = Math.round(cell.cy + Math.sin(wkAngle) * wk.orbitR);
-                    var wkPulse = Math.sin(tWee * 2 * Math.PI * 3 + wi * 2.3);
-                    var wkDx = wkX - cell.cx, wkDy = wkY - cell.cy;
-                    var wkDist = Math.sqrt(wkDx * wkDx + wkDy * wkDy);
-                    if (wkDist < maxR - 1.0 && wkDist > nucR + 0.5) {
-                        if (wkX >= 0 && wkX < size && wkY >= 0 && wkY < size) {
-                            // Flickering rapidly — ubiquitin tags being added
-                            wee1Pixels[wkX + ',' + wkY] = wkPulse > 0.4 ? '#443388' : wk.color;
-                        }
-                    }
-                }
-            }
-
             // Cyclin D-CDK4/6: amber particles, some cytoplasmic, some nuclear
             var cycDPixels = {};
             if (cell.cyclinD && cell.separated) {
@@ -2056,7 +1968,6 @@
                 topoPixels: topoPixels,
                 cycBPixels: cycBPixels,
                 plk1Pixels: plk1Pixels,
-                wee1Pixels: wee1Pixels,
                 auroraAPixels: auroraAPixels
             };
         }
@@ -2327,93 +2238,36 @@
 
                         if (effDist <= dd.maxR) {
                             inAnyCell = true;
-                            // Layer priority: furrow > centrosomes > vesicles > atp > envPixels > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
-                            if (dd.furrowPixels && dd.furrowPixels[key]) {
-                                color = dd.furrowPixels[key];
-                            } else if (dd.centPixels[key]) {
-                                color = dd.centPixels[key];
-                            } else if (dd.secVesPixels && dd.secVesPixels[key]) {
-                                color = dd.secVesPixels[key];
-                            } else if (dd.vesPixels[key]) {
-                                color = dd.vesPixels[key];
-                            } else if (dd.atpPixels[key]) {
-                                color = dd.atpPixels[key];
-                            } else if (dd.lysoPixels && dd.lysoPixels[key]) {
-                                color = dd.lysoPixels[key];
-                            } else if (dd.endoPixels && dd.endoPixels[key]) {
-                                color = dd.endoPixels[key];
-                            } else if (dd.peroxPixels && dd.peroxPixels[key]) {
-                                color = dd.peroxPixels[key];
-                            } else if (dd.cyclinPixels && dd.cyclinPixels[key]) {
-                                color = dd.cyclinPixels[key];
-                            } else if (dd.cycAPixels && dd.cycAPixels[key]) {
-                                color = dd.cycAPixels[key];
-                            } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
-                                color = dd.cdc25Pixels[key];
-                            } else if (dd.cycBPixels && dd.cycBPixels[key]) {
-                                color = dd.cycBPixels[key];
-                            } else if (dd.plk1Pixels && dd.plk1Pixels[key]) {
-                                color = dd.plk1Pixels[key];
-                            } else if (dd.wee1Pixels && dd.wee1Pixels[key]) {
-                                color = dd.wee1Pixels[key];
-                            } else if (dd.auroraAPixels && dd.auroraAPixels[key]) {
-                                color = dd.auroraAPixels[key];
-                            } else if (dd.cycDPixels && dd.cycDPixels[key]) {
-                                color = dd.cycDPixels[key];
-                            } else if (dd.phosphPixels && dd.phosphPixels[key]) {
-                                color = dd.phosphPixels[key];
-                            } else if (dd.mitoPixels[key]) {
-                                color = dd.mitoPixels[key];
-                            } else if (dd.nucPixels[key]) {
-                                color = dd.nucPixels[key];
-                            } else if (dd.porePixels && dd.porePixels[key]) {
-                                color = dd.porePixels[key];
-                            } else if (dd.envPixels[key]) {
-                                color = dd.envPixels[key];
-                            } else if (dd.sacPixels && dd.sacPixels[key]) {
-                                color = dd.sacPixels[key];
-                            } else if (dd.cohesinPixels && dd.cohesinPixels[key]) {
-                                color = dd.cohesinPixels[key];
-                            } else if (dd.topoPixels && dd.topoPixels[key]) {
-                                color = dd.topoPixels[key];
-                            } else if (dd.checkPixels && dd.checkPixels[key]) {
-                                color = dd.checkPixels[key];
-                            } else if (dd.chrPixels[key]) {
-                                color = dd.chrPixels[key];
-                            } else if (dd.condensinPixels && dd.condensinPixels[key]) {
-                                color = dd.condensinPixels[key];
-                            } else if (dd.recPixels[key]) {
-                                color = dd.recPixels[key];
-                            } else if (cc.golgiPixels[key]) {
+                            // Layer priority via array lookup
+                            var layers = ['furrowPixels','centPixels','secVesPixels','vesPixels','atpPixels',
+                                'lysoPixels','endoPixels','peroxPixels','cyclinPixels','cycAPixels',
+                                'cdc25Pixels','cycBPixels','plk1Pixels','auroraAPixels','cycDPixels',
+                                'phosphPixels','mitoPixels','nucPixels','porePixels','envPixels',
+                                'sacPixels','cohesinPixels','topoPixels','checkPixels','chrPixels',
+                                'condensinPixels','recPixels'];
+                            for (var li = 0; li < layers.length && !color; li++) {
+                                if (dd[layers[li]] && dd[layers[li]][key]) color = dd[layers[li]][key];
+                            }
+                            if (!color && cc.golgiPixels[key]) {
                                 color = cc.golgiPixels[key];
-                            } else if (effDist > dd.maxR - 1.2) {
+                            } else if (!color && effDist > dd.maxR - 1.2) {
                                 var shell = dd.maxR - effDist;
                                 var mi = Math.floor(shell * cc.membraneColors.length / 1.2);
                                 if (mi >= cc.membraneColors.length) mi = cc.membraneColors.length - 1;
                                 color = cc.membraneColors[mi];
-                            } else if (dd.actinPixels && dd.actinPixels[key]) {
-                                color = dd.actinPixels[key];
-                            } else if (dd.mtPixels && dd.mtPixels[key]) {
-                                color = dd.mtPixels[key];
-                            } else if (dd.ifPixels && dd.ifPixels[key]) {
-                                color = dd.ifPixels[key];
-                            } else if (dd.riboPixels && dd.riboPixels[key]) {
-                                color = dd.riboPixels[key];
-                            } else if (dd.serPixels && dd.serPixels[key]) {
-                                color = dd.serPixels[key];
-                            } else if (cc.erPixels[key]) {
-                                color = cc.erColor;
-                            } else {
-                                // Check if inside nucleus region
-                                var ndx2 = x - cc.cx;
-                                var ndy2 = y - cc.cy;
-                                var ndist = Math.sqrt(ndx2 * ndx2 + ndy2 * ndy2);
-                                if (ndist <= dd.nucR + 0.3) {
-                                    // Interphase nucleus interior
-                                    color = '#7a3500';
-                                } else {
-                                    color = cc.cytoColor;
+                            }
+                            if (!color) {
+                                var innerLayers = ['actinPixels','mtPixels','ifPixels','riboPixels','serPixels'];
+                                for (var li2 = 0; li2 < innerLayers.length && !color; li2++) {
+                                    if (dd[innerLayers[li2]] && dd[innerLayers[li2]][key]) color = dd[innerLayers[li2]][key];
                                 }
+                            }
+                            if (!color && cc.erPixels[key]) {
+                                color = cc.erColor;
+                            }
+                            if (!color) {
+                                var ndx2 = x - cc.cx, ndy2 = y - cc.cy;
+                                color = Math.sqrt(ndx2*ndx2+ndy2*ndy2) <= dd.nucR+0.3 ? '#7a3500' : cc.cytoColor;
                             }
                             break;
                         }
