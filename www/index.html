@@ -1951,6 +1951,53 @@
                 var swY = Math.round(ag.y + axdy * swFrac);
                 set(swX, swY, '#ffddaa');
             }
+            // Muscularis externa — circular muscle layer: thick smooth muscle ring outside Auerbach's plexus
+            // Inner circular fibers run perpendicular to longitudinal axis; ICC slow waves drive contraction
+            // Dense α-actin/myosin-II filaments with gap junctions coupling adjacent smooth muscle cells
+            var tCM = (now % 22000) / 22000;
+            var circMusclePath = [
+                {x:31,y:6},{x:31,y:10},{x:31,y:14},{x:30,y:18},
+                {x:28,y:21},{x:25,y:25},{x:21,y:28},{x:17,y:30},
+                {x:12,y:30},{x:8,y:28},{x:5,y:25},{x:2,y:21},
+            ];
+            // Slow-wave contraction: propagates from ICC pacemaker cells in Auerbach's plexus
+            var cmWavePos = (tCM * 2.0) % 1.0;
+            for (var cmi = 0; cmi < circMusclePath.length; cmi++) {
+                var cmP = circMusclePath[cmi];
+                var cmFrac = cmi / (circMusclePath.length - 1);
+                // Contraction wave from ICC — phase-locked to Auerbach's slow wave timing
+                var cmDist = Math.abs(cmFrac - cmWavePos);
+                if (cmDist > 0.5) cmDist = 1.0 - cmDist;
+                var cmContract = Math.max(0, 1.0 - cmDist * 3.5);
+                var cmPulse = Math.sin(tCM * 2 * Math.PI * 1.2 + cmi * 0.7);
+                var cmActive = cmContract > 0.25;
+                // Contracted fibers: bright red-brown (active crossbridges); relaxed: dark maroon
+                set(cmP.x, cmP.y, cmActive ? '#bb5544' : (cmPulse > 0 ? '#884433' : '#663322'));
+                // Interpolate between path points for continuous muscle band
+                if (cmi < circMusclePath.length - 1) {
+                    var cmN = circMusclePath[cmi + 1];
+                    var cmdx = cmN.x - cmP.x, cmdy = cmN.y - cmP.y;
+                    var cmSt = Math.max(Math.abs(cmdx), Math.abs(cmdy));
+                    for (var cms = 1; cms < cmSt; cms++) {
+                        var cmsFrac = cmi / (circMusclePath.length - 1) + (1.0 / (circMusclePath.length - 1)) * (cms / cmSt);
+                        var cmsDist = Math.abs(cmsFrac - cmWavePos);
+                        if (cmsDist > 0.5) cmsDist = 1.0 - cmsDist;
+                        var cmsContract = Math.max(0, 1.0 - cmsDist * 3.5);
+                        var cmsP = Math.sin(tCM * 2 * Math.PI * 1.5 + cmi * 0.8 + cms * 0.4);
+                        var cmsActive = cmsContract > 0.25;
+                        set(Math.round(cmP.x+cmdx*cms/cmSt), Math.round(cmP.y+cmdy*cms/cmSt),
+                            cmsActive ? '#cc6655' : (cmsP > 0 ? '#774433' : '#553322'));
+                    }
+                }
+                // Dense body anchors: α-actinin plaques where actin filaments attach (visible during contraction)
+                if (cmContract > 0.5 && cmi % 2 === 0) {
+                    var dbP = Math.sin(tCM * 2 * Math.PI * 4.0 + cmi * 1.9);
+                    if (dbP > 0.2) {
+                        var dbOff = Math.round(Math.sin(tCM * 2 * Math.PI * 2.5 + cmi * 1.3) * 0.7);
+                        set(cmP.x + dbOff, cmP.y - dbOff, '#ddaa77');
+                    }
+                }
+            }
             return px;
         }
 
