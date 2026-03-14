@@ -2113,6 +2113,34 @@
                     var regX=Math.round(it.x+Math.cos(epiA2)*regR),regY=Math.round(it.y+Math.sin(epiA2)*regR);
                     if(inB(regX,regY))s(regX,regY,'#ddffcc');}
                 }},
+                // Lymphatic lacteals: blind-ended lymphatic capillaries in villus core
+                // LYVE-1+ endothelial cells with button-like junctions absorb chylomicrons and interstitial fluid
+                // Drain toward submucosal collecting lymphatics; VEGF-C maintains lacteal integrity
+                {period:23000, phaseStep:2.09, items:[
+                    {x:17,y:17,color:'#88cc88',dimColor:'#669966'},{x:14,y:15,color:'#77bb77',dimColor:'#558855'},
+                    {x:21,y:20,color:'#88cc88',dimColor:'#669966'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // Lacteal lumen: translucent lymph fluid shimmer
+                    var lumP=Math.sin(ph*1.2+idx*1.8);
+                    if(lumP>0.2){var la=ph*0.5+idx*2.3;
+                    s(Math.round(ix+Math.cos(la)*0.7),Math.round(iy+Math.sin(la)*0.7),lumP>0.6?'#cceecc':'#aaddaa');}
+                    // Button junctions: discontinuous VE-cadherin allows chylomicron entry
+                    for(var bj=0;bj<3;bj++){var bjA=ph*0.3+bj*2.09+idx*0.8;
+                    var bjP=Math.sin(ph*2.0+bj*2.5+idx*1.2);
+                    var bjX=Math.round(ix+Math.cos(bjA)*1.0),bjY=Math.round(iy+Math.sin(bjA)*1.0);
+                    if(inB(bjX,bjY))s(bjX,bjY,bjP>0.3?'#bbddbb':'#99bb99');}
+                    // Chylomicron uptake: lipid particles entering through open junctions
+                    var cmUp=(t*1.8+idx*0.4)%1.0;
+                    if(cmUp<0.5){var cmA2=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    var cmR2=1.5-cmUp*2.5;
+                    var cmX2=Math.round(ix+Math.cos(cmA2)*cmR2),cmY2=Math.round(iy+Math.sin(cmA2)*cmR2);
+                    if(inB(cmX2,cmY2))s(cmX2,cmY2,cmUp<0.2?'#eedd66':'#ddcc55');}
+                    // Lymph drainage toward submucosal collecting vessel
+                    if(p>0.3){var drA=Math.atan2(it.y-16,it.x-16);
+                    var drR=1.3+Math.sin(ph*0.6)*0.3;
+                    s(Math.round(it.x+Math.cos(drA)*drR),Math.round(it.y+Math.sin(drA)*drR),'#aaddaa');
+                    if(p>0.6){s(Math.round(it.x+Math.cos(drA)*(drR+1.0)),Math.round(it.y+Math.sin(drA)*(drR+1.0)),'#88bb88');}}
+                }},
             ]);
             // Notch lateral inhibition: Delta-Notch progenitor pairs with signal exchange
             var tNotch = (now % 22000) / 22000;
