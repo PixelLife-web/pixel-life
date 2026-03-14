@@ -2191,6 +2191,33 @@
             if(vipPh<0.5&&smP>-0.3){var vipR=1.2+vipPh*3.0;set(_r(sm.x+_c(vipA)*vipR),_r(sm.y+_s(vipA)*vipR),vipPh<0.2?'#ddaaff':'#bb88dd');}
             if(smi<myenteric.length){var myn=myenteric[smi],inA=_a(myn.y-sm.y,myn.x-sm.x),inD=_q((myn.x-sm.x)*(myn.x-sm.x)+(myn.y-sm.y)*(myn.y-sm.y));
             var inPh=(tSub*1.5+smi*0.4)%1.0;if(inPh<0.4){var inR=inD*inPh/0.4;set(_r(sm.x+_c(inA)*inR),_r(sm.y+_s(inA)*inR),inPh<0.15?'#eedd88':'#ccbb66');}}}
+            // CX3CR1+ lamina propria macrophages with transepithelial dendrites
+            var tMac=(now%22000)/22000;
+            var lpMacs=[{x:10,y:19,a:0.5,dendA:_P*0.3},{x:15,y:23,a:1.7,dendA:_P*0.8},{x:20,y:21,a:2.9,dendA:_P*0.55},{x:13,y:17,a:4.1,dendA:_P*1.1},{x:22,y:18,a:5.3,dendA:_P*0.2}];
+            for(var maci=0;maci<lpMacs.length;maci++){var mac=lpMacs[maci],macPh=tMac*2*_P+mac.a,macP=_s(macPh);
+            // cell body with CX3CR1 receptor
+            if(inB(mac.x,mac.y))set(mac.x,mac.y,macP>0?'#dd8844':'#bb6633');
+            // pseudopods (2 per macrophage, slow amoeboid motion)
+            for(var psi=0;psi<2;psi++){var psA=macPh*0.15+maci*1.57+psi*_P,psR=0.8+_s(macPh*0.6+psi*2.5)*0.4;
+            var psX=_r(mac.x+_c(psA)*psR),psY=_r(mac.y+_s(psA)*psR);
+            if(inB(psX,psY))set(psX,psY,macP>0.2?'#cc7733':'#aa5522');}
+            // transepithelial dendrite extending toward lumen
+            var dendExt=_s(macPh*0.4+maci*1.2);if(dendExt>-0.2){
+            var lumA7=mac.dendA,dendLen=2.0+dendExt*1.5;
+            for(var dl=1;dl<=_r(dendLen);dl++){var dlSway=_s(macPh*0.3+dl*1.6)*0.15;
+            var dlX=_r(mac.x+_c(lumA7+dlSway)*dl),dlY=_r(mac.y+_s(lumA7+dlSway)*dl);
+            if(inB(dlX,dlY))set(dlX,dlY,dl<=1?'#cc8844':'#bb7733');}
+            // dendrite tip sampling (antigen capture)
+            var tipX=_r(mac.x+_c(lumA7)*dendLen),tipY=_r(mac.y+_s(lumA7)*dendLen);
+            if(inB(tipX,tipY)){var tipP=_s(macPh*2.5+maci*1.9);set(tipX,tipY,tipP>0.3?'#ffcc66':'#ddaa55');}}
+            // IL-10 tolerogenic secretion (maintains homeostasis)
+            var il10Ph=(tMac*1.8+maci*0.35)%1.0;
+            if(il10Ph<0.4&&macP>0){var il10A=macPh*0.2+maci*2.3+_P,il10R=0.8+il10Ph*3.0;
+            set(_r(mac.x+_c(il10A)*il10R),_r(mac.y+_s(il10A)*il10R),il10Ph<0.15?'#88eebb':'#66ccaa');}
+            // phagocytosis event (periodic engulfment)
+            if(macP>0.7){var phagA=macPh*0.12+maci*0.8,phagR=1.0+macP*0.3;
+            set(_r(mac.x+_c(phagA)*phagR),_r(mac.y+_s(phagA)*phagR),'#ffbb88');
+            set(_r(mac.x+_c(phagA+0.6)*0.5),_r(mac.y+_s(phagA+0.6)*0.5),'#eeaa77');}}
             var tBMP = (now % 26000) / 26000;
             var bmpSrc = [[27,20],[23,25],[18,28],[12,28],[7,25]];
             for (var bi2 = 0; bi2 < bmpSrc.length; bi2++) {
