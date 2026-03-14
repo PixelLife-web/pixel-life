@@ -515,15 +515,17 @@
         // Cyclin B-CDK1 floods nucleus, phosphorylates condensins → chromatin condensation begins
         // Centrosomes begin separating along nuclear envelope, pushed by Eg5 kinesin
         cellA.prophase = {
-            condensation: 0.15, // early condensation — chromosome territories start to resolve
-            laminPhospho: 0,    // lamina intact at early prophase
+            condensation: 0.35, // condensation advancing — chromosome territories resolving into distinct fibers
+            laminPhospho: 0.15, // CDK1 begins phosphorylating lamin A/C — envelope weakening
+            asterCount: 8,      // gamma-TuRC accumulating — more astral MTs nucleated
             // Centrosome pole targets: Eg5 kinesin pushes them apart along nuclear envelope
             pole1Target: { x: 19, y: 7 },
             pole2Target: { x: 23, y: 11 },
         };
         cellB.prophase = {
-            condensation: 0.15,
-            laminPhospho: 0,
+            condensation: 0.35,
+            laminPhospho: 0.15,
+            asterCount: 8,
             pole1Target: { x: 9, y: 21 },
             pole2Target: { x: 13, y: 25 },
         };
@@ -556,15 +558,15 @@
             { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
         ];
 
-        // Cyclin B-CDK1: 5th particle — peak concentration, nuclear import surging
-        // CRM1 export shut down by CDK1 phosphorylation → cyclin B floods nucleus
-        // Nuclear cyclin B-CDK1 phosphorylates condensins, triggering chromosome condensation
+        // Cyclin B-CDK1: 6th particle — nuclear import accelerating, CRM1 export fully blocked
+        // Nuclear cyclin B-CDK1 phosphorylates condensins and lamins, driving prophase forward
         cellA.cyclinB = [
             { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#44ddaa', nuclear: false },
             { orbitR: 2.8, baseAngle: 3.0, speed: -0.42, color: '#33ccaa', nuclear: false },
             { orbitR: 4.0, baseAngle: 5.2, speed: 0.38, color: '#44ddaa', nuclear: false },
             { orbitR: 2.2, baseAngle: 1.8, speed: 0.55, color: '#55eebb', nuclear: false },
             { orbitR: 1.0, baseAngle: 0.0, speed: 0.7, color: '#66ffcc', nuclear: true },
+            { orbitR: 0.7, baseAngle: 2.5, speed: -0.6, color: '#77ffdd', nuclear: true },
         ];
         cellB.cyclinB = [
             { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#44ddaa', nuclear: false },
@@ -572,6 +574,7 @@
             { orbitR: 4.0, baseAngle: 1.0, speed: -0.36, color: '#44ddaa', nuclear: false },
             { orbitR: 2.2, baseAngle: 4.5, speed: -0.52, color: '#55eebb', nuclear: false },
             { orbitR: 1.0, baseAngle: 3.14, speed: -0.65, color: '#66ffcc', nuclear: true },
+            { orbitR: 0.7, baseAngle: 5.6, speed: 0.58, color: '#77ffdd', nuclear: true },
         ];
 
         // PLK1 (Polo-like kinase 1): master G2/M regulator
@@ -587,13 +590,25 @@
             { orbitR: 3.0, baseAngle: 1.5, speed: 0.46, color: '#dd5533' },
         ];
 
+        // Aurora A kinase: recruited to centrosomes during prophase
+        // Phosphorylates centrosomal substrates for PCM maturation and Eg5 activation
+        // Bright cyan-white flashes at centrosome positions
+        cellA.auroraA = [
+            { targetPole: 1, speed: 0.8, phase: 0, color: '#88ddff' },
+            { targetPole: 2, speed: 0.75, phase: 0.5, color: '#99eeff' },
+        ];
+        cellB.auroraA = [
+            { targetPole: 1, speed: -0.78, phase: 0.3, color: '#88ddff' },
+            { targetPole: 2, speed: -0.72, phase: 0.8, color: '#99eeff' },
+        ];
+
         // Wee1 kinase: fully degraded by SCF-beta-TrCP ubiquitin-proteasome pathway
         // CDK1 inhibition completely lifted — the bistable switch has flipped
         cellA.wee1 = [];
         cellB.wee1 = [];
 
-        // PROPHASE: CDK1 fully active, phosphorylation cascade begins
-        // Condensins loading onto chromosomes, centrosomes separating via Eg5
+        // PROPHASE ADVANCING: condensation intensifies, CDK1 phosphorylates lamins
+        // Aurora A matures centrosomes, asters grow, nuclear envelope begins to weaken
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1693,6 +1708,32 @@
                 }
             }
 
+            // Aurora A kinase: flashes at centrosome positions, driving PCM maturation
+            var auroraAPixels = {};
+            if (cell.auroraA && cell.prophase && cell.separated) {
+                var tAurA = (t * 8000 / 4000) % 1.0;
+                var cs = cell.centrosomes[0];
+                var tCentMig2 = (t * 8000 / 9000) % 1.0;
+                var migFrac2 = 0.6 + Math.sin(tCentMig2 * 2 * Math.PI * 0.2) * 0.08;
+                var poles2 = [
+                    { x: cs.x + (cell.prophase.pole1Target.x - cs.x) * migFrac2, y: cs.y + (cell.prophase.pole1Target.y - cs.y) * migFrac2 },
+                    { x: cs.x + (cell.prophase.pole2Target.x - cs.x) * migFrac2, y: cs.y + (cell.prophase.pole2Target.y - cs.y) * migFrac2 },
+                ];
+                for (var aai = 0; aai < cell.auroraA.length; aai++) {
+                    var aa = cell.auroraA[aai];
+                    var poleIdx = aa.targetPole - 1;
+                    var aurPulse = Math.sin(tAurA * 2 * Math.PI * 3 + aa.phase * 6);
+                    // Flash near the centrosome pole — phosphorylation activity
+                    var aaAngle = tAurA * 2 * Math.PI * aa.speed + aa.phase * 4;
+                    var aaR = 1.2 + aurPulse * 0.3;
+                    var aax = Math.round(poles2[poleIdx].x + Math.cos(aaAngle) * aaR);
+                    var aay = Math.round(poles2[poleIdx].y + Math.sin(aaAngle) * aaR);
+                    if (aax >= 0 && aax < size && aay >= 0 && aay < size) {
+                        auroraAPixels[aax + ',' + aay] = aurPulse > 0.2 ? '#bbffff' : aa.color;
+                    }
+                }
+            }
+
             // Wee1 kinase: nearly degraded — SCF-beta-TrCP ubiquitination in progress
             // Last particle flickers as proteasome digests it; CDK1 inhibition lifting
             var wee1Pixels = {};
@@ -2006,7 +2047,8 @@
                 topoPixels: topoPixels,
                 cycBPixels: cycBPixels,
                 plk1Pixels: plk1Pixels,
-                wee1Pixels: wee1Pixels
+                wee1Pixels: wee1Pixels,
+                auroraAPixels: auroraAPixels
             };
         }
 
@@ -2307,6 +2349,8 @@
                                 color = dd.plk1Pixels[key];
                             } else if (dd.wee1Pixels && dd.wee1Pixels[key]) {
                                 color = dd.wee1Pixels[key];
+                            } else if (dd.auroraAPixels && dd.auroraAPixels[key]) {
+                                color = dd.auroraAPixels[key];
                             } else if (dd.cycDPixels && dd.cycDPixels[key]) {
                                 color = dd.cycDPixels[key];
                             } else if (dd.phosphPixels && dd.phosphPixels[key]) {
