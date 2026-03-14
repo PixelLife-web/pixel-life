@@ -911,203 +911,90 @@
             var lysoPixels = renderOrbiters(cell, cell.lysosomes, tOrbit, t, 5500, {threshold:-9});
             var peroxPixels = renderOrbiters(cell, cell.peroxisomes, tOrbit, t, 5500, {threshold:-9});
 
-            // Ribosomes on rough ER: small dots that pulse with protein synthesis
+            // Ribosomes on rough ER (consolidated)
             var riboPixels = {};
             if (cell.ribosomes && cell.erPaths) {
-                var tRibo = (t * 8000 / 3000) % 1.0;
+                var tRb = (t*8000/3000)%1.0;
                 for (var rbi = 0; rbi < cell.ribosomes.length; rbi++) {
-                    var ribo = cell.ribosomes[rbi];
-                    if (ribo.erIdx < cell.erPaths.length) {
-                        var ePath = cell.erPaths[ribo.erIdx];
-                        var rIdx = Math.round(ribo.pos * (ePath.length - 1));
-                        if (rIdx >= 0 && rIdx < ePath.length) {
-                            var rp = ePath[rIdx];
-                            // Offset ribosome one pixel perpendicular to ER
-                            var rpNext = rIdx < ePath.length - 1 ? ePath[rIdx + 1] : ePath[rIdx - 1];
-                            var rdx = rpNext.x - rp.x;
-                            var rdy = rpNext.y - rp.y;
-                            // Perpendicular offset
-                            var offX = rp.x + (rbi % 2 === 0 ? -rdy : rdy);
-                            var offY = rp.y + (rbi % 2 === 0 ? rdx : -rdx);
-                            offX = Math.round(offX);
-                            offY = Math.round(offY);
-                            // Pulse: ribosome brightens when synthesizing
-                            var riboPulse = Math.sin(tRibo * 2 * Math.PI + rbi * 1.1);
-                            var riboColor = riboPulse > 0.2 ? '#776644' : ribo.color;
-                            if (offX >= 0 && offX < size && offY >= 0 && offY < size) {
-                                riboPixels[offX + ',' + offY] = riboColor;
-                            }
-                        }
-                    }
+                    var rb = cell.ribosomes[rbi]; if (rb.erIdx >= cell.erPaths.length) continue;
+                    var rP2 = cell.erPaths[rb.erIdx], rI = Math.round(rb.pos*(rP2.length-1));
+                    if (rI < 0 || rI >= rP2.length) continue;
+                    var rr = rP2[rI], rn = rI<rP2.length-1?rP2[rI+1]:rP2[rI-1], rdx2=rn.x-rr.x, rdy2=rn.y-rr.y;
+                    var ox = Math.round(rr.x+(rbi%2===0?-rdy2:rdy2)), oy = Math.round(rr.y+(rbi%2===0?rdx2:-rdx2));
+                    if (inB(ox,oy)) riboPixels[ox+','+oy] = Math.sin(tRb*2*Math.PI+rbi*1.1)>0.2?'#776644':rb.color;
                 }
             }
 
-            // Smooth ER: lipid-synthesizing tubules rendered as small ellipses
+            // Smooth ER (consolidated)
             var serPixels = {};
             if (cell.smoothER) {
-                var tSER = (t * 8000 / 7000) % 1.0;
+                var tSER = (t*8000/7000)%1.0;
                 for (var sei = 0; sei < cell.smoothER.length; sei++) {
-                    var ser = cell.smoothER[sei];
-                    // Draw small elliptical tubule with pulsing lipid synthesis
-                    var serPulse = Math.sin(tSER * 2 * Math.PI + sei * 2.0);
-                    var serColor = serPulse > 0.3 ? '#aa7744' : '#996633';
-                    for (var sa = 0; sa < 8; sa++) {
-                        var sAngle = sa * 2 * Math.PI / 8 + ser.angle;
-                        var sx = Math.round(ser.cx + Math.cos(sAngle) * ser.rx);
-                        var sy = Math.round(ser.cy + Math.sin(sAngle) * ser.ry);
-                        if (sx >= 0 && sx < size && sy >= 0 && sy < size) {
-                            serPixels[sx + ',' + sy] = serColor;
-                        }
-                    }
-                    // Center pixel: lipid droplet forming
-                    if (serPulse > 0.5) {
-                        serPixels[ser.cx + ',' + ser.cy] = '#ccaa55';
-                    }
+                    var ser = cell.smoothER[sei], serP = Math.sin(tSER*2*Math.PI+sei*2.0), sc = serP>0.3?'#aa7744':'#996633';
+                    for (var sa = 0; sa < 8; sa++) { var sA = sa*Math.PI/4+ser.angle;
+                        var sx2 = Math.round(ser.cx+Math.cos(sA)*ser.rx), sy2 = Math.round(ser.cy+Math.sin(sA)*ser.ry);
+                        if (inB(sx2,sy2)) serPixels[sx2+','+sy2] = sc; }
+                    if (serP > 0.5) serPixels[ser.cx+','+ser.cy] = '#ccaa55';
                 }
             }
 
-            // Actin stress fibers: cables from junction sites inward toward nucleus
+            // Actin stress fibers (consolidated)
             var actinPixels = {};
             if (cell.actinFibers) {
-                var tActin = (t * 8000 / 9000) % 1.0;
+                var tAc = (t*8000/9000)%1.0;
                 for (var afi = 0; afi < cell.actinFibers.length; afi++) {
-                    var af = cell.actinFibers[afi];
-                    // Start at junction site on membrane, extend inward
-                    var startR = maxR - 0.8;
-                    var endR = startR - af.length;
-                    if (endR < 0.5) endR = 0.5;
-                    // Actin fiber tension pulse
-                    var actPulse = Math.sin(tActin * 2 * Math.PI + af.phase);
+                    var af = cell.actinFibers[afi], sR2 = maxR-0.8, aP3 = Math.sin(tAc*2*Math.PI+af.phase), myP = (tAc+af.phase*0.3)%1.0;
                     for (var al = 0; al <= Math.ceil(af.length); al++) {
-                        var ar = startR - al;
-                        var ax2 = Math.round(cell.cx + Math.cos(af.junctionAngle) * ar);
-                        var ay2 = Math.round(cell.cy + Math.sin(af.junctionAngle) * ar);
-                        if (ax2 >= 0 && ax2 < size && ay2 >= 0 && ay2 < size) {
-                            // Myosin contraction pulse travels along the fiber
-                            var myosinPos = (tActin + af.phase * 0.3) % 1.0;
-                            var fiberPos = al / af.length;
-                            var nearMyosin = Math.abs(fiberPos - myosinPos) < 0.25;
-                            actinPixels[ax2 + ',' + ay2] = nearMyosin && actPulse > 0 ? '#cc6655' : '#aa5544';
-                        }
+                        var ar = sR2-al, ax2 = Math.round(cell.cx+Math.cos(af.junctionAngle)*ar), ay2 = Math.round(cell.cy+Math.sin(af.junctionAngle)*ar);
+                        if (inB(ax2,ay2)) actinPixels[ax2+','+ay2] = (Math.abs(al/af.length-myP)<0.25&&aP3>0)?'#cc6655':'#aa5544';
                     }
                 }
             }
 
             // Intermediate filaments: consolidated (perinuclear cage, resolved post-division)
 
-            // Nuclear pores and mRNA export particles
-            // Late prophase: NPCs disassemble — Nup proteins released, mRNA export ceases
+            // Nuclear pores + mRNA export (consolidated)
             var porePixels = {};
             if (cell.nuclearPores && cell.separated) {
-                var tPore = (t * 8000 / 6000) % 1.0;
-                var unifiedNucR2 = nucR + 0.9;
-                var npcDisasm = (cell.prophase && cell.prophase.npcDisassembly) || 0;
+                var tP = (t*8000/6000)%1.0, uNR = nucR+0.9, npcD = (cell.prophase&&cell.prophase.npcDisassembly)||0;
                 for (var npi = 0; npi < cell.nuclearPores.length; npi++) {
-                    var np = cell.nuclearPores[npi];
-                    // NPC disassembly: some pores disappear, replaced by dispersing Nup particles
-                    if (npcDisasm > 0) {
-                        var poreFlicker = Math.sin(tPore * 2 * Math.PI * 2 + npi * 2.3);
-                        // Higher disassembly = more pores lost; at >0.5, odd pores also begin to go
-                        var poreVulnerable = npcDisasm > 0.5 ? true : (npi % 2 === 0);
-                        if (poreFlicker > (1.0 - npcDisasm * 2.5) && poreVulnerable) {
-                            // Dispersing Nup protein — drifts outward from former pore site
-                            var nupDrift = (tPore + npi * 0.2) % 1.0;
-                            var nupDist = unifiedNucR2 + nupDrift * 1.8;
-                            if (nupDist < maxR - 1.0) {
-                                var nupX = Math.round(cell.cx + Math.cos(np.angle + nupDrift * 0.3) * nupDist);
-                                var nupY = Math.round(cell.cy + Math.sin(np.angle + nupDrift * 0.3) * nupDist);
-                                if (nupX >= 0 && nupX < size && nupY >= 0 && nupY < size) {
-                                    porePixels[nupX + ',' + nupY] = '#997744'; // dim Nup protein
-                                }
-                            }
-                            continue; // pore gone — skip normal rendering
-                        }
+                    var np = cell.nuclearPores[npi], pF = Math.sin(tP*2*Math.PI*2+npi*2.3);
+                    if (npcD > 0 && pF > (1.0-npcD*2.5) && (npcD>0.5||npi%2===0)) {
+                        var nD = (tP+npi*0.2)%1.0, nDR = uNR+nD*1.8;
+                        if (nDR<maxR-1.0) { var nx=Math.round(cell.cx+Math.cos(np.angle+nD*0.3)*nDR), ny=Math.round(cell.cy+Math.sin(np.angle+nD*0.3)*nDR);
+                            if (inB(nx,ny)) porePixels[nx+','+ny]='#997744'; } continue;
                     }
-                    // Pore sits on the nuclear envelope
-                    var poreX = Math.round(cell.cx + Math.cos(np.angle) * unifiedNucR2);
-                    var poreY = Math.round(cell.cy + Math.sin(np.angle) * unifiedNucR2);
-                    if (poreX >= 0 && poreX < size && poreY >= 0 && poreY < size) {
-                        // Pore complex: dimmer during disassembly
-                        var porePulse = Math.sin(tPore * 2 * Math.PI + np.mRNAphase * 6);
-                        var poreColor = npcDisasm > 0.2
-                            ? (porePulse > 0 ? '#ddaa44' : '#cc9933')
-                            : (porePulse > 0 ? '#ffcc66' : '#ddaa44');
-                        porePixels[poreX + ',' + poreY] = poreColor;
-                    }
-                    // mRNA export slows as NPCs disassemble
-                    if (npcDisasm < 0.5) {
-                        var mRNAprogress = (tPore + np.mRNAphase) % 1.0;
-                        var mRNAdist = unifiedNucR2 + mRNAprogress * 2.5;
-                        if (mRNAdist < maxR - 1.5) {
-                            var mX = Math.round(cell.cx + Math.cos(np.angle) * mRNAdist);
-                            var mY = Math.round(cell.cy + Math.sin(np.angle) * mRNAdist);
-                            if (mX >= 0 && mX < size && mY >= 0 && mY < size) {
-                                porePixels[mX + ',' + mY] = mRNAprogress < 0.5 ? '#ff8855' : '#ee7744';
-                            }
-                        }
-                    }
+                    var pX=Math.round(cell.cx+Math.cos(np.angle)*uNR), pY=Math.round(cell.cy+Math.sin(np.angle)*uNR);
+                    if (inB(pX,pY)) { var pp=Math.sin(tP*2*Math.PI+np.mRNAphase*6);
+                        porePixels[pX+','+pY]=npcD>0.2?(pp>0?'#ddaa44':'#cc9933'):(pp>0?'#ffcc66':'#ddaa44'); }
+                    if (npcD<0.5) { var mP=(tP+np.mRNAphase)%1.0, mD2=uNR+mP*2.5;
+                        if (mD2<maxR-1.5) { var mX=Math.round(cell.cx+Math.cos(np.angle)*mD2), mY=Math.round(cell.cy+Math.sin(np.angle)*mD2);
+                            if (inB(mX,mY)) porePixels[mX+','+mY]=mP<0.5?'#ff8855':'#ee7744'; } }
                 }
             }
 
-            // Secretory vesicles: bud from Golgi, travel to membrane, fuse (exocytosis)
-            var secVesPixels = {};
+            // Secretory + endocytic vesicle traffic (consolidated)
+            var secVesPixels = {}, endoPixels = {};
             if (cell.secretoryVesicles && cell.separated) {
-                var tSecVes = (t * 8000 / 7000) % 1.0;
+                var tSV = (t*8000/7000)%1.0;
                 for (var svi = 0; svi < cell.secretoryVesicles.length; svi++) {
-                    var sv = cell.secretoryVesicles[svi];
-                    // Progress: 0=at Golgi, 1=at membrane (then fuses and resets)
-                    var svProgress = (tSecVes * sv.speed + sv.phase) % 1.0;
-                    // Interpolate from Golgi region outward to membrane
-                    var golgiR = 2.0; // near Golgi (inner cytoplasm)
-                    var memR = maxR - 0.8; // near plasma membrane
-                    var svR = golgiR + svProgress * (memR - golgiR);
-                    // Angle interpolates from bud angle to target membrane angle
-                    var svAngle = sv.budAngle + svProgress * (sv.memAngle - sv.budAngle);
-                    var svX = Math.round(cell.cx + Math.cos(svAngle) * svR);
-                    var svY = Math.round(cell.cy + Math.sin(svAngle) * svR);
-                    if (svX >= 0 && svX < size && svY >= 0 && svY < size) {
-                        // Vesicle brightens as it approaches membrane (about to fuse)
-                        secVesPixels[svX + ',' + svY] = svProgress > 0.8 ? '#ffcc55' : sv.color;
-                    }
-                    // Exocytosis flash: when vesicle reaches membrane, brief bright pixel on membrane
-                    if (svProgress > 0.9) {
-                        var exoX = Math.round(cell.cx + Math.cos(sv.memAngle) * maxR);
-                        var exoY = Math.round(cell.cy + Math.sin(sv.memAngle) * maxR);
-                        if (exoX >= 0 && exoX < size && exoY >= 0 && exoY < size) {
-                            secVesPixels[exoX + ',' + exoY] = '#ffee88';
-                        }
-                    }
+                    var sv = cell.secretoryVesicles[svi], svP = (tSV*sv.speed+sv.phase)%1.0;
+                    var svR = 2.0+svP*(maxR-2.8), svA = sv.budAngle+svP*(sv.memAngle-sv.budAngle);
+                    var svX=Math.round(cell.cx+Math.cos(svA)*svR), svY=Math.round(cell.cy+Math.sin(svA)*svR);
+                    if (inB(svX,svY)) secVesPixels[svX+','+svY] = svP>0.8?'#ffcc55':sv.color;
+                    if (svP>0.9) { var exX=Math.round(cell.cx+Math.cos(sv.memAngle)*maxR), exY=Math.round(cell.cy+Math.sin(sv.memAngle)*maxR);
+                        if (inB(exX,exY)) secVesPixels[exX+','+exY]='#ffee88'; }
                 }
             }
-
-            // Endocytic vesicles: pinch from membrane, travel inward toward lysosomes
-            var endoPixels = {};
             if (cell.endocyticVesicles && cell.separated) {
-                var tEndo = (t * 8000 / 8000) % 1.0;
+                var tEV = (t*8000/8000)%1.0;
                 for (var evi = 0; evi < cell.endocyticVesicles.length; evi++) {
-                    var ev = cell.endocyticVesicles[evi];
-                    // Progress: 0=at membrane (coated pit), 1=near lysosome (early endosome)
-                    var evProgress = (tEndo * ev.speed + ev.phase) % 1.0;
-                    // Interpolate from membrane inward toward cell interior
-                    var memR2 = maxR - 0.5; // starts at membrane
-                    var lysoR = 2.2; // ends near lysosome orbit radius
-                    var evR = memR2 - evProgress * (memR2 - lysoR);
-                    // Angle curves from membrane receptor toward interior
-                    var evAngle = ev.memAngle + evProgress * (ev.targetAngle - ev.memAngle) * 0.3;
-                    var evX = Math.round(cell.cx + Math.cos(evAngle) * evR);
-                    var evY = Math.round(cell.cy + Math.sin(evAngle) * evR);
-                    if (evX >= 0 && evX < size && evY >= 0 && evY < size) {
-                        // Coated pit at membrane is darker, brightens as it matures into endosome
-                        endoPixels[evX + ',' + evY] = evProgress < 0.2 ? '#7733aa' : ev.color;
-                    }
-                    // Clathrin coat flash at membrane when pit forms
-                    if (evProgress < 0.15) {
-                        var pitX = Math.round(cell.cx + Math.cos(ev.memAngle) * maxR);
-                        var pitY = Math.round(cell.cy + Math.sin(ev.memAngle) * maxR);
-                        if (pitX >= 0 && pitX < size && pitY >= 0 && pitY < size) {
-                            endoPixels[pitX + ',' + pitY] = '#bb77dd';
-                        }
-                    }
+                    var ev = cell.endocyticVesicles[evi], evP = (tEV*ev.speed+ev.phase)%1.0;
+                    var evR = (maxR-0.5)-evP*(maxR-2.7), evA = ev.memAngle+evP*(ev.targetAngle-ev.memAngle)*0.3;
+                    var evX=Math.round(cell.cx+Math.cos(evA)*evR), evY=Math.round(cell.cy+Math.sin(evA)*evR);
+                    if (inB(evX,evY)) endoPixels[evX+','+evY] = evP<0.2?'#7733aa':ev.color;
+                    if (evP<0.15) { var pitX=Math.round(cell.cx+Math.cos(ev.memAngle)*maxR), pitY=Math.round(cell.cy+Math.sin(ev.memAngle)*maxR);
+                        if (inB(pitX,pitY)) endoPixels[pitX+','+pitY]='#bb77dd'; }
                 }
             }
 
@@ -2180,6 +2067,51 @@
                         if(p>0.2){var tfhA=Math.atan2(14-iy,26-ix);
                         s(Math.round(ix+Math.cos(tfhA)*1.0),Math.round(iy+Math.sin(tfhA)*1.0),p>0.5?'#88ddaa':'#66bb88');}
                     }
+                }},
+                // CX3CR1+ lamina propria macrophages: tolerogenic sentinels beneath epithelium
+                // Extend transepithelial dendrites between cells to sample luminal antigens
+                // Maintain oral tolerance by clearing commensals without inflammatory response
+                {period:27000, phaseStep:2.09, items:[
+                    {x:24,y:18,color:'#cc8844',dimColor:'#996622'},{x:18,y:24,color:'#bb7733',dimColor:'#885511'},
+                    {x:13,y:21,color:'#cc8844',dimColor:'#996622'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // Macrophage body pulses with phagocytic activity
+                    var phagP=Math.sin(ph*1.8+idx*1.4);
+                    if(phagP>0.3){var pa=ph*0.7+idx*2.0;
+                    s(Math.round(ix+Math.cos(pa)*0.8),Math.round(iy+Math.sin(pa)*0.8),phagP>0.6?'#eebb66':'#ddaa55');}
+                    // Transepithelial dendrite: long process extending toward lumen through epithelium
+                    var lumA5=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    var dendSway=Math.sin(ph*0.4+idx*1.7)*0.10;
+                    for(var dl=1;dl<=4;dl++){
+                        var dA2=lumA5+dendSway*(dl*0.3);
+                        var dx3=Math.round(it.x+Math.cos(dA2)*dl),dy3=Math.round(it.y+Math.sin(dA2)*dl);
+                        var dPulse=Math.sin(ph*1.3+idx*0.9+dl*1.5);
+                        if(inB(dx3,dy3))s(dx3,dy3,dPulse>0?'#ddaa66':'#bb8844');
+                    }
+                    // Antigen sampling flash at dendrite tip when capturing
+                    if(Math.sin(ph*3.0+idx*2.1)>0.5){
+                        var tipR=4.5,tipX=Math.round(it.x+Math.cos(lumA5)*tipR),tipY=Math.round(it.y+Math.sin(lumA5)*tipR);
+                        if(inB(tipX,tipY))s(tipX,tipY,'#ffeeaa');
+                    }
+                    // IL-10 anti-inflammatory secretion: maintains tolerance
+                    if(p>0.3){var il10A=Math.atan2(it.y-16,it.x-16);
+                    s(Math.round(it.x+Math.cos(il10A)*1.3),Math.round(it.y+Math.sin(il10A)*1.3),'#88ccaa');}
+                }},
+                // ILC3 (group 3 innate lymphoid cells): IL-22 producers in lamina propria
+                // RORγt+ cells sense microbial signals and secrete IL-22 to strengthen epithelial barrier
+                // IL-22 induces antimicrobial peptides (RegIIIγ) and promotes mucus production
+                {period:29000, phaseStep:2.09, items:[
+                    {x:26,y:20,color:'#55ccaa',dimColor:'#338877'},{x:20,y:26,color:'#44bb99',dimColor:'#227766'},
+                ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // IL-22 secretion toward epithelium (upward toward cells)
+                    var epiA2=Math.atan2(16-it.y,16-it.x);
+                    if(p>0.2){s(Math.round(it.x+Math.cos(epiA2)*1.0),Math.round(it.y+Math.sin(epiA2)*1.0),'#77eebb');
+                    if(p>0.5){var il22R=1.8+p*0.5;s(Math.round(it.x+Math.cos(epiA2)*il22R),Math.round(it.y+Math.sin(epiA2)*il22R),'#aaffdd');}
+                    }
+                    // RegIIIγ antimicrobial peptide induction at epithelial surface (downstream effect)
+                    if(Math.sin(ph*2.2+idx*1.6)>0.4){var regR=2.5+Math.sin(ph*0.8)*0.5;
+                    var regX=Math.round(it.x+Math.cos(epiA2)*regR),regY=Math.round(it.y+Math.sin(epiA2)*regR);
+                    if(inB(regX,regY))s(regX,regY,'#ddffcc');}
                 }},
             ]);
             // Notch lateral inhibition: Delta-Notch progenitor pairs with signal exchange
