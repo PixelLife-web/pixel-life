@@ -440,9 +440,7 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // Cyclin E-CDK2: completely degraded — no trace remains in G2
-        cellA.cyclinE = [];
-        cellB.cyclinE = [];
+        // Cyclin E-CDK2: degraded in G2 (consolidated — no rendering)
 
         // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
         // They reverse CDK1 effects on lamins, condensins, NPCs — restoring interphase state
@@ -479,10 +477,7 @@
             { orbitR: 3.2, baseAngle: 5.5, speed: 0.4, color: '#44aa88' },
         ];
 
-        // E2F transcription factors: fully silenced by cyclin A-CDK2 phosphorylation
-        // S-phase gene program self-sustaining; E2F completely degraded
-        cellA.e2fFactors = [];
-        cellB.e2fFactors = [];
+        // E2F: degraded in G2 (consolidated — no rendering)
 
         // Cyclin A-CDK2: G2 peak — highest concentration before mitotic entry
         // Prevents re-replication (Cdc6/Cdt1 phosphorylated), primes CDK1 activation
@@ -516,21 +511,24 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // G2 PHASE: S phase complete, genome fully replicated (4n DNA content)
-        // All replication forks have terminated — PCNA/RPA unloaded
-        // Cohesins locked on sisters, topoII finishing decatenation
-        // Cyclin A-CDK2 high, cyclin B accumulating in cytoplasm (CRM1 exports it from nucleus)
-        cellA.prophase = null;
-        cellB.prophase = null;
+        // PROPHASE ONSET: CDK1 fully active — Wee1 gone, Cdc25 positive feedback complete
+        // Cyclin B-CDK1 floods nucleus, phosphorylates condensins → chromatin condensation begins
+        // Centrosomes begin separating along nuclear envelope, pushed by Eg5 kinesin
+        cellA.prophase = {
+            condensation: 0.15, // early condensation — chromosome territories start to resolve
+            laminPhospho: 0,    // lamina intact at early prophase
+            // Centrosome pole targets: Eg5 kinesin pushes them apart along nuclear envelope
+            pole1Target: { x: 19, y: 7 },
+            pole2Target: { x: 23, y: 11 },
+        };
+        cellB.prophase = {
+            condensation: 0.15,
+            laminPhospho: 0,
+            pole1Target: { x: 9, y: 21 },
+            pole2Target: { x: 13, y: 25 },
+        };
 
-        // Replication forks: all terminated — S phase is complete
-        // Only residual PCNA foci remain at late-replicating heterochromatin, rapidly unloading
-        cellA.replicationForks = [];
-        cellB.replicationForks = [];
-
-        // Condensins: unloaded from chromatin in G1 — no longer needed
-        cellA.condensins = [];
-        cellB.condensins = [];
+        // Replication forks + condensins: cleared in G2 (consolidated — no rendering)
 
         // Cohesin rings (Smc1/Smc3/Rad21): established behind replication forks
         // Eco1 acetyltransferase acetylates Smc3, locking cohesins around sister chromatids
@@ -558,18 +556,22 @@
             { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
         ];
 
-        // Cyclin B-CDK1: accumulating toward threshold — 3rd particle appears
-        // CRM1 exportin keeps cyclin B cytoplasmic; Wee1 keeps CDK1 inactive (Y15 phospho)
-        // Once cyclin B reaches critical mass, Cdc25 positive feedback triggers mitotic entry
+        // Cyclin B-CDK1: 5th particle — peak concentration, nuclear import surging
+        // CRM1 export shut down by CDK1 phosphorylation → cyclin B floods nucleus
+        // Nuclear cyclin B-CDK1 phosphorylates condensins, triggering chromosome condensation
         cellA.cyclinB = [
-            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#44ddaa' },
-            { orbitR: 2.8, baseAngle: 3.0, speed: -0.42, color: '#33ccaa' },
-            { orbitR: 4.0, baseAngle: 5.2, speed: 0.38, color: '#44ddaa' },
+            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#44ddaa', nuclear: false },
+            { orbitR: 2.8, baseAngle: 3.0, speed: -0.42, color: '#33ccaa', nuclear: false },
+            { orbitR: 4.0, baseAngle: 5.2, speed: 0.38, color: '#44ddaa', nuclear: false },
+            { orbitR: 2.2, baseAngle: 1.8, speed: 0.55, color: '#55eebb', nuclear: false },
+            { orbitR: 1.0, baseAngle: 0.0, speed: 0.7, color: '#66ffcc', nuclear: true },
         ];
         cellB.cyclinB = [
-            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#44ddaa' },
-            { orbitR: 2.8, baseAngle: 5.5, speed: 0.45, color: '#33ccaa' },
-            { orbitR: 4.0, baseAngle: 1.0, speed: -0.36, color: '#44ddaa' },
+            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#44ddaa', nuclear: false },
+            { orbitR: 2.8, baseAngle: 5.5, speed: 0.45, color: '#33ccaa', nuclear: false },
+            { orbitR: 4.0, baseAngle: 1.0, speed: -0.36, color: '#44ddaa', nuclear: false },
+            { orbitR: 2.2, baseAngle: 4.5, speed: -0.52, color: '#55eebb', nuclear: false },
+            { orbitR: 1.0, baseAngle: 3.14, speed: -0.65, color: '#66ffcc', nuclear: true },
         ];
 
         // PLK1 (Polo-like kinase 1): master G2/M regulator
@@ -585,19 +587,13 @@
             { orbitR: 3.0, baseAngle: 1.5, speed: 0.46, color: '#dd5533' },
         ];
 
-        // Wee1 kinase: inhibitory kinase keeping CDK1 inactive via Y15 phosphorylation
-        // PLK1 phosphorylates Wee1, marking it for SCF-beta-TrCP ubiquitination
-        // Dark blue-violet particles, dimming as PLK1 begins targeting them
-        cellA.wee1 = [
-            { orbitR: 2.5, baseAngle: 0.8, speed: -0.35, color: '#5544aa' },
-            { orbitR: 1.8, baseAngle: 3.5, speed: 0.4, color: '#6655bb' },
-        ];
-        cellB.wee1 = [
-            { orbitR: 2.5, baseAngle: 3.2, speed: 0.38, color: '#5544aa' },
-            { orbitR: 1.8, baseAngle: 0.3, speed: -0.42, color: '#6655bb' },
-        ];
+        // Wee1 kinase: fully degraded by SCF-beta-TrCP ubiquitin-proteasome pathway
+        // CDK1 inhibition completely lifted — the bistable switch has flipped
+        cellA.wee1 = [];
+        cellB.wee1 = [];
 
-        // G2 phase: G2/M checkpoint — PLK1/Cdc25/Wee1 regulatory network builds toward mitotic switch
+        // PROPHASE: CDK1 fully active, phosphorylation cascade begins
+        // Condensins loading onto chromosomes, centrosomes separating via Eg5
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -894,22 +890,20 @@
                 }
             }
 
-            // Condensin complexes: visible as bright dots co-localizing with condensing chromosomes
+            // Condensins: CDK1-phosphorylated condensin I/II loading onto chromosomes
+            // They compact chromatin into visible chromosome fibers
             var condensinPixels = {};
-            if (cell.condensins && cell.prophase && cell.prophase.condensation > 0.3) {
-                var tCond = (t * 8000 / 7000) % 1.0;
-                var allChr = cell.chromatin.concat(cell.sisterChromatin || []);
-                for (var coni = 0; coni < cell.condensins.length; coni++) {
-                    var con = cell.condensins[coni];
-                    // Condensin tracks along chromosomes — orbits near nucleus center
-                    var conAngle = con.baseAngle + con.speed * tOrbit;
-                    var conR = 0.3 + cell.prophase.condensation * 0.4;
-                    var conX = Math.round(cell.cx + Math.cos(conAngle) * conR);
-                    var conY = Math.round(cell.cy + Math.sin(conAngle) * conR);
+            if (cell.prophase && cell.separated) {
+                for (var coi = 0; coi < allChromatin.length; coi++) {
+                    var chr = allChromatin[coi];
+                    // Condensin glows near each chromatin pixel
+                    var conAngle = tChromatin * 0.1 + coi * 1.5;
+                    var conR = 0.6;
+                    var conX = Math.round(chr.x + Math.cos(conAngle) * conR);
+                    var conY = Math.round(chr.y + Math.sin(conAngle) * conR);
                     if (conX >= 0 && conX < size && conY >= 0 && conY < size) {
-                        var conPulse = Math.sin(tCond * 2 * Math.PI + coni * 1.5);
-                        // Condensin glows as it extrudes chromatin loops
-                        condensinPixels[conX + ',' + conY] = conPulse > 0 ? '#ffaa66' : con.color;
+                        var conPulse = Math.sin(tChromatin * 0.08 + coi * 2.1);
+                        condensinPixels[conX + ',' + conY] = conPulse > 0 ? '#aaddff' : '#88bbdd';
                     }
                 }
             }
@@ -1465,8 +1459,6 @@
                 }
             }
 
-            // (S-phase replication machinery cleared — consolidated at abscission)
-
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
             if (cell.microtubules && cell.centrosomes && cell.separated) {
@@ -1527,8 +1519,6 @@
                 }
             }
 
-            // (Cyclin B degraded — consolidated at abscission)
-
             // Phospho-Rb: inactivated, drifts slowly inside nucleus (dim green)
             var checkPixels = {};
             if (cell.checkpointKinases && cell.separated) {
@@ -1562,93 +1552,9 @@
                 }
             }
 
-            // E2F transcription factors: bright cyan particles inside nucleus
-            var e2fPixels = {};
-            if (cell.e2fFactors && cell.separated) {
-                var tE2F = (t * 8000 / 3500) % 1.0;
-                for (var efi = 0; efi < cell.e2fFactors.length; efi++) {
-                    var ef = cell.e2fFactors[efi];
-                    var efAngle = ef.baseAngle + ef.speed * tOrbit;
-                    var efX = Math.round(cell.cx + Math.cos(efAngle) * ef.orbitR);
-                    var efY = Math.round(cell.cy + Math.sin(efAngle) * ef.orbitR);
-                    if (efX >= 0 && efX < size && efY >= 0 && efY < size) {
-                        // E2F pulses brightly as it activates target gene promoters
-                        var efPulse = Math.sin(tE2F * 2 * Math.PI * 2 + efi * 1.8);
-                        e2fPixels[efX + ',' + efY] = efPulse > 0.2 ? '#66ffff' : ef.color;
-                    }
-                }
-            }
+            // E2F: degraded (consolidated)
 
-            // Replication forks: origins have fired, bidirectional forks extend through nucleus
-            // PCNA (yellow) marks the fork position; RPA (blue) coats exposed ssDNA ahead of fork
-            var forkPixels = {};
-            if (cell.replicationForks && cell.separated) {
-                var tFork = (t * 8000 / 6000) % 1.0;
-                for (var rfi = 0; rfi < cell.replicationForks.length; rfi++) {
-                    var rf = cell.replicationForks[rfi];
-                    // Fork advances along origin angle within nucleus
-                    var forkProgress = (tFork + rfi * 0.33) % 1.0;
-                    var forkOsc = Math.sin(forkProgress * 2 * Math.PI) * 0.3; // oscillation
-                    // Leading strand fork position
-                    var forkR1 = nucR * 0.3 + forkProgress * nucR * 0.5;
-                    var forkAngle1 = rf.originAngle + rf.speed * tOrbit + forkOsc;
-                    var fx1 = Math.round(cell.cx + Math.cos(forkAngle1) * forkR1);
-                    var fy1 = Math.round(cell.cy + Math.sin(forkAngle1) * forkR1);
-                    // Lagging strand fork position (opposite direction)
-                    var forkR2 = nucR * 0.3 + (1 - forkProgress) * nucR * 0.5;
-                    var forkAngle2 = rf.originAngle + Math.PI + rf.speed * tOrbit - forkOsc;
-                    var fx2 = Math.round(cell.cx + Math.cos(forkAngle2) * forkR2);
-                    var fy2 = Math.round(cell.cy + Math.sin(forkAngle2) * forkR2);
-                    // PCNA at fork positions (yellow dots)
-                    var fdx1 = fx1 - cell.cx, fdy1 = fy1 - cell.cy;
-                    if (Math.sqrt(fdx1 * fdx1 + fdy1 * fdy1) < nucR + 0.3) {
-                        if (fx1 >= 0 && fx1 < size && fy1 >= 0 && fy1 < size) {
-                            var pcnaPulse = Math.sin(tFork * 2 * Math.PI * 3 + rfi * 2.1);
-                            forkPixels[fx1 + ',' + fy1] = pcnaPulse > 0 ? '#ffee66' : rf.pcnaColor;
-                        }
-                    }
-                    var fdx2 = fx2 - cell.cx, fdy2 = fy2 - cell.cy;
-                    if (Math.sqrt(fdx2 * fdx2 + fdy2 * fdy2) < nucR + 0.3) {
-                        if (fx2 >= 0 && fx2 < size && fy2 >= 0 && fy2 < size) {
-                            forkPixels[fx2 + ',' + fy2] = rf.pcnaColor;
-                        }
-                    }
-                    // RPA on ssDNA: blue pixel between origin and fork (exposed template)
-                    var rpaR = (forkR1 + nucR * 0.3) / 2;
-                    var rpaAngle = forkAngle1 - rf.armSpread * 0.5;
-                    var rpx = Math.round(cell.cx + Math.cos(rpaAngle) * rpaR);
-                    var rpy = Math.round(cell.cy + Math.sin(rpaAngle) * rpaR);
-                    var rdx = rpx - cell.cx, rdy = rpy - cell.cy;
-                    if (Math.sqrt(rdx * rdx + rdy * rdy) < nucR + 0.3) {
-                        if (rpx >= 0 && rpx < size && rpy >= 0 && rpy < size) {
-                            forkPixels[rpx + ',' + rpy] = rf.rpaColor;
-                        }
-                    }
-                }
-            }
-
-            // Histone deposition: CAF-1 chaperone deposits H3-H4 tetramers behind each fork
-            // Green-teal dots trail behind the advancing PCNA, restoring nucleosome structure
-            var histonePixels = {};
-            if (cell.replicationForks && cell.separated) {
-                var tHist = (t * 8000 / 6000) % 1.0;
-                for (var hfi = 0; hfi < cell.replicationForks.length; hfi++) {
-                    var hrf = cell.replicationForks[hfi];
-                    var hforkProgress = (tHist + hfi * 0.33) % 1.0;
-                    // Histone trail: behind the leading fork (smaller radius = already replicated)
-                    var histR = nucR * 0.2 + hforkProgress * nucR * 0.35;
-                    var histAngle = hrf.originAngle + hrf.speed * tOrbit + Math.sin(hforkProgress * 2 * Math.PI) * 0.2;
-                    var hx = Math.round(cell.cx + Math.cos(histAngle) * histR);
-                    var hy = Math.round(cell.cy + Math.sin(histAngle) * histR);
-                    var hdx = hx - cell.cx, hdy = hy - cell.cy;
-                    if (Math.sqrt(hdx * hdx + hdy * hdy) < nucR + 0.3) {
-                        if (hx >= 0 && hx < size && hy >= 0 && hy < size) {
-                            var histPulse = Math.sin(tHist * 2 * Math.PI * 2 + hfi * 1.7);
-                            histonePixels[hx + ',' + hy] = histPulse > 0.2 ? '#55ccaa' : '#449988';
-                        }
-                    }
-                }
-            }
+            // Replication forks + histones: S phase complete (consolidated)
 
             // Cohesin rings: blue-lavender dots inside nucleus, holding sister chromatids together
             var cohesinPixels = {};
@@ -1735,10 +1641,19 @@
                     var cbPulse = Math.sin(tCycB * 2 * Math.PI + cbi * 1.9);
                     var cbdx = cbx - cell.cx, cbdy = cby - cell.cy;
                     var cbDist = Math.sqrt(cbdx * cbdx + cbdy * cbdy);
-                    // Strictly cytoplasmic: CRM1 export keeps it out of nucleus
-                    if (cbDist < maxR - 0.8 && cbDist > nucR + 1.2) {
-                        if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
-                            cycBPixels[cbx + ',' + cby] = cbPulse > 0.2 ? '#55eebb' : cyb.color;
+                    if (cyb.nuclear) {
+                        // Nuclear cyclin B-CDK1: CRM1 export shut down, flooding nucleus
+                        if (cbDist <= nucR + 0.8) {
+                            if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
+                                cycBPixels[cbx + ',' + cby] = cbPulse > 0.1 ? '#77ffdd' : cyb.color;
+                            }
+                        }
+                    } else {
+                        // Cytoplasmic cyclin B
+                        if (cbDist < maxR - 0.8 && cbDist > nucR + 1.2) {
+                            if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
+                                cycBPixels[cbx + ',' + cby] = cbPulse > 0.2 ? '#55eebb' : cyb.color;
+                            }
                         }
                     }
                 }
@@ -1778,8 +1693,8 @@
                 }
             }
 
-            // Wee1 kinase: inhibitory Y15 phosphorylation keeps CDK1 inactive
-            // Dark blue-violet, beginning to dim as PLK1 targets it for degradation
+            // Wee1 kinase: nearly degraded — SCF-beta-TrCP ubiquitination in progress
+            // Last particle flickers as proteasome digests it; CDK1 inhibition lifting
             var wee1Pixels = {};
             if (cell.wee1 && cell.separated) {
                 var tWee = (t * 8000 / 6400) % 1.0;
@@ -1788,13 +1703,13 @@
                     var wkAngle = wk.baseAngle + wk.speed * tOrbit;
                     var wkX = Math.round(cell.cx + Math.cos(wkAngle) * wk.orbitR);
                     var wkY = Math.round(cell.cy + Math.sin(wkAngle) * wk.orbitR);
-                    var wkPulse = Math.sin(tWee * 2 * Math.PI + wi * 2.3);
+                    var wkPulse = Math.sin(tWee * 2 * Math.PI * 3 + wi * 2.3);
                     var wkDx = wkX - cell.cx, wkDy = wkY - cell.cy;
                     var wkDist = Math.sqrt(wkDx * wkDx + wkDy * wkDy);
                     if (wkDist < maxR - 1.0 && wkDist > nucR + 0.5) {
                         if (wkX >= 0 && wkX < size && wkY >= 0 && wkY < size) {
-                            // Wee1 pulses dimly — inhibitory kinase holding CDK1 back
-                            wee1Pixels[wkX + ',' + wkY] = wkPulse > 0.2 ? '#7766cc' : wk.color;
+                            // Flickering rapidly — ubiquitin tags being added
+                            wee1Pixels[wkX + ',' + wkY] = wkPulse > 0.4 ? '#443388' : wk.color;
                         }
                     }
                 }
@@ -1836,40 +1751,7 @@
                 }
             }
 
-            // Cyclin E-CDK2: restriction point effector particles
-            var cycEPixels = {};
-            if (cell.cyclinE && cell.separated) {
-                var tCycE = (t * 8000 / 4800) % 1.0;
-                for (var cei = 0; cei < cell.cyclinE.length; cei++) {
-                    var cye = cell.cyclinE[cei];
-                    var cyeAngle = cye.baseAngle + cye.speed * tOrbit;
-                    var cyeR = cye.orbitR;
-                    var cyex = Math.round(cell.cx + Math.cos(cyeAngle) * cyeR);
-                    var cyey = Math.round(cell.cy + Math.sin(cyeAngle) * cyeR);
-                    var cyePulse = Math.sin(tCycE * 2 * Math.PI + cei * 1.3);
-                    var cyeDx = cyex - cell.cx;
-                    var cyeDy = cyey - cell.cy;
-                    var cyeDist = Math.sqrt(cyeDx * cyeDx + cyeDy * cyeDy);
-                    var cyeInRange = cye.nuclear
-                        ? (cyeDist < nucR + 0.5)
-                        : (cyeDist < maxR - 1.0 && cyeDist > nucR + 0.8);
-                    if (cyeInRange && cyex >= 0 && cyex < size && cyey >= 0 && cyey < size) {
-                        // Nuclear cyclin E flashes bright when phosphorylating Rb
-                        cycEPixels[cyex + ',' + cyey] = cye.nuclear
-                            ? (cyePulse > 0.1 ? '#55ffaa' : '#44ee99')
-                            : (cyePulse > 0.3 ? '#55eebb' : cye.color);
-                    }
-                    // Hyper-phosphorylation spark: nuclear cyclin E emits sparks at Rb sites
-                    if (cye.nuclear && cyePulse > 0.5) {
-                        var ceSparkAngle = cyeAngle + 0.6;
-                        var ceSparkX = Math.round(cell.cx + Math.cos(ceSparkAngle) * (cyeR + 0.4));
-                        var ceSparkY = Math.round(cell.cy + Math.sin(ceSparkAngle) * (cyeR + 0.4));
-                        if (ceSparkX >= 0 && ceSparkX < size && ceSparkY >= 0 && ceSparkY < size) {
-                            cycEPixels[ceSparkX + ',' + ceSparkY] = '#88ffcc'; // phosphorylation spark
-                        }
-                    }
-                }
-            }
+            // Cyclin E: degraded (consolidated)
 
             // Cdc25 phosphatase: bright particles that flash when activating CDK1
             var cdc25Pixels = {};
@@ -1911,8 +1793,6 @@
                     }
                 }
             }
-
-            // (Wee1 degraded — consolidated at abscission)
 
             // PP1/PP2A phosphatases: dephosphorylation wave sweeping through the cell
             var phosphPixels = {};
@@ -2077,8 +1957,6 @@
                     }
                 }
             }
-
-            // (Securin/Separase cleared — consolidated at abscission)
 
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
