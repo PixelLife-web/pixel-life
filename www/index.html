@@ -2000,223 +2000,140 @@
                     }
                 }
             }
-            // Luminal chyme: macronutrient particles drifting with peristalsis
-            var tChyme = (now % 20000) / 20000;
-            var chymeParticles = [
-                {x:2, y:2, color:'#cc9955', dimColor:'#aa7744', size:1},   // carb fragment
-                {x:6, y:1, color:'#dd8877', dimColor:'#bb6655', size:1},   // protein fragment
-                {x:1, y:7, color:'#ddbb55', dimColor:'#bbaa44', size:1},   // lipid micelle
-                {x:4, y:5, color:'#cc9955', dimColor:'#aa7744', size:1},   // carb
-                {x:9, y:2, color:'#dd8877', dimColor:'#bb6655', size:1},   // protein
-                {x:3, y:10, color:'#ddbb55', dimColor:'#bbaa44', size:1},  // lipid
-                {x:7, y:8, color:'#cc9955', dimColor:'#aa7744', size:1},   // carb
-                {x:12, y:4, color:'#dd8877', dimColor:'#bb6655', size:1},  // protein
-                {x:1, y:14, color:'#ddbb55', dimColor:'#bbaa44', size:1},  // lipid
-                {x:10, y:11, color:'#cc9955', dimColor:'#aa7744', size:1}, // carb
-            ];
-            // Peristaltic drift: chyme particles shift position with gut contraction cycle
-            var chymeWave = (tChyme * 1.2) % 1.0;
-            for (var chi = 0; chi < chymeParticles.length; chi++) {
-                var ch = chymeParticles[chi];
-                // Peristaltic displacement: particles drift along lumen axis
-                var chDrift = Math.sin(tChyme * 2 * Math.PI + chi * 0.7) * 1.2;
-                var chLat = Math.cos(tChyme * 2 * Math.PI * 0.6 + chi * 1.3) * 0.6;
-                var chX = Math.round(ch.x + chDrift);
-                var chY = Math.round(ch.y + chLat);
-                // Brownian jitter: thermal fluctuation
-                var chJit = Math.sin(tChyme * 2 * Math.PI * 3.5 + chi * 2.1);
-                if (chJit > 0.5) chX += Math.round(Math.sin(tChyme * 2 * Math.PI * 7 + chi * 4.3) * 0.5);
-                // Only render in lumen region (upper-left quadrant, away from tissue)
-                if (chX >= 0 && chX < 15 && chY >= 0 && chY < 16 && inB(chX, chY)) {
-                    var chPulse = Math.sin(tChyme * 2 * Math.PI * 1.5 + chi * 1.1);
-                    set(chX, chY, chPulse > 0 ? ch.color : ch.dimColor);
-                }
-            }
-            // Commensal bacteria in mucus gel layer — produce SCFAs (butyrate)
-            var tBact = (now % 16000) / 16000;
-            var bacteria = [
-                {x:13,y:8,angle:0.3,len:1,color:'#77aa55',dimColor:'#558833'},
-                {x:8,y:14,angle:1.8,len:1,color:'#5588aa',dimColor:'#336688'},
-                {x:15,y:12,angle:2.5,len:1,color:'#aa8855',dimColor:'#886633'},
-                {x:5,y:16,angle:4.1,len:1,color:'#77aa55',dimColor:'#558833'},
-                {x:11,y:15,angle:5.2,len:1,color:'#5588aa',dimColor:'#336688'},
-            ];
-            for (var bai = 0; bai < bacteria.length; bai++) {
-                var bact = bacteria[bai];
-                var baTumble = Math.sin(tBact * 2 * Math.PI * 0.4 + bai * 1.7) * 0.3;
-                var baAngle = bact.angle + baTumble;
-                var baCx = Math.round(bact.x + Math.sin(tBact * 2 * Math.PI * 0.7 + bai * 2.3) * 0.5);
-                var baCy = Math.round(bact.y + Math.cos(tBact * 2 * Math.PI * 0.5 + bai * 1.9) * 0.4);
-                var baPulse = Math.sin(tBact * 2 * Math.PI * 1.2 + bai * 0.9);
-                if (inB(baCx, baCy)) set(baCx, baCy, baPulse > 0 ? bact.color : bact.dimColor);
-                var baTipX = Math.round(baCx + Math.cos(baAngle) * bact.len);
-                var baTipY = Math.round(baCy + Math.sin(baAngle) * bact.len);
-                if (inB(baTipX, baTipY)) set(baTipX, baTipY, baPulse > -0.3 ? bact.color : bact.dimColor);
-                if (baPulse > 0.5) {
-                    var scfaAngle = Math.atan2(16 - baCy, 16 - baCx);
-                    var scfaX = Math.round(baCx + Math.cos(scfaAngle) * 1.2);
-                    var scfaY = Math.round(baCy + Math.sin(scfaAngle) * 1.2);
-                    if (inB(scfaX, scfaY)) set(scfaX, scfaY, '#bbdd77');
-                }
-            }
-            // IELs: CD8αα+ T cells patrolling between enterocytes
-            var tIEL = (now % 22000) / 22000;
-            var iels = [
-                {homeX:16,homeY:16,patrolR:2.5,color:'#6644bb',dimColor:'#553399',granzColor:'#aa77ee'},
-                {homeX:21,homeY:19,patrolR:2.0,color:'#5533aa',dimColor:'#442288',granzColor:'#9966dd'},
-                {homeX:11,homeY:13,patrolR:2.2,color:'#6644bb',dimColor:'#553399',granzColor:'#aa77ee'},
-            ];
-            for (var ieli = 0; ieli < iels.length; ieli++) {
-                var iel = iels[ieli];
-                var ielPhase = tIEL * 2 * Math.PI + ieli * 2.09;
-                var ielX = Math.round(iel.homeX + Math.cos(ielPhase) * iel.patrolR);
-                var ielY = Math.round(iel.homeY + Math.sin(ielPhase * 0.7 + ieli * 1.3) * iel.patrolR);
-                var ielPulse = Math.sin(tIEL * 2 * Math.PI * 2.5 + ieli * 1.7);
-                if (inB(ielX, ielY)) set(ielX, ielY, ielPulse > 0 ? iel.color : iel.dimColor);
-                var ielDirX = -Math.sin(ielPhase), ielDirY = Math.cos(ielPhase * 0.7 + ieli * 1.3) * 0.7;
-                var ielPodX = Math.round(ielX + ielDirX * 0.8), ielPodY = Math.round(ielY + ielDirY * 0.8);
-                if (inB(ielPodX, ielPodY) && ielPulse > -0.3) set(ielPodX, ielPodY, iel.dimColor);
-                if (ielPulse > 0.7) {
-                    var grX = Math.round(ielX - ielDirX), grY = Math.round(ielY - ielDirY);
-                    if (inB(grX, grY)) set(grX, grY, iel.granzColor);
-                }
-            }
-            // Paneth cells: defensin/lysozyme degranulation at crypt base
-            var tPan = (now % 26000) / 26000;
-            var panethCells = [
-                {x:18,y:22,color:'#cc7733',dimColor:'#aa5522',granColor:'#ffcc66',lyzColor:'#eebb44',defColor:'#ffdd88'},
-                {x:14,y:17,color:'#bb6622',dimColor:'#994411',granColor:'#eebc55',lyzColor:'#ddaa33',defColor:'#eeccaa'},
-                {x:23,y:22,color:'#cc7733',dimColor:'#aa5522',granColor:'#ffcc66',lyzColor:'#eebb44',defColor:'#ffdd88'},
-            ];
-            for (var pani = 0; pani < panethCells.length; pani++) {
-                var pan = panethCells[pani];
-                var panPhase = tPan * 2 * Math.PI + pani * 2.09;
-                var panPulse = Math.sin(panPhase);
-                if (inB(pan.x, pan.y)) set(pan.x, pan.y, panPulse > 0 ? pan.color : pan.dimColor);
-                var granAngle = Math.atan2(pan.y - 16, pan.x - 16) + Math.PI;
-                var granX = Math.round(pan.x + Math.cos(granAngle) * 0.9);
-                var granY = Math.round(pan.y + Math.sin(granAngle) * 0.9);
-                if (inB(granX, granY)) set(granX, granY, Math.sin(panPhase * 1.3 + pani * 0.8) > 0.2 ? pan.granColor : pan.lyzColor);
-                if (panPulse > 0.3) {
-                    var defX = Math.round(pan.x + Math.cos(granAngle) * (1.5 + panPulse * 0.5));
-                    var defY = Math.round(pan.y + Math.sin(granAngle) * (1.5 + panPulse * 0.5));
-                    if (inB(defX, defY)) set(defX, defY, pan.defColor);
-                    if (panPulse > 0.6) {
-                        var lyzR = 2.0 + panPulse * 0.4, lyzSpread = Math.sin(panPhase * 2.5 + pani * 1.2) * 0.5;
-                        var lyzX = Math.round(pan.x + Math.cos(granAngle + lyzSpread) * lyzR);
-                        var lyzY = Math.round(pan.y + Math.sin(granAngle + lyzSpread) * lyzR);
-                        if (inB(lyzX, lyzY)) set(lyzX, lyzY, pan.lyzColor);
+            // Generic tissue cell renderer: renders positioned cells with drift, pulse, and secondary emissions
+            // spec: {period, items:[{x,y,color,dimColor,...}], drift, emitThresh, emitFn(item,pulse,phase,tNorm)}
+            function renderTissueCells(specs) {
+                for (var tsi = 0; tsi < specs.length; tsi++) {
+                    var sp = specs[tsi];
+                    var tN2 = (now % sp.period) / sp.period;
+                    for (var tci = 0; tci < sp.items.length; tci++) {
+                        var it = sp.items[tci];
+                        var phase = tN2 * 2 * Math.PI + tci * (sp.phaseStep || 2.09);
+                        var pulse = Math.sin(phase);
+                        var driftX = sp.drift ? Math.sin(tN2 * 2 * Math.PI * (sp.driftFreq||0.8) + tci * 1.5) * (sp.drift||0) : 0;
+                        var driftY = sp.drift ? Math.cos(tN2 * 2 * Math.PI * (sp.driftFreqY||0.5) + tci * 2.1) * (sp.drift * 0.6||0) : 0;
+                        var ix = Math.round(it.x + driftX), iy = Math.round(it.y + driftY);
+                        if (sp.bounds && (ix < sp.bounds[0] || ix >= sp.bounds[2] || iy < sp.bounds[1] || iy >= sp.bounds[3])) continue;
+                        if (inB(ix, iy)) set(ix, iy, pulse > 0 ? it.color : it.dimColor);
+                        if (sp.emitFn && pulse > (sp.emitThresh||0.3)) sp.emitFn(it, pulse, phase, tN2, ix, iy, tci, set);
                     }
                 }
             }
-            // Lgr5+ stem cells: Wnt-driven asymmetric division at crypt base
-            var tISC = (now % 28000) / 28000;
-            var stemCells = [
-                {x:16,y:20,color:'#33bb66',dimColor:'#228844',wntColor:'#55dd88',divColor:'#88ffbb'},
-                {x:21,y:23,color:'#33bb66',dimColor:'#228844',wntColor:'#55dd88',divColor:'#88ffbb'},
-                {x:12,y:18,color:'#2aaa55',dimColor:'#1d8844',wntColor:'#44cc77',divColor:'#77eeaa'},
-            ];
-            for (var isci = 0; isci < stemCells.length; isci++) {
-                var isc = stemCells[isci];
-                var iscPhase = tISC * 2 * Math.PI + isci * 2.09;
-                var iscPulse = Math.sin(iscPhase);
-                if (inB(isc.x, isc.y)) set(isc.x, isc.y, iscPulse > 0 ? isc.color : isc.dimColor);
-                var wntAngle = Math.atan2(isc.y - 16, isc.x - 16);
-                var wntX = Math.round(isc.x + Math.cos(wntAngle) * 0.9);
-                var wntY = Math.round(isc.y + Math.sin(wntAngle) * 0.9);
-                if (inB(wntX, wntY)) set(wntX, wntY, Math.sin(iscPhase * 1.7 + isci * 1.2) > 0 ? isc.wntColor : isc.dimColor);
-                if (iscPulse > 0.5) {
-                    var divAngle = wntAngle + Math.PI;
-                    var divR = 1.3 + iscPulse * 0.4;
-                    var divX = Math.round(isc.x + Math.cos(divAngle) * divR);
-                    var divY = Math.round(isc.y + Math.sin(divAngle) * divR);
-                    if (inB(divX, divY)) set(divX, divY, isc.divColor);
-                    if (iscPulse > 0.75) {
-                        var spnX = Math.round(isc.x + Math.cos(divAngle) * 0.6);
-                        var spnY = Math.round(isc.y + Math.sin(divAngle) * 0.6);
-                        if (inB(spnX, spnY)) set(spnX, spnY, '#aaffcc');
-                    }
-                }
-            }
-            // Notch lateral inhibition: Delta-Notch fate resolution in TA progenitors
+            // Luminal chyme, bacteria, IELs, Paneth, stem cells, progenitors, BMP/Noggin
+            renderTissueCells([
+                // Chyme particles in lumen
+                {period:20000, drift:1.2, driftFreq:1.0, driftFreqY:0.6, bounds:[0,0,15,16], phaseStep:1.1, items:[
+                    {x:2,y:2,color:'#cc9955',dimColor:'#aa7744'},{x:6,y:1,color:'#dd8877',dimColor:'#bb6655'},
+                    {x:1,y:7,color:'#ddbb55',dimColor:'#bbaa44'},{x:4,y:5,color:'#cc9955',dimColor:'#aa7744'},
+                    {x:9,y:2,color:'#dd8877',dimColor:'#bb6655'},{x:3,y:10,color:'#ddbb55',dimColor:'#bbaa44'},
+                    {x:7,y:8,color:'#cc9955',dimColor:'#aa7744'},{x:12,y:4,color:'#dd8877',dimColor:'#bb6655'},
+                    {x:1,y:14,color:'#ddbb55',dimColor:'#bbaa44'},{x:10,y:11,color:'#cc9955',dimColor:'#aa7744'},
+                ]},
+                // Commensal bacteria — emit SCFAs toward tissue center
+                {period:16000, drift:0.5, phaseStep:0.9, items:[
+                    {x:13,y:8,color:'#77aa55',dimColor:'#558833'},{x:8,y:14,color:'#5588aa',dimColor:'#336688'},
+                    {x:15,y:12,color:'#aa8855',dimColor:'#886633'},{x:5,y:16,color:'#77aa55',dimColor:'#558833'},
+                    {x:11,y:15,color:'#5588aa',dimColor:'#336688'},
+                ], emitThresh:0.5, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var a=Math.atan2(16-iy,16-ix); s(Math.round(ix+Math.cos(a)*1.2),Math.round(iy+Math.sin(a)*1.2),'#bbdd77');
+                }},
+                // IELs: patrolling T cells (use orbit-like motion around home position)
+                {period:22000, phaseStep:2.09, items:[
+                    {x:16,y:16,color:'#6644bb',dimColor:'#553399',r:2.5},{x:21,y:19,color:'#5533aa',dimColor:'#442288',r:2.0},
+                    {x:11,y:13,color:'#6644bb',dimColor:'#553399',r:2.2},
+                ], emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var r=it.r||2.0,px2=Math.round(it.x+Math.cos(ph)*r),py2=Math.round(it.y+Math.sin(ph*0.7+idx*1.3)*r);
+                    if(inB(px2,py2))s(px2,py2,p>0?it.color:it.dimColor);
+                    if(p>0.7){var dx=-Math.sin(ph),dy=Math.cos(ph*0.7+idx*1.3)*0.7;s(Math.round(px2-dx),Math.round(py2-dy),'#aa77ee');}
+                }, emitThresh:-1},
+                // Paneth cells: defensin degranulation at crypt base
+                {period:26000, phaseStep:2.09, items:[
+                    {x:18,y:22,color:'#cc7733',dimColor:'#aa5522'},{x:14,y:17,color:'#bb6622',dimColor:'#994411'},
+                    {x:23,y:22,color:'#cc7733',dimColor:'#aa5522'},
+                ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var a=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    s(Math.round(it.x+Math.cos(a)*0.9),Math.round(it.y+Math.sin(a)*0.9),Math.sin(ph*1.3+idx*0.8)>0.2?'#ffcc66':'#eebb44');
+                    if(p>0.3){s(Math.round(it.x+Math.cos(a)*(1.5+p*0.5)),Math.round(it.y+Math.sin(a)*(1.5+p*0.5)),'#ffdd88');
+                    if(p>0.6){var lr=2.0+p*0.4,ls=Math.sin(ph*2.5+idx*1.2)*0.5;s(Math.round(it.x+Math.cos(a+ls)*lr),Math.round(it.y+Math.sin(a+ls)*lr),'#eebb44');}}
+                }},
+                // Lgr5+ stem cells: Wnt-driven asymmetric division
+                {period:28000, phaseStep:2.09, items:[
+                    {x:16,y:20,color:'#33bb66',dimColor:'#228844'},{x:21,y:23,color:'#33bb66',dimColor:'#228844'},
+                    {x:12,y:18,color:'#2aaa55',dimColor:'#1d8844'},
+                ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var wa=Math.atan2(it.y-16,it.x-16);
+                    s(Math.round(it.x+Math.cos(wa)*0.9),Math.round(it.y+Math.sin(wa)*0.9),Math.sin(ph*1.7+idx*1.2)>0?'#55dd88':it.dimColor);
+                    if(p>0.5){var da=wa+Math.PI,dr=1.3+p*0.4;s(Math.round(it.x+Math.cos(da)*dr),Math.round(it.y+Math.sin(da)*dr),'#88ffbb');
+                    if(p>0.75)s(Math.round(it.x+Math.cos(da)*0.6),Math.round(it.y+Math.sin(da)*0.6),'#aaffcc');}
+                }},
+                // BMP4 ligands at villus tip — drift toward crypt
+                {period:19000, drift:0.5, driftFreq:0.8, phaseStep:1.26, items:[
+                    {x:4,y:3,color:'#dd7744',dimColor:'#bb5533'},{x:7,y:5,color:'#cc6633',dimColor:'#aa4422'},
+                    {x:3,y:7,color:'#dd7744',dimColor:'#bb5533'},{x:10,y:4,color:'#cc6633',dimColor:'#aa4422'},
+                    {x:6,y:10,color:'#dd7744',dimColor:'#bb5533'},
+                ], emitThresh:0.5, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var a=Math.atan2(16-it.y,16-it.x);s(Math.round(ix+Math.cos(a)*1.1),Math.round(iy+Math.sin(a)*1.1),'#ffaa77');
+                }},
+                // Noggin/Gremlin: BMP antagonists at crypt base
+                {period:19000, drift:0.4, driftFreq:0.6, driftFreqY:0.4, phaseStep:2.09, items:[
+                    {x:19,y:24,color:'#4488bb',dimColor:'#336699'},{x:15,y:21,color:'#3377aa',dimColor:'#225588'},
+                    {x:23,y:24,color:'#4488bb',dimColor:'#336699'},
+                ], emitThresh:0.4, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var a=Math.atan2(it.y-16,it.x-16)+Math.PI;s(Math.round(ix+Math.cos(a)*0.9),Math.round(iy+Math.sin(a)*0.9),'#77bbdd');
+                }},
+            ]);
+            // Notch lateral inhibition: Delta-Notch progenitor pairs with signal exchange
             var tNotch = (now % 22000) / 22000;
             var progenitors = [
-                {x:15,y:15,pair:1,color:'#5588cc',dimColor:'#446699',notchHigh:true},
-                {x:17,y:14,pair:1,color:'#cc5588',dimColor:'#994466',notchHigh:false},
-                {x:20,y:16,pair:2,color:'#5588cc',dimColor:'#446699',notchHigh:true},
-                {x:22,y:15,pair:2,color:'#cc5588',dimColor:'#994466',notchHigh:false},
-                {x:13,y:14,pair:3,color:'#cc5588',dimColor:'#994466',notchHigh:false},
-                {x:11,y:15,pair:3,color:'#5588cc',dimColor:'#446699',notchHigh:true},
+                {x:15,y:15,pair:1,hi:true,c:'#5588cc',d:'#446699'},{x:17,y:14,pair:1,hi:false,c:'#cc5588',d:'#994466'},
+                {x:20,y:16,pair:2,hi:true,c:'#5588cc',d:'#446699'},{x:22,y:15,pair:2,hi:false,c:'#cc5588',d:'#994466'},
+                {x:13,y:14,pair:3,hi:false,c:'#cc5588',d:'#994466'},{x:11,y:15,pair:3,hi:true,c:'#5588cc',d:'#446699'},
             ];
             for (var pri = 0; pri < progenitors.length; pri++) {
-                var prog = progenitors[pri];
-                var progPhase = tNotch * 2 * Math.PI + pri * 1.05;
-                var progPulse = Math.sin(progPhase);
-                if (inB(prog.x, prog.y)) set(prog.x, prog.y, progPulse > 0 ? prog.color : prog.dimColor);
-                var partner = null;
+                var prog = progenitors[pri], progPh = tNotch * 2 * Math.PI + pri * 1.05, progP = Math.sin(progPh);
+                if (inB(prog.x, prog.y)) set(prog.x, prog.y, progP > 0 ? prog.c : prog.d);
                 for (var pj = 0; pj < progenitors.length; pj++) {
-                    if (pj !== pri && progenitors[pj].pair === prog.pair && progenitors[pj].notchHigh !== prog.notchHigh) { partner = progenitors[pj]; break; }
-                }
-                if (partner && progPulse > 0.1) {
-                    var sigX = Math.round((prog.x + partner.x) / 2), sigY = Math.round((prog.y + partner.y) / 2);
-                    var sigPulse = Math.sin(progPhase * 2.3 + pri * 0.7);
-                    if (inB(sigX, sigY) && sigPulse > 0) set(sigX, sigY, prog.notchHigh ? '#88bbee' : '#ee88bb');
-                    if (progPulse > 0.5) {
-                        var tfAngle = Math.atan2(prog.y - 16, prog.x - 16);
-                        var tfX = Math.round(prog.x - Math.cos(tfAngle) * 0.9);
-                        var tfY = Math.round(prog.y - Math.sin(tfAngle) * 0.9);
-                        if (inB(tfX, tfY)) set(tfX, tfY, prog.notchHigh ? '#aaddff' : '#ffaacc');
+                    if (pj !== pri && progenitors[pj].pair === prog.pair && progenitors[pj].hi !== prog.hi) {
+                        if (progP > 0.1) {
+                            var mx2 = Math.round((prog.x + progenitors[pj].x) / 2), my2 = Math.round((prog.y + progenitors[pj].y) / 2);
+                            if (inB(mx2, my2) && Math.sin(progPh * 2.3 + pri * 0.7) > 0) set(mx2, my2, prog.hi ? '#88bbee' : '#ee88bb');
+                        } break;
                     }
                 }
             }
-            // BMP gradient: BMP4 high at villus tip, Noggin antagonist at crypt base
-            // Opposes Wnt — drives differentiation away from niche, maintains stemness at base
-            var tBMP = (now % 19000) / 19000;
-            // BMP4 ligand particles drift from villus tip (upper-left) toward crypt (lower-right)
-            var bmpSources = [
-                {x:4,y:3,color:'#dd7744',dimColor:'#bb5533'},   // BMP4 at villus tip
-                {x:7,y:5,color:'#cc6633',dimColor:'#aa4422'},
-                {x:3,y:7,color:'#dd7744',dimColor:'#bb5533'},
-                {x:10,y:4,color:'#cc6633',dimColor:'#aa4422'},
-                {x:6,y:10,color:'#dd7744',dimColor:'#bb5533'},
+            // Anoikis: cells shed from villus tip into lumen — programmed detachment and death
+            // Completes the crypt-villus renewal cycle: stem → progenitor → migrate → shed
+            var tAnoi = (now % 30000) / 30000;
+            var anoikisCells = [
+                {x:2,y:4,phase:0,color:'#996655',dimColor:'#774433',fragColor:'#665544',bleb:'#aa8877'},
+                {x:8,y:2,phase:0.33,color:'#887755',dimColor:'#665533',fragColor:'#554433',bleb:'#998866'},
+                {x:5,y:6,phase:0.66,color:'#996655',dimColor:'#774433',fragColor:'#665544',bleb:'#aa8877'},
             ];
-            for (var bmpi = 0; bmpi < bmpSources.length; bmpi++) {
-                var bmp = bmpSources[bmpi];
-                var bmpPhase = tBMP * 2 * Math.PI + bmpi * 1.26;
-                var bmpPulse = Math.sin(bmpPhase);
-                // BMP4 dimer drifts slowly toward crypt, gradient decays with distance
-                var bmpDrift = Math.sin(tBMP * 2 * Math.PI * 0.8 + bmpi * 1.5) * 1.0;
-                var bmpX = Math.round(bmp.x + bmpDrift * 0.5);
-                var bmpY = Math.round(bmp.y + Math.cos(tBMP * 2 * Math.PI * 0.5 + bmpi * 2.1) * 0.6);
-                if (inB(bmpX, bmpY)) set(bmpX, bmpY, bmpPulse > 0 ? bmp.color : bmp.dimColor);
-                // SMAD1/5/8 phosphorylation cascade: signal transduction toward nearby cells
-                if (bmpPulse > 0.5) {
-                    var smadAngle = Math.atan2(16 - bmp.y, 16 - bmp.x);
-                    var smadX = Math.round(bmpX + Math.cos(smadAngle) * 1.1);
-                    var smadY = Math.round(bmpY + Math.sin(smadAngle) * 1.1);
-                    if (inB(smadX, smadY)) set(smadX, smadY, '#ffaa77');
-                }
-            }
-            // Noggin/Gremlin: BMP antagonists secreted at crypt base by mesenchymal cells
-            var nogginSources = [
-                {x:19,y:24,color:'#4488bb',dimColor:'#336699'},
-                {x:15,y:21,color:'#3377aa',dimColor:'#225588'},
-                {x:23,y:24,color:'#4488bb',dimColor:'#336699'},
-            ];
-            for (var nogi = 0; nogi < nogginSources.length; nogi++) {
-                var nog = nogginSources[nogi];
-                var nogPhase = tBMP * 2 * Math.PI + nogi * 2.09 + Math.PI;
-                var nogPulse = Math.sin(nogPhase);
-                var nogDrift = Math.sin(tBMP * 2 * Math.PI * 0.6 + nogi * 1.8) * 0.7;
-                var nogX = Math.round(nog.x + nogDrift * 0.4);
-                var nogY = Math.round(nog.y + Math.cos(tBMP * 2 * Math.PI * 0.4 + nogi * 2.5) * 0.5);
-                if (inB(nogX, nogY)) set(nogX, nogY, nogPulse > 0 ? nog.color : nog.dimColor);
-                // Noggin sequesters BMP4 — neutralization halo when active
-                if (nogPulse > 0.4) {
-                    var seqAngle = Math.atan2(nog.y - 16, nog.x - 16) + Math.PI;
-                    var seqX = Math.round(nogX + Math.cos(seqAngle) * 0.9);
-                    var seqY = Math.round(nogY + Math.sin(seqAngle) * 0.9);
-                    if (inB(seqX, seqY)) set(seqX, seqY, '#77bbdd');
+            for (var ani = 0; ani < anoikisCells.length; ani++) {
+                var ac = anoikisCells[ani];
+                var anPhase = (tAnoi + ac.phase) % 1.0;
+                // Detachment phase: cell rounds up and separates from epithelium
+                var anPulse = Math.sin(tAnoi * 2 * Math.PI * 1.5 + ani * 2.3);
+                var drift = Math.sin(tAnoi * 2 * Math.PI * 0.6 + ani * 1.8) * 0.8;
+                var acX = Math.round(ac.x + drift), acY = Math.round(ac.y + Math.cos(tAnoi * 2 * Math.PI * 0.4 + ani * 2.5) * 0.5);
+                if (anPhase < 0.4) {
+                    // Rounding up: cell body visible, membrane blebbing
+                    if (inB(acX, acY)) set(acX, acY, anPulse > 0 ? ac.color : ac.dimColor);
+                    if (anPulse > 0.3) {
+                        var blebA = tAnoi * 2 * Math.PI * 3 + ani * 2.0;
+                        var blebX = Math.round(acX + Math.cos(blebA) * 0.8);
+                        var blebY = Math.round(acY + Math.sin(blebA) * 0.8);
+                        if (inB(blebX, blebY)) set(blebX, blebY, ac.bleb);
+                    }
+                } else if (anPhase < 0.7) {
+                    // Fragmentation: cell breaks into apoptotic bodies
+                    if (inB(acX, acY)) set(acX, acY, ac.fragColor);
+                    var fAngle = tAnoi * 2 * Math.PI * 2 + ani * 3.0;
+                    var fx = Math.round(acX + Math.cos(fAngle) * 1.0), fy = Math.round(acY + Math.sin(fAngle) * 1.0);
+                    if (inB(fx, fy)) set(fx, fy, ac.fragColor);
+                } else {
+                    // Clearance: macrophages engulf debris, faint remnant
+                    if (anPulse > 0.4 && inB(acX, acY)) set(acX, acY, '#554433');
                 }
             }
             return px;
