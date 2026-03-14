@@ -19,27 +19,41 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The diamond softens; corners fill, edges blur toward a circle
+        // The circle is complete. It breathes.
         var size = 11;
         var center = 5;
 
-        // Layered palette: warm core fading outward
-        var colors = ['#6b2a00', '#4a1a00', '#331100', '#444444', '#777777', '#aaaaaa', '#cccccc'];
+        // Warm core palette, now fully rounded
+        var coreColors = ['#8b3a10', '#6b2a00', '#4a1a00', '#331100', '#555555', '#888888'];
 
-        for (var y = 0; y < size; y++) {
-            for (var x = 0; x < size; x++) {
-                var dx = Math.abs(x - center);
-                var dy = Math.abs(y - center);
-                var manhattan = dx + dy;
-                var euclidean = Math.sqrt(dx * dx + dy * dy);
-                // Blend manhattan and euclidean: the diamond rounds its edges
-                var dist = Math.floor(manhattan * 0.4 + euclidean * 0.6 + 0.5);
-                if (dist <= 5) {
-                    ctx.fillStyle = colors[dist];
-                    ctx.fillRect(x, y, 1, 1);
+        function draw() {
+            ctx.clearRect(0, 0, size, size);
+
+            // Breathing: slow sine wave synced to wall clock (8-second cycle)
+            // Two viewers see the same phase
+            var t = (Date.now() % 8000) / 8000;
+            var breath = Math.sin(t * 2 * Math.PI);
+            // Radius oscillates between 4.2 and 5.0
+            var maxRadius = 4.6 + breath * 0.4;
+
+            for (var y = 0; y < size; y++) {
+                for (var x = 0; x < size; x++) {
+                    var dx = x - center;
+                    var dy = y - center;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist <= maxRadius) {
+                        // Map distance to color index
+                        var idx = Math.floor(dist * coreColors.length / (maxRadius + 0.5));
+                        if (idx >= coreColors.length) idx = coreColors.length - 1;
+                        ctx.fillStyle = coreColors[idx];
+                        ctx.fillRect(x, y, 1, 1);
+                    }
                 }
             }
+            requestAnimationFrame(draw);
         }
+        draw();
     </script>
 </body>
 </html>
