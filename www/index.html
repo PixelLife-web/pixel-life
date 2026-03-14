@@ -513,24 +513,25 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // METAPHASE: all chromosomes aligned at metaphase plate, bipolar tension maximal
-        // SAC fully satisfied — Mad2 released from kinetochores, MCC disassembled
-        // APC/C-Cdc20 activated, securin ubiquitination begins — separase liberation imminent
-        // Last Aurora B corrections complete, all kinetochore-MT attachments amphitelic
+        // ANAPHASE ONSET: securin fully degraded by proteasome, separase liberated
+        // Separase cleaves cohesin rings at chromosome centromeres
+        // Sister chromatids separate — pulled poleward by kinetochore fiber depolymerization (anaphase A)
+        // Interpolar microtubules slide apart, elongating the spindle (anaphase B begins)
         cellA.prophase = {
-            condensation: 1.0, // chromosomes maximally condensed, tight X-shaped bivalents
+            condensation: 1.0, // chromosomes still condensed during anaphase
             pole1Target: { x: 19, y: 7 },  // upper pole
             pole2Target: { x: 23, y: 11 }, // lower pole
             prometaphase: true, // rendering flag retained
-            metaphase: true, // full metaphase achieved
-            spindleForming: true, // spindle fully formed, kinetochore fibers taut under tension
+            metaphase: true, // passed through metaphase
+            anaphase: true, // ANAPHASE — sisters separating
+            spindleForming: true, // spindle elongating via anaphase B
             asterCount: 12, // asters maximal
-            laminPhospho: 1.0, // lamina completely dissolved
-            npcDisassembly: 1.0, // NPCs fully disassembled
-            envelopeVesicles: true, // envelope vesicles merged with ER
-            congressProgress: 1.0, // 100% chromosomes at plate — perfect alignment
-            sacSatisfaction: 1.0, // SAC fully satisfied — checkpoint silenced
-            auroraBActive: false, // Aurora B done — all attachments correct
+            laminPhospho: 1.0, // lamina dissolved
+            npcDisassembly: 1.0, // NPCs gone
+            envelopeVesicles: true, // envelope fragments in ER
+            congressProgress: 1.0, // alignment irrelevant now — sisters freed
+            sacSatisfaction: 1.0, // SAC silenced
+            auroraBActive: false, // Aurora B relocating to spindle midzone
         };
         cellB.prophase = {
             condensation: 1.0,
@@ -538,6 +539,7 @@
             pole2Target: { x: 13, y: 25 }, // lower pole
             prometaphase: true,
             metaphase: true,
+            anaphase: true, // ANAPHASE
             spindleForming: true,
             asterCount: 12,
             laminPhospho: 1.0,
@@ -563,21 +565,24 @@
             { baseAngle: 6.0, speed: 0.11, color: '#dd7744' },
         ];
 
-        // METAPHASE: APC/C-Cdc20 active, ubiquitinating securin
-        // Securin particles tagged with ubiquitin chains, destined for proteasome
-        // Once securin is degraded, separase is freed to cleave cohesin → anaphase onset
-        cellA.securin = [
-            { orbitR: 1.5, baseAngle: 0.6, speed: 0.7, color: '#ffdd77', ubiqColor: '#ff8866' },
-            { orbitR: 1.8, baseAngle: 2.8, speed: -0.6, color: '#ffcc66', ubiqColor: '#ff7755' },
-            { orbitR: 1.3, baseAngle: 5.0, speed: 0.55, color: '#ffdd77', ubiqColor: '#ff8866' },
+        // ANAPHASE: securin fully degraded by 26S proteasome — separase now free
+        // Separase cleaves Scc1/Rad21 subunit of cohesin rings at centromeres
+        // Cohesin fragments drift away as sisters are released
+        cellA.securin = [];
+        cellB.securin = [];
+
+        // Separase: active enzyme, released from securin inhibition
+        // Bright particles at the metaphase plate region where cohesin was cleaved
+        cellA.separase = [
+            { orbitR: 0.5, baseAngle: 0.8, speed: 0.9, color: '#ff4444' },
+            { orbitR: 0.7, baseAngle: 3.5, speed: -0.8, color: '#ee3333' },
         ];
-        cellB.securin = [
-            { orbitR: 1.5, baseAngle: 1.5, speed: -0.65, color: '#ffdd77', ubiqColor: '#ff8866' },
-            { orbitR: 1.8, baseAngle: 4.2, speed: 0.58, color: '#ffcc66', ubiqColor: '#ff7755' },
-            { orbitR: 1.3, baseAngle: 0.3, speed: -0.52, color: '#ffdd77', ubiqColor: '#ff8866' },
+        cellB.separase = [
+            { orbitR: 0.5, baseAngle: 2.2, speed: -0.85, color: '#ff4444' },
+            { orbitR: 0.7, baseAngle: 5.0, speed: 0.75, color: '#ee3333' },
         ];
 
-        // Metaphase: nucleus dissolved, CDK1 active, spindle under tension
+        // Anaphase: sisters separating, spindle elongating, CDK1 active
         var growthRate = 0.8;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1876,10 +1881,36 @@
                 }
             }
 
-            // Securin: APC/C ubiquitinates securin at metaphase plate
-            // Flashing ubiquitin tags signal imminent degradation → separase release
+            // Securin/Separase: securin degraded, separase active at plate cleaving cohesin
             var securinPixels = {};
-            if (cell.securin && cell.prophase && cell.prophase.metaphase && cell.separated) {
+            if (cell.separase && cell.prophase && cell.prophase.anaphase && cell.separated) {
+                // Separase particles flash red at the former metaphase plate — cohesin cleavage
+                var tSep = (t * 8000 / 4000) % 1.0;
+                var sepPlateX = (cell.prophase.pole1Target.x + cell.prophase.pole2Target.x) / 2;
+                var sepPlateY = (cell.prophase.pole1Target.y + cell.prophase.pole2Target.y) / 2;
+                for (var sci = 0; sci < cell.separase.length; sci++) {
+                    var sep = cell.separase[sci];
+                    var sepAngle = sep.baseAngle + sep.speed * tOrbit;
+                    var sepX = Math.round(sepPlateX + Math.cos(sepAngle) * sep.orbitR);
+                    var sepY = Math.round(sepPlateY + Math.sin(sepAngle) * sep.orbitR);
+                    if (sepX >= 0 && sepX < size && sepY >= 0 && sepY < size) {
+                        // Separase flashes bright red — enzymatic cleavage of cohesin
+                        var cleavePulse = Math.sin(tSep * 2 * Math.PI * 4 + sci * 2.5);
+                        securinPixels[sepX + ',' + sepY] = cleavePulse > 0 ? '#ff6644' : sep.color;
+                    }
+                }
+                // Cohesin fragments: small debris drifting outward from plate
+                for (var cfi = 0; cfi < 4; cfi++) {
+                    var cfAngle = cfi * Math.PI / 2 + tSep * 1.5;
+                    var cfDist = 1.0 + ((tSep + cfi * 0.25) % 1.0) * 2.5;
+                    var cfX = Math.round(sepPlateX + Math.cos(cfAngle) * cfDist);
+                    var cfY = Math.round(sepPlateY + Math.sin(cfAngle) * cfDist);
+                    var cfDistFromCenter = Math.sqrt((cfX - cell.cx) * (cfX - cell.cx) + (cfY - cell.cy) * (cfY - cell.cy));
+                    if (cfDistFromCenter < maxR - 0.5 && cfX >= 0 && cfX < size && cfY >= 0 && cfY < size) {
+                        securinPixels[cfX + ',' + cfY] = '#886644'; // cohesin ring fragments
+                    }
+                }
+            } else if (cell.securin && cell.securin.length > 0 && cell.prophase && cell.prophase.metaphase && cell.separated) {
                 var tSec = (t * 8000 / 4000) % 1.0;
                 var secPlateX = (cell.prophase.pole1Target.x + cell.prophase.pole2Target.x) / 2;
                 var secPlateY = (cell.prophase.pole1Target.y + cell.prophase.pole2Target.y) / 2;
@@ -1889,7 +1920,6 @@
                     var secX = Math.round(secPlateX + Math.cos(secAngle) * sec.orbitR);
                     var secY = Math.round(secPlateY + Math.sin(secAngle) * sec.orbitR);
                     if (secX >= 0 && secX < size && secY >= 0 && secY < size) {
-                        // Ubiquitin tag flashes — securin being marked for proteasomal destruction
                         var ubiqPulse = Math.sin(tSec * 2 * Math.PI * 3 + sci * 2.1);
                         securinPixels[secX + ',' + secY] = ubiqPulse > 0.3 ? sec.ubiqColor : sec.color;
                     }
