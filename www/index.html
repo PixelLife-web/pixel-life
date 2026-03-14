@@ -2009,6 +2009,25 @@
                     if(p>0.5){var wntA=Math.atan2(it.y-16,it.x-16);
                     s(Math.round(it.x+Math.cos(wntA)*1.0),Math.round(it.y+Math.sin(wntA)*1.0),'#88dd66');}
                 }},
+                {period:25000, phaseStep:2.09, items:[
+                    {x:16,y:11,color:'#ddaa44',dimColor:'#bb8833'},{x:20,y:13,color:'#cc9933',dimColor:'#aa7722'},
+                    {x:13,y:13,color:'#ddaa44',dimColor:'#bb8833'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var lumA=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    for(var ti=0;ti<3;ti++){var tA=lumA+(ti-1)*0.20;
+                    for(var tl=1;tl<=2;tl++){var tx=Math.round(it.x+Math.cos(tA)*tl),ty=Math.round(it.y+Math.sin(tA)*tl);
+                    if(inB(tx,ty))s(tx,ty,Math.sin(ph*1.6+ti*2.3+tl*1.0)>0?'#eebb55':'#ccaa44');}}
+                    var sucPh=(t*2.2+idx*0.35)%1.0;
+                    if(sucPh<0.4){var sucR=2.0+sucPh*3.5;
+                    var sucX=Math.round(it.x+Math.cos(lumA)*sucR),sucY=Math.round(it.y+Math.sin(lumA)*sucR);
+                    if(inB(sucX,sucY))s(sucX,sucY,sucPh<0.15?'#ffee77':'#eedd55');}
+                    if(Math.sin(ph*2.8+idx*2.0)>0.4)s(ix,iy,'#ffdd88');
+                    if(p>0.3){var basA=Math.atan2(it.y-16,it.x-16);
+                    var il25R=1.2+p*0.5;s(Math.round(it.x+Math.cos(basA)*il25R),Math.round(it.y+Math.sin(basA)*il25R),'#88eedd');
+                    if(p>0.6){var il25R2=il25R+1.0;s(Math.round(it.x+Math.cos(basA)*il25R2),Math.round(it.y+Math.sin(basA)*il25R2),'#aaffee');}}
+                    if(Math.sin(ph*1.8+idx*1.5)>0.5){var pgA=Math.atan2(it.y-16,it.x-16)+Math.PI*0.5;
+                    s(Math.round(it.x+Math.cos(pgA)*1.3),Math.round(it.y+Math.sin(pgA)*1.3),'#ffbb77');}
+                }},
             ]);
             function renderVessels(vessels, period, cfg) {
                 var tV = (now % period) / period;
@@ -2041,42 +2060,26 @@
                 s(Math.round(v.x+Math.cos(dA2)*dR),Math.round(v.y+Math.sin(dA2)*dR),dPh<0.2?'#ffddaa':(dPh<0.4?'#eebb77':'#ccaa66'));}}});
 
             var tMeiss = (now % 29000) / 29000;
-            var meissnerNeurons = [
-                {x:22,y:19,t:'A',p:1},{x:25,y:20,t:'V',p:1},{x:16,y:22,t:'A',p:2},
-                {x:14,y:24,t:'V',p:2},{x:20,y:27,t:'A',p:3},{x:23,y:26,t:'V',p:3},
-            ];
-            for (var mni = 0; mni < meissnerNeurons.length; mni++) {
-                var mn = meissnerNeurons[mni], mnPh = tMeiss * 2 * Math.PI + mni * 1.05;
-                var mnP = Math.sin(mnPh), isACh = mn.t === 'A';
+            var meissNeur = [{x:22,y:19,t:'A',p:1},{x:25,y:20,t:'V',p:1},{x:16,y:22,t:'A',p:2},{x:14,y:24,t:'V',p:2},{x:20,y:27,t:'A',p:3},{x:23,y:26,t:'V',p:3}];
+            for (var mni = 0; mni < meissNeur.length; mni++) {
+                var mn = meissNeur[mni], mnPh = tMeiss * 2 * Math.PI + mni * 1.05, mnP = Math.sin(mnPh), isACh = mn.t === 'A';
                 if (inB(mn.x, mn.y)) set(mn.x, mn.y, mnP > 0 ? (isACh ? '#cc8833' : '#8833cc') : (isACh ? '#aa6622' : '#662299'));
-                var nisslX = Math.round(mn.x + Math.cos(mnPh * 0.2 + mni * 1.3) * 0.7);
-                var nisslY = Math.round(mn.y + Math.sin(mnPh * 0.2 + mni * 1.3) * 0.7);
+                var nisslX = Math.round(mn.x + Math.cos(mnPh * 0.2 + mni * 1.3) * 0.7), nisslY = Math.round(mn.y + Math.sin(mnPh * 0.2 + mni * 1.3) * 0.7);
                 if (inB(nisslX, nisslY) && Math.sin(mnPh * 1.8 + mni * 2.0) > -0.3) set(nisslX, nisslY, isACh ? '#ddaa55' : '#aa55dd');
-                for (var mnj = 0; mnj < meissnerNeurons.length; mnj++) {
-                    if (mnj !== mni && meissnerNeurons[mnj].p === mn.p) {
-                        var mn2 = meissnerNeurons[mnj], midX = Math.round((mn.x + mn2.x) / 2), midY = Math.round((mn.y + mn2.y) / 2);
-                        if (inB(midX, midY) && mnP > -0.2) set(midX, midY, Math.sin(mnPh * 2.5 + mni * 0.8) > 0 ? '#eecc88' : '#bbaa66');
-                        break;
-                    }
-                }
+                for (var mnj = 0; mnj < meissNeur.length; mnj++) {
+                    if (mnj !== mni && meissNeur[mnj].p === mn.p) { var mn2 = meissNeur[mnj];
+                        var midX = Math.round((mn.x + mn2.x) / 2), midY = Math.round((mn.y + mn2.y) / 2);
+                        if (inB(midX, midY) && mnP > -0.2) set(midX, midY, Math.sin(mnPh * 2.5 + mni * 0.8) > 0 ? '#eecc88' : '#bbaa66'); break; } }
                 var ntA = isACh ? Math.atan2(16 - mn.y, 16 - mn.x) : Math.atan2(mn.y - 16, mn.x - 16);
                 var ntPh = (tMeiss * (isACh ? 2.4 : 1.8) + mni * (isACh ? 0.35 : 0.4)) % 1.0;
                 if (mnP > (isACh ? 0.1 : 0.0) && ntPh < (isACh ? 0.5 : 0.55)) {
                     var ntR3 = (isACh ? 1.2 : 1.0) + ntPh * (isACh ? 3.0 : 2.8);
-                    set(Math.round(mn.x + Math.cos(ntA) * ntR3), Math.round(mn.y + Math.sin(ntA) * ntR3),
-                        isACh ? (ntPh < 0.2 ? '#ffdd44' : '#eebb33') : (ntPh < 0.25 ? '#bb66ff' : '#9944dd'));
-                }
-                if (mnP > (isACh ? 0.5 : 0.4)) {
-                    var secR = (isACh ? 2.5 : 2.2) + mnP * (isACh ? 0.5 : 0.4);
-                    set(Math.round(mn.x + Math.cos(ntA) * secR), Math.round(mn.y + Math.sin(ntA) * secR), isACh ? '#ffee77' : '#dd99ff');
-                }
-                if (mnP > -0.5) {
-                    for (var di = 0; di < 3; di++) {
-                        var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9, dSway = Math.sin(mnPh * 0.7 + di * 1.6) * 0.1;
-                        var dX = Math.round(mn.x + Math.cos(dA + dSway) * 1.3), dY = Math.round(mn.y + Math.sin(dA + dSway) * 1.3);
-                        if (inB(dX, dY) && Math.sin(mnPh * 1.5 + di * 2.3) > -0.4) set(dX, dY, isACh ? '#bb9944' : '#7744aa');
-                    }
-                }
+                    set(Math.round(mn.x + Math.cos(ntA) * ntR3), Math.round(mn.y + Math.sin(ntA) * ntR3), isACh ? (ntPh < 0.2 ? '#ffdd44' : '#eebb33') : (ntPh < 0.25 ? '#bb66ff' : '#9944dd')); }
+                if (mnP > (isACh ? 0.5 : 0.4)) { var secR = (isACh ? 2.5 : 2.2) + mnP * (isACh ? 0.5 : 0.4);
+                    set(Math.round(mn.x + Math.cos(ntA) * secR), Math.round(mn.y + Math.sin(ntA) * secR), isACh ? '#ffee77' : '#dd99ff'); }
+                if (mnP > -0.5) { for (var di = 0; di < 3; di++) { var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9, dSway = Math.sin(mnPh * 0.7 + di * 1.6) * 0.1;
+                    var dX = Math.round(mn.x + Math.cos(dA + dSway) * 1.3), dY = Math.round(mn.y + Math.sin(dA + dSway) * 1.3);
+                    if (inB(dX, dY) && Math.sin(mnPh * 1.5 + di * 2.3) > -0.4) set(dX, dY, isACh ? '#bb9944' : '#7744aa'); } }
             }
             var tFlum = (now % 31000) / 31000;
             var cox2Sites = [{x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9}];
@@ -2112,43 +2115,22 @@
                 }
             }
             var tIEL = (now % 19000) / 19000;
-            var iels = [
-                {x:16,y:13,patrol:0,span:3,color:'#44aadd',dimColor:'#337799',granColor:'#66ccee'},
-                {x:19,y:14,patrol:1,span:4,color:'#3399cc',dimColor:'#226688',granColor:'#55bbdd'},
-                {x:13,y:16,patrol:2,span:3,color:'#44aadd',dimColor:'#337799',granColor:'#66ccee'},
-                {x:21,y:17,patrol:3,span:4,color:'#3399cc',dimColor:'#226688',granColor:'#55bbdd'},
-                {x:17,y:19,patrol:0,span:3,color:'#44aadd',dimColor:'#337799',granColor:'#66ccee'},
-            ];
+            var iels = [{x:16,y:13,p:0,s:3,c:'#44aadd',d:'#337799',g:'#66ccee'},{x:19,y:14,p:1,s:4,c:'#3399cc',d:'#226688',g:'#55bbdd'},
+                {x:13,y:16,p:2,s:3,c:'#44aadd',d:'#337799',g:'#66ccee'},{x:21,y:17,p:3,s:4,c:'#3399cc',d:'#226688',g:'#55bbdd'},
+                {x:17,y:19,p:0,s:3,c:'#44aadd',d:'#337799',g:'#66ccee'}];
             for (var ieli = 0; ieli < iels.length; ieli++) {
-                var iel = iels[ieli];
-                var ielPh = tIEL * 2 * Math.PI + ieli * 1.26;
-                var ielP = Math.sin(ielPh);
+                var iel = iels[ieli], ielPh = tIEL * 2 * Math.PI + ieli * 1.26, ielP = Math.sin(ielPh);
                 var patrolA = Math.atan2(iel.x - 16, iel.y - 16) + Math.PI * 0.5;
-                var patrolOff = Math.sin(tIEL * 2 * Math.PI * 0.8 + iel.patrol * 1.57) * iel.span * 0.4;
-                var ielX = Math.round(iel.x + Math.cos(patrolA) * patrolOff);
-                var ielY = Math.round(iel.y + Math.sin(patrolA) * patrolOff);
-                if (inB(ielX, ielY)) set(ielX, ielY, ielP > 0 ? iel.color : iel.dimColor);
-                if (ielP > 0.3) {
-                    var granA = ielPh * 0.6 + ieli * 2.0;
-                    var granX = Math.round(ielX + Math.cos(granA) * 0.8);
-                    var granY = Math.round(ielY + Math.sin(granA) * 0.8);
-                    if (inB(granX, granY)) set(granX, granY, iel.granColor);
-                }
+                var patrolOff = Math.sin(tIEL * 2 * Math.PI * 0.8 + iel.p * 1.57) * iel.s * 0.4;
+                var ielX = Math.round(iel.x + Math.cos(patrolA) * patrolOff), ielY = Math.round(iel.y + Math.sin(patrolA) * patrolOff);
+                if (inB(ielX, ielY)) set(ielX, ielY, ielP > 0 ? iel.c : iel.d);
+                if (ielP > 0.3) { var granA = ielPh * 0.6 + ieli * 2.0;
+                    set(Math.round(ielX + Math.cos(granA) * 0.8), Math.round(ielY + Math.sin(granA) * 0.8), iel.g); }
                 var survPh = (tIEL * 2.5 + ieli * 0.2) % 1.0;
-                if (survPh < 0.3 && ielP > -0.2) {
-                    var survA = Math.atan2(16 - iel.y, 16 - iel.x);
-                    var survR = 0.8 + survPh * 2.5;
-                    var survX = Math.round(ielX + Math.cos(survA) * survR);
-                    var survY = Math.round(ielY + Math.sin(survA) * survR);
-                    if (inB(survX, survY)) set(survX, survY, survPh < 0.15 ? '#88eeff' : '#66ccdd');
-                }
-                if (ielP > 0.6) {
-                    var cytA = Math.atan2(iel.y - 16, iel.x - 16);
-                    var cytR = 1.0 + ielP * 0.3;
-                    var cytX = Math.round(ielX + Math.cos(cytA) * cytR);
-                    var cytY = Math.round(ielY + Math.sin(cytA) * cytR);
-                    if (inB(cytX, cytY)) set(cytX, cytY, '#aaeeff');
-                }
+                if (survPh < 0.3 && ielP > -0.2) { var survA = Math.atan2(16 - iel.y, 16 - iel.x), survR = 0.8 + survPh * 2.5;
+                    set(Math.round(ielX + Math.cos(survA) * survR), Math.round(ielY + Math.sin(survA) * survR), survPh < 0.15 ? '#88eeff' : '#66ccdd'); }
+                if (ielP > 0.6) { var cytA = Math.atan2(iel.y - 16, iel.x - 16), cytR = 1.0 + ielP * 0.3;
+                    set(Math.round(ielX + Math.cos(cytA) * cytR), Math.round(ielY + Math.sin(cytA) * cytR), '#aaeeff'); }
             }
             var tMyo = (now % 23000) / 23000;
             var myenteric = [
