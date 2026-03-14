@@ -329,7 +329,16 @@
                 }
             }
 
-            // Compute receptor positions and signal cascade (11-second cycle)
+            // mRNA transcripts: emerge from nucleus and travel to ribosomes on rough ER
+        // Each transcript has a target ribosome and travels along a path
+        var mRNAs = [
+            { targetRibo: 0, phase: 0.0, color: '#dd6644' },
+            { targetRibo: 2, phase: 0.25, color: '#cc5533' },
+            { targetRibo: 4, phase: 0.5, color: '#dd6644' },
+            { targetRibo: 6, phase: 0.75, color: '#cc5533' },
+        ];
+
+        // Compute receptor positions and signal cascade (11-second cycle)
             var tSignal = (Date.now() % 11000) / 11000;
             var receptorPixels = {};
             var signalPixels = {};
@@ -369,6 +378,39 @@
                 }
             }
 
+            // Compute mRNA transcript positions (13-second transcription cycle)
+            var tRNA = (Date.now() % 13000) / 13000;
+            var mRNAPixels = {};
+            for (var mri = 0; mri < mRNAs.length; mri++) {
+                var mrna = mRNAs[mri];
+                var mrnaPhase = (tRNA + mrna.phase) % 1.0;
+                // mRNA is visible for 60% of cycle (transcription + travel), rests 40%
+                if (mrnaPhase < 0.6) {
+                    var mrnaProgress = mrnaPhase / 0.6; // 0 to 1
+                    // Target ribosome position
+                    var targetIdx = mrna.targetRibo;
+                    if (targetIdx < ribosomePositions.length) {
+                        var target = ribosomePositions[targetIdx];
+                        // Travel from nucleus edge toward the target ribosome
+                        var startAngle = Math.atan2(target.y - center, target.x - center);
+                        var startR = nucleusRadius + 0.5;
+                        var startX = center + Math.cos(startAngle) * startR;
+                        var startY = center + Math.sin(startAngle) * startR;
+                        // Interpolate from start to target
+                        var mrnaX = Math.round(startX + (target.x - startX) * mrnaProgress);
+                        var mrnaY = Math.round(startY + (target.y - startY) * mrnaProgress);
+                        if (mrnaX >= 0 && mrnaX < size && mrnaY >= 0 && mrnaY < size) {
+                            mRNAPixels[mrnaX + ',' + mrnaY] = mrna.color;
+                            // When mRNA arrives at ribosome, show a bright "translation" flash
+                            if (mrnaProgress > 0.8) {
+                                var flashKey = target.x + ',' + target.y;
+                                mRNAPixels[flashKey] = '#ffaa77';
+                            }
+                        }
+                    }
+                }
+            }
+
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
                     var dx = x - center;
@@ -397,6 +439,12 @@
                         // Check ATP energy particles
                         if (!isSpecial && atpPixels[x + ',' + y]) {
                             color = atpPixels[x + ',' + y];
+                            isSpecial = true;
+                        }
+
+                        // Check mRNA transcripts traveling to ribosomes
+                        if (!isSpecial && mRNAPixels[x + ',' + y]) {
+                            color = mRNAPixels[x + ',' + y];
                             isSpecial = true;
                         }
 
