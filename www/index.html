@@ -2038,6 +2038,57 @@
                 }
             }
 
+            // Submucosal venules: postcapillary venules with leukocyte rolling and diapedesis
+            // E-selectin mediates rolling; ICAM-1/integrin firm adhesion; paracellular diapedesis into lamina propria
+            var tVen = (now % 31000) / 31000;
+            var venules = [
+                {x:17,y:19,ex:16,ey:18,ang:1.8},{x:21,y:24,ex:20,ey:23,ang:3.5},
+                {x:10,y:23,ex:11,ey:22,ang:5.0},{x:25,y:23,ex:24,ey:22,ang:0.8},
+            ];
+            for (var vni = 0; vni < venules.length; vni++) {
+                var ven = venules[vni];
+                var venPh = tVen * 2 * Math.PI + vni * 1.57;
+                var venP = Math.sin(venPh);
+                // Endothelial lining: thinner than arteriolar, lower pressure
+                if (inB(ven.ex, ven.ey)) set(ven.ex, ven.ey, venP > -0.3 ? '#8855aa' : '#663388');
+                // Venular wall: thinner smooth muscle than arterioles
+                var vwA = ven.ang + venP * 0.10;
+                var vwR = 0.8 + venP * 0.08;
+                var vwX = Math.round(ven.x + Math.cos(vwA) * vwR);
+                var vwY = Math.round(ven.y + Math.sin(vwA) * vwR);
+                if (inB(vwX, vwY)) set(vwX, vwY, venP > 0.1 ? '#886699' : '#775588');
+                // Leukocyte rolling: E-selectin-mediated tethering along endothelium
+                var rollPh = (tVen * 4.0 + vni * 0.25) % 1.0;
+                var rollA = Math.atan2(ven.ey - ven.y, ven.ex - ven.x);
+                var rollTangent = rollA + Math.PI * 0.5;
+                var rollX = Math.round(ven.ex + Math.cos(rollTangent) * (rollPh * 2.0 - 1.0));
+                var rollY = Math.round(ven.ey + Math.sin(rollTangent) * (rollPh * 2.0 - 1.0));
+                if (inB(rollX, rollY)) set(rollX, rollY, rollPh < 0.5 ? '#eedd55' : '#ddcc44');
+                // Firm adhesion: ICAM-1/LFA-1 integrin arrest (neutrophil flattening)
+                var adhPh = (tVen * 2.2 + vni * 0.4) % 1.0;
+                if (adhPh > 0.3 && adhPh < 0.6) {
+                    var adhX = Math.round(ven.ex + Math.cos(rollTangent) * 0.3);
+                    var adhY = Math.round(ven.ey + Math.sin(rollTangent) * 0.3);
+                    if (inB(adhX, adhY)) set(adhX, adhY, '#ffee88');
+                }
+                // Diapedesis: transendothelial migration toward lamina propria (inward)
+                var diapPh = (tVen * 1.5 + vni * 0.35) % 1.0;
+                if (diapPh < 0.6) {
+                    var diapA = Math.atan2(16 - ven.y, 16 - ven.x);
+                    var diapR = 0.5 + diapPh * 3.0;
+                    var diapX = Math.round(ven.x + Math.cos(diapA) * diapR);
+                    var diapY = Math.round(ven.y + Math.sin(diapA) * diapR);
+                    if (inB(diapX, diapY)) set(diapX, diapY, diapPh < 0.2 ? '#ffddaa' : (diapPh < 0.4 ? '#eebb77' : '#ccaa66'));
+                }
+                // Venous blood flow: deoxygenated RBCs moving through lumen (darker than arterial)
+                var vrbcPh = (tVen * 2.8 + vni * 0.6) % 1.0;
+                var vrbcA = Math.atan2(ven.ey - ven.y, ven.ex - ven.x);
+                var vrbcD = 0.3 + vrbcPh * 0.9;
+                var vrbcX = Math.round(ven.x + Math.cos(vrbcA) * vrbcD);
+                var vrbcY = Math.round(ven.y + Math.sin(vrbcA) * vrbcD);
+                if (inB(vrbcX, vrbcY)) set(vrbcX, vrbcY, vrbcPh < 0.5 ? '#993344' : '#882233');
+            }
+
             // Meissner's (submucosal) plexus: enteric neuron ganglia
             // Cholinergic neurons release ACh → epithelial secretion; VIPergic neurons → vasodilation
             var tMeiss = (now % 29000) / 29000;
