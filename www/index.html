@@ -53,14 +53,14 @@
             chromatin: [
                 { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
             ],
-            // Metaphase: sister chromatids aligned at metaphase plate
+            // Anaphase: sister chromatids separating toward poles
             sisterChromatin: [
                 { x: 21, y: 9 }, { x: 21, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 9 },
             ],
-            // Metaphase: centrosomes at poles, spindle under tension
+            // Anaphase: centrosomes at poles pulling chromatids apart
             centrosomes: [
-                { x: 24, y: 7 },
-                { x: 16, y: 13 },
+                { x: 25, y: 6 },
+                { x: 15, y: 14 },
             ],
             cilia: [],
             receptors: [
@@ -95,14 +95,14 @@
             chromatin: [
                 { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
             ],
-            // Metaphase: sister chromatids aligned at metaphase plate
+            // Anaphase: sister chromatids separating toward poles
             sisterChromatin: [
                 { x: 13, y: 21 }, { x: 13, y: 23 }, { x: 11, y: 23 }, { x: 11, y: 21 },
             ],
-            // Metaphase: centrosomes at poles, spindle under tension
+            // Anaphase: centrosomes at poles pulling chromatids apart
             centrosomes: [
-                { x: 16, y: 19 },
-                { x: 8, y: 25 },
+                { x: 17, y: 18 },
+                { x: 7, y: 26 },
             ],
             cilia: [],
             receptors: [
@@ -178,12 +178,14 @@
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
-            // G1 growth: cells expand as they absorb nutrients and receive signals
+            // Anaphase: cells elongate along spindle axis
             var growthPulse = (1 + Math.sin(tGrowth * 2 * Math.PI)) * 0.5; // 0 to 1
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
+            // Anaphase elongation: stretch radius along spindle axis
+            var elongation = 0.8;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            // Metaphase: nucleus fully dissolved
+            // Anaphase: nucleus still dissolved
             var nucSwell = 0.0;
             var nucR = cell.nucleusRadius + nucleusPulse * 0.05;
 
@@ -212,52 +214,49 @@
             var nucPixels = {};
             var envPulse = Math.sin(t * 2 * Math.PI * 1.3) * 0.1;
             var envR = nucR + envPulse;
-            // Metaphase: nuclear envelope completely dissolved, no fragments remain
-            // Nucleolus fully dispersed — no trace remains
+            // Anaphase: nuclear envelope still dissolved, will reform in telophase
 
-            // Metaphase: all chromosomes fully aligned at the metaphase plate
+            // Anaphase: sister chromatids separate toward opposite poles
             var chrPixels = {};
-            // Metaphase plate center (midpoint between centrosomes)
             var plateCx = cell.cx;
             var plateCy = cell.cy;
+            // Spindle axis direction
+            var axisNx = 0, axisNy = 0;
+            var perpX = 0, perpY = 0;
             if (cell.centrosomes && cell.centrosomes.length >= 2) {
                 plateCx = (cell.centrosomes[0].x + cell.centrosomes[1].x) / 2;
                 plateCy = (cell.centrosomes[0].y + cell.centrosomes[1].y) / 2;
-            }
-            // Chromosomes fully at the plate — slight jitter from spindle tension
-            var tensionJitter = Math.sin(tChromatin * 3) * 0.3;
-            // Perpendicular direction to spindle axis (the plate line)
-            var perpX = 0, perpY = 0;
-            if (cell.centrosomes && cell.centrosomes.length >= 2) {
                 var axisX = cell.centrosomes[1].x - cell.centrosomes[0].x;
                 var axisY = cell.centrosomes[1].y - cell.centrosomes[0].y;
                 var axisLen = Math.sqrt(axisX * axisX + axisY * axisY);
+                axisNx = axisX / axisLen;
+                axisNy = axisY / axisLen;
                 perpX = -axisY / axisLen;
                 perpY = axisX / axisLen;
             }
+            // Anaphase separation: chromatids pulled toward pole 0
+            var separationDist = 1.8 + Math.sin(tChromatin * 0.5) * 0.3;
             for (var chi = 0; chi < cell.chromatin.length; chi++) {
-                // Chromosomes spread along the plate perpendicular to spindle axis
-                var spread = (chi - (cell.chromatin.length - 1) / 2) * 0.8;
-                var driftX = Math.round(plateCx + perpX * spread + tensionJitter * (chi % 2 === 0 ? 0.5 : -0.5));
-                var driftY = Math.round(plateCy + perpY * spread + tensionJitter * (chi % 2 === 0 ? -0.5 : 0.5));
+                var spread = (chi - (cell.chromatin.length - 1) / 2) * 0.7;
+                // Move toward centrosome 0 (pole A)
+                var driftX = Math.round(plateCx - axisNx * separationDist + perpX * spread);
+                var driftY = Math.round(plateCy - axisNy * separationDist + perpY * spread);
                 var cPulse = Math.sin(tChromatin + chi * 0.8);
                 chrPixels[driftX + ',' + driftY] = cPulse > 0 ? '#ee7744' : '#dd6633';
             }
-            // Sister chromatids paired alongside each chromosome — kinetochores glow with checkpoint satisfaction
+            // Sister chromatids pulled toward pole 1 (opposite direction)
             if (cell.sisterChromatin) {
                 for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
-                    var spread2 = (rci - (cell.sisterChromatin.length - 1) / 2) * 0.8;
-                    // Offset slightly along spindle axis (paired beside original)
-                    var sAxisOff = 0.5;
-                    var sDriftX = Math.round(plateCx + perpX * spread2 + sAxisOff);
-                    var sDriftY = Math.round(plateCy + perpY * spread2 + sAxisOff);
+                    var spread2 = (rci - (cell.sisterChromatin.length - 1) / 2) * 0.7;
+                    // Move toward centrosome 1 (pole B)
+                    var sDriftX = Math.round(plateCx + axisNx * separationDist + perpX * spread2);
+                    var sDriftY = Math.round(plateCy + axisNy * separationDist + perpY * spread2);
                     var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
-                    // Spindle checkpoint satisfied — bright steady kinetochore glow
                     chrPixels[sDriftX + ',' + sDriftY] = rcPulse > -0.2 ? '#ffdd55' : '#eebb44';
                 }
             }
 
-            // Centrosomes: metaphase — at poles, spindle under tension, checkpoint satisfied
+            // Centrosomes: anaphase — at poles, spindle shortening, chromatids being pulled
             var centPixels = {};
             if (cell.centrosomes) {
                 var tCent = (t * 8000 / 3000) % 1.0;
@@ -386,7 +385,7 @@
             }
 
             return {
-                maxR: maxR, nucR: nucR,
+                maxR: maxR, nucR: nucR, elongation: elongation,
                 mitoPixels: mitoPixels, envPixels: envPixels,
                 nucPixels: nucPixels, chrPixels: chrPixels,
                 cilPixels: cilPixels, recPixels: recPixels,
@@ -478,9 +477,25 @@
                         var dd = cells[ci].d;
                         var dx = x - cc.cx;
                         var dy = y - cc.cy;
+                        // Anaphase elongation: use elliptical distance along spindle axis
                         var dist = Math.sqrt(dx * dx + dy * dy);
+                        var elong = dd.elongation || 0;
+                        var effDist = dist;
+                        if (elong > 0 && cc.centrosomes && cc.centrosomes.length >= 2) {
+                            var eAxisX = cc.centrosomes[1].x - cc.centrosomes[0].x;
+                            var eAxisY = cc.centrosomes[1].y - cc.centrosomes[0].y;
+                            var eAxisLen = Math.sqrt(eAxisX * eAxisX + eAxisY * eAxisY);
+                            if (eAxisLen > 0) {
+                                var enx = eAxisX / eAxisLen;
+                                var eny = eAxisY / eAxisLen;
+                                var projAlong = dx * enx + dy * eny;
+                                var projPerp = dx * (-eny) + dy * enx;
+                                // Shrink along-axis component to make cell appear elongated
+                                effDist = Math.sqrt((projAlong / (1 + elong)) * (projAlong / (1 + elong)) + projPerp * projPerp);
+                            }
+                        }
 
-                        if (dist <= dd.maxR) {
+                        if (effDist <= dd.maxR) {
                             inAnyCell = true;
                             // Layer priority: centrosomes > vesicles > atp > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
                             if (dd.centPixels[key]) {
@@ -501,8 +516,8 @@
                                 color = dd.recPixels[key];
                             } else if (cc.golgiPixels[key]) {
                                 color = cc.golgiPixels[key];
-                            } else if (dist > dd.maxR - 1.2) {
-                                var shell = dd.maxR - dist;
+                            } else if (effDist > dd.maxR - 1.2) {
+                                var shell = dd.maxR - effDist;
                                 var mi = Math.floor(shell * cc.membraneColors.length / 1.2);
                                 if (mi >= cc.membraneColors.length) mi = cc.membraneColors.length - 1;
                                 color = cc.membraneColors[mi];
@@ -514,7 +529,7 @@
                                 var ndy2 = y - cc.nucleusCy;
                                 var ndist = Math.sqrt(ndx2 * ndx2 + ndy2 * ndy2);
                                 if (ndist <= dd.nucR) {
-                                    // Metaphase: nuclear region fully merged with cytoplasm
+                                    // Anaphase: nuclear region still merged with cytoplasm
                                     color = '#6e2d00';
                                 } else {
                                     color = cc.cytoColor;
