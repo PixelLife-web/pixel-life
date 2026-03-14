@@ -113,6 +113,24 @@
             { mitoIdx: 1, angleOffset: 1.0, distOffset: 2.2 },
         ];
 
+        // Cytoskeleton: microtubules radiate from a centrosome near the nucleus
+        // Each microtubule is defined by an angle and length (in pixels from centrosome)
+        var centrosome = { x: 14, y: 11 }; // just outside the nucleus
+        var microtubules = [
+            { angle: 0.0, length: 5 },
+            { angle: 0.7, length: 4 },
+            { angle: 1.3, length: 5 },
+            { angle: 2.0, length: 4 },
+            { angle: 2.7, length: 5 },
+            { angle: 3.4, length: 4 },
+            { angle: 4.0, length: 5 },
+            { angle: 4.7, length: 4 },
+            { angle: 5.3, length: 5 },
+            { angle: 5.9, length: 4 },
+        ];
+        var mtColor1 = '#7a4422'; // slightly different from cytoplasm
+        var mtColor2 = '#8a5533'; // brighter pulse
+
         // Ribosomes: small dots along the ER channels (rough ER)
         var ribosomePositions = [];
         for (var ri = 0; ri < erSegments.length; ri++) {
@@ -282,6 +300,26 @@
                 ribosomePixels[rp.x + ',' + rp.y] = riboPulse > 0 ? '#6655aa' : '#7766bb';
             }
 
+            // Compute microtubule pixels (subtle 9-second pulse cycle)
+            var tMT = (Date.now() % 9000) / 9000 * 2 * Math.PI;
+            var mtPixels = {};
+            // Centrosome itself
+            mtPixels[centrosome.x + ',' + centrosome.y] = '#996633';
+            for (var mti = 0; mti < microtubules.length; mti++) {
+                var mt = microtubules[mti];
+                var mtPulse = Math.sin(tMT + mti * 0.6);
+                var mtCol = mtPulse > 0 ? mtColor2 : mtColor1;
+                for (var ml = 1; ml <= mt.length; ml++) {
+                    var mtx = Math.round(centrosome.x + Math.cos(mt.angle) * ml);
+                    var mty = Math.round(centrosome.y + Math.sin(mt.angle) * ml);
+                    // Only draw inside the cell, outside the nucleus
+                    var mtDist = Math.sqrt((mtx - center) * (mtx - center) + (mty - center) * (mty - center));
+                    if (mtDist < maxRadius - 1.5 && mtDist > nucleusRadius && mtx >= 0 && mtx < size && mty >= 0 && mty < size) {
+                        mtPixels[mtx + ',' + mty] = mtCol;
+                    }
+                }
+            }
+
             // Compute nutrient drift (slow 20-second cycle, small oscillation)
             var tNutrient = (Date.now() % 20000) / 20000 * 2 * Math.PI;
             var nutrientPixels = {};
@@ -361,6 +399,8 @@
                                 color = membraneColors[mi];
                             } else if (ribosomePixels[x + ',' + y]) {
                                 color = ribosomePixels[x + ',' + y];
+                            } else if (mtPixels[x + ',' + y]) {
+                                color = mtPixels[x + ',' + y];
                             } else if (erPixels[x + ',' + y]) {
                                 color = erColor;
                             } else {
