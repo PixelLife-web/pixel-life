@@ -2119,6 +2119,44 @@
                     set(bcX, bcY, '#ee5555');
                 }
             }
+            // Meissner's plexus: submucosal enteric nerve network beneath basal lamina
+            // Intrinsic neurons regulate epithelial secretion (VIP→goblet cells) and blood flow (ACh→capillaries)
+            // Ganglia house neuron cell bodies; varicose axons run parallel to lamina with en passant synapses
+            var tNerv = (now % 15000) / 15000;
+            var ganglia = [
+                {x:31,y:12, color:'#8866aa', axonEnd:{x:6,y:24}},
+                {x:22,y:30, color:'#7755aa', axonEnd:{x:8,y:28}},
+            ];
+            for (var ngi = 0; ngi < ganglia.length; ngi++) {
+                var gang = ganglia[ngi];
+                // Ganglion cell body: 1 bright pixel
+                var ngP = Math.sin(tNerv * 2 * Math.PI * 2.0 + ngi * 3.1);
+                set(gang.x, gang.y, ngP > 0 ? '#aa88cc' : gang.color);
+                // Varicose axon: path from ganglion toward axon end, running near capillaries
+                var axDx = gang.axonEnd.x - gang.x, axDy = gang.axonEnd.y - gang.y;
+                var axLen = Math.sqrt(axDx*axDx + axDy*axDy);
+                var axSteps = Math.ceil(axLen);
+                for (var axi = 1; axi < axSteps; axi++) {
+                    var axF = axi / axSteps;
+                    var axX = Math.round(gang.x + axDx * axF);
+                    var axY = Math.round(gang.y + axDy * axF);
+                    // Varicosity: swelling every ~3 pixels where vesicles cluster
+                    var isVaricosity = (axi % 3 === 0);
+                    var axP = Math.sin(tNerv * 2 * Math.PI * 1.5 + ngi * 2.0 + axi * 0.6);
+                    if (isVaricosity) {
+                        // Neurotransmitter release: VIP (green) or ACh (yellow) vesicle pulse
+                        var ntColor = axi % 6 === 0 ? '#77ddaa' : '#eedd77'; // alternating VIP/ACh
+                        set(axX, axY, axP > 0 ? ntColor : '#9977bb');
+                    } else {
+                        set(axX, axY, axP > 0.3 ? '#776699' : '#665588');
+                    }
+                }
+                // Action potential wave: bright pulse traveling along the axon
+                var apFrac = (tNerv * 3.0 + ngi * 0.5) % 1.0;
+                var apX = Math.round(gang.x + axDx * apFrac);
+                var apY = Math.round(gang.y + axDy * apFrac);
+                set(apX, apY, '#eeccff');
+            }
             return px;
         }
 
