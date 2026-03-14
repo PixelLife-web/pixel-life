@@ -447,180 +447,60 @@
             }
         }
 
-        // Na+/K+ ATPase: basolateral ion pumps establishing electrochemical gradient
-        // 3 Na+ out, 2 K+ in per ATP hydrolyzed — the engine of epithelial transport
-        // Positioned on basolateral face (toward basal lamina), opposite apical microvilli
-        for (var nki = 0; nki < granddaughterNuclei.length; nki++) {
-            var nkn = granddaughterNuclei[nki];
-            var blCtr = { x: 16, y: 22 };
-            var basalAngle = Math.atan2(blCtr.y - nkn.y, blCtr.x - nkn.x);
-            nkn.naKPumps = [];
-            var nkCount = 2 + (nki % 2); // 2-3 pumps per cell
-            for (var nkj = 0; nkj < nkCount; nkj++) {
-                var nkSpread = (nkj - (nkCount - 1) / 2) * 0.45;
-                nkn.naKPumps.push({
-                    angle: basalAngle + nkSpread,
-                    phase: nki * 0.8 + nkj * 1.5,
-                    pumpColor: '#dd6644',       // ATPase alpha subunit (red-orange)
-                    naColor: '#ffaa33',          // Na+ ions (gold, moving out)
-                    kColor: '#7744dd',           // K+ ions (purple, moving in)
-                    restColor: '#aa4433',        // resting pump
-                });
+        // Generic membrane transporter initializer: replaces individual loops for each transporter type
+        // face: 'apical'|'basal'|'ring', cellFilter: null|'enterocyte'|'goblet'
+        var blCenter = { x: 16, y: 22 };
+        function initTransporters(field, face, count, spread, angleOff, phaseMul, phaseStep, props, cellFilter) {
+            for (var ti = 0; ti < granddaughterNuclei.length; ti++) {
+                var tn = granddaughterNuclei[ti];
+                if (cellFilter && tn.cellType !== cellFilter) continue;
+                var baseAngle = face === 'apical' ? Math.atan2(tn.y - blCenter.y, tn.x - blCenter.x) :
+                    face === 'basal' ? Math.atan2(blCenter.y - tn.y, blCenter.x - tn.x) :
+                    tn.cajalAngle + Math.PI; // ring
+                tn[field] = [];
+                var c = (typeof count === 'function') ? count(ti) : count;
+                for (var tj = 0; tj < c; tj++) {
+                    var sp = (tj - (c - 1) / 2) * spread;
+                    var item = { angle: baseAngle + sp + (angleOff||0), phase: ti * phaseMul + tj * phaseStep };
+                    for (var pk in props) item[pk] = props[pk];
+                    tn[field].push(item);
+                }
             }
         }
-
-        // SGLT1 sodium-glucose cotransporters: apical secondary active transport (enterocytes only)
-        // Uses the Na+ gradient from Na+/K+ ATPase to drive glucose absorption against its gradient
-        // 2 Na+ ions co-transported with 1 glucose molecule per cycle
-        // GLUT2 facilitated diffusion on basolateral side exports glucose to interstitium
-        for (var sgi = 0; sgi < granddaughterNuclei.length; sgi++) {
-            var sgn = granddaughterNuclei[sgi];
-            if (sgn.cellType !== 'enterocyte') continue; // only absorptive cells
-            var sgBlCenter = { x: 16, y: 22 };
-            var sgApicalAngle = Math.atan2(sgn.y - sgBlCenter.y, sgn.x - sgBlCenter.x);
-            var sgBasalAngle = Math.atan2(sgBlCenter.y - sgn.y, sgBlCenter.x - sgn.x);
-            // SGLT1 on apical face (toward lumen)
-            sgn.sglt1 = [];
-            var sgltCount = 2 + (sgi % 2);
-            for (var sgj = 0; sgj < sgltCount; sgj++) {
-                var sgSpread = (sgj - (sgltCount - 1) / 2) * 0.40;
-                sgn.sglt1.push({
-                    angle: sgApicalAngle + sgSpread,
-                    phase: sgi * 0.9 + sgj * 1.4,
-                    transporterColor: '#ee8833',   // SGLT1 protein (orange)
-                    glucoseColor: '#ffcc00',        // glucose molecule (bright yellow)
-                    naCoColor: '#ffaa33',            // co-transported Na+ (gold)
-                });
-            }
-            // GLUT2 on basolateral face (toward interstitium)
-            sgn.glut2 = [];
-            var glutCount = 2;
-            for (var glj = 0; glj < glutCount; glj++) {
-                var glSpread = (glj - (glutCount - 1) / 2) * 0.50;
-                sgn.glut2.push({
-                    angle: sgBasalAngle + glSpread,
-                    phase: sgi * 0.7 + glj * 1.8,
-                    channelColor: '#cc7722',        // GLUT2 transporter (amber)
-                    glucoseColor: '#ffdd44',         // glucose exiting (pale yellow)
-                });
-            }
-        }
-
-        // PepT1 (SLC15A1): H+-coupled peptide transporter on enterocyte apical membrane
-        // Absorbs di/tripeptides from protein digestion using the proton gradient
-        // 1 H+ co-transported with each peptide molecule; peptides exit basolateral via amino acid transporters
-        for (var pti = 0; pti < granddaughterNuclei.length; pti++) {
-            var ptn = granddaughterNuclei[pti];
-            if (ptn.cellType !== 'enterocyte') continue;
-            var ptBlCenter = { x: 16, y: 22 };
-            var ptApicalAngle = Math.atan2(ptn.y - ptBlCenter.y, ptn.x - ptBlCenter.x);
-            ptn.pepT1 = [];
-            var ptCount = 2 + (pti % 2);
-            for (var ptj = 0; ptj < ptCount; ptj++) {
-                var ptSpread = (ptj - (ptCount - 1) / 2) * 0.42;
-                ptn.pepT1.push({
-                    angle: ptApicalAngle + ptSpread + 0.15, // slightly offset from SGLT1
-                    phase: pti * 0.8 + ptj * 1.6,
-                    transporterColor: '#cc55aa',    // PepT1 protein (magenta-pink)
-                    peptideColor: '#ee88cc',         // peptide molecule (light pink)
-                    hColor: '#ff6666',               // co-transported H+ (red)
-                    restColor: '#993377',            // resting transporter
-                });
-            }
-        }
-
-        // CD36/FATP4 fatty acid transporters on enterocyte apical membrane
-        // Long-chain fatty acids (C16-C18) cross the membrane via CD36 scavenger receptor
-        // and FATP4 acyl-CoA synthetase; internalized FAs traffic to ER for re-esterification
-        // into triglycerides, then packaged into chylomicrons for basolateral secretion
-        for (var fai = 0; fai < granddaughterNuclei.length; fai++) {
-            var fan = granddaughterNuclei[fai];
-            if (fan.cellType !== 'enterocyte') continue;
-            var faBlCenter = { x: 16, y: 22 };
-            var faApicalAngle = Math.atan2(fan.y - faBlCenter.y, fan.x - faBlCenter.x);
-            var faBasalAngle = Math.atan2(faBlCenter.y - fan.y, faBlCenter.x - fan.x);
-            // CD36 on apical membrane (fatty acid uptake from lumen)
-            fan.cd36 = [];
-            var cd36Count = 2;
-            for (var cdj = 0; cdj < cd36Count; cdj++) {
-                var cdSpread = (cdj - (cd36Count - 1) / 2) * 0.50;
-                fan.cd36.push({
-                    angle: faApicalAngle + cdSpread + 0.30, // offset from other transporters
-                    phase: fai * 0.6 + cdj * 1.9,
-                    receptorColor: '#dd9944',     // CD36 scavenger receptor (amber-brown)
-                    faColor: '#eebb55',            // fatty acid chain (golden yellow)
-                    restColor: '#aa7733',          // resting receptor
-                });
-            }
-            // Chylomicron assembly: large lipoprotein particles bud from ER toward basolateral
-            // Triglycerides + apoB-48 coat → secreted via exocytosis into interstitial space
-            fan.chylomicrons = [];
-            var cmCount = 1 + (fai % 2);
-            for (var cmj = 0; cmj < cmCount; cmj++) {
-                fan.chylomicrons.push({
-                    angle: faBasalAngle + (cmj - (cmCount - 1) / 2) * 0.55,
-                    phase: fai * 0.5 + cmj * 1.7,
-                    coreColor: '#eedd66',          // triglyceride-rich core (bright yellow)
-                    coatColor: '#ccbb55',           // apoB-48 phospholipid coat
-                    speed: 0.20,
-                });
-            }
-        }
-
-        // NHE3 (SLC9A3) Na+/H+ exchanger on enterocyte apical membrane
-        // Exchanges luminal Na+ for intracellular H+, major Na+ absorber coupled to Na+/K+ ATPase
-        // DRA (SLC26A3) Cl-/HCO3- exchanger works in parallel — net effect: NaCl absorption
-        for (var nhei = 0; nhei < granddaughterNuclei.length; nhei++) {
-            var nhen = granddaughterNuclei[nhei];
-            if (nhen.cellType !== 'enterocyte') continue;
-            var nheBlCenter = { x: 16, y: 22 };
-            var nheApicalAngle = Math.atan2(nhen.y - nheBlCenter.y, nhen.x - nheBlCenter.x);
-            // NHE3 exchangers on apical face
-            nhen.nhe3 = [];
-            var nheCount = 2 + (nhei % 2);
-            for (var nhej = 0; nhej < nheCount; nhej++) {
-                var nheSpread = (nhej - (nheCount - 1) / 2) * 0.44;
-                nhen.nhe3.push({
-                    angle: nheApicalAngle + nheSpread - 0.20, // offset from other transporters
-                    phase: nhei * 0.7 + nhej * 1.5,
-                    exchangerColor: '#dd5577',   // NHE3 protein (salmon-red)
-                    naInColor: '#ffbb44',         // Na+ entering cell (gold)
-                    hOutColor: '#ff5555',          // H+ expelled to lumen (red)
-                    restColor: '#aa3355',          // resting exchanger
-                });
-            }
-            // DRA Cl-/HCO3- exchangers (paired with NHE3)
-            nhen.dra = [];
-            var draCount = 2;
-            for (var draj = 0; draj < draCount; draj++) {
-                var draSpread = (draj - (draCount - 1) / 2) * 0.46;
-                nhen.dra.push({
-                    angle: nheApicalAngle + draSpread + 0.22, // slightly offset from NHE3
-                    phase: nhei * 0.6 + draj * 1.8,
-                    exchangerColor: '#55aa77',   // DRA protein (green)
-                    clInColor: '#55ddaa',          // Cl- entering cell (teal)
-                    hco3OutColor: '#88ccee',        // HCO3- expelled to lumen (light blue)
-                    restColor: '#337755',          // resting exchanger
-                });
-            }
-        }
-
-        // Aquaporin water channels: AQP1/AQP2 tetramers embedded in granddaughter membranes
-        // Selective water transport across the sealed epithelium — osmotic homeostasis
-        // Water molecules (small blue dots) transit through channels on both apical and basal faces
+        // Na+/K+ ATPase (basolateral, all cells)
+        initTransporters('naKPumps','basal',function(i){return 2+(i%2)},0.45,0,0.8,1.5,
+            {pumpColor:'#dd6644',naColor:'#ffaa33',kColor:'#7744dd',restColor:'#aa4433'});
+        // SGLT1 (apical, enterocytes)
+        initTransporters('sglt1','apical',function(i){return 2+(i%2)},0.40,0,0.9,1.4,
+            {transporterColor:'#ee8833',glucoseColor:'#ffcc00',naCoColor:'#ffaa33'},'enterocyte');
+        // GLUT2 (basal, enterocytes)
+        initTransporters('glut2','basal',2,0.50,0,0.7,1.8,
+            {channelColor:'#cc7722',glucoseColor:'#ffdd44'},'enterocyte');
+        // PepT1 (apical, enterocytes)
+        initTransporters('pepT1','apical',function(i){return 2+(i%2)},0.42,0.15,0.8,1.6,
+            {transporterColor:'#cc55aa',peptideColor:'#ee88cc',hColor:'#ff6666',restColor:'#993377'},'enterocyte');
+        // CD36 (apical, enterocytes)
+        initTransporters('cd36','apical',2,0.50,0.30,0.6,1.9,
+            {receptorColor:'#dd9944',faColor:'#eebb55',restColor:'#aa7733'},'enterocyte');
+        // Chylomicrons (basal, enterocytes)
+        initTransporters('chylomicrons','basal',function(i){return 1+(i%2)},0.55,0,0.5,1.7,
+            {coreColor:'#eedd66',coatColor:'#ccbb55',speed:0.20},'enterocyte');
+        // NHE3 (apical, enterocytes)
+        initTransporters('nhe3','apical',function(i){return 2+(i%2)},0.44,-0.20,0.7,1.5,
+            {exchangerColor:'#dd5577',naInColor:'#ffbb44',hOutColor:'#ff5555',restColor:'#aa3355'},'enterocyte');
+        // DRA (apical, enterocytes)
+        initTransporters('dra','apical',2,0.46,0.22,0.6,1.8,
+            {exchangerColor:'#55aa77',clInColor:'#55ddaa',hco3OutColor:'#88ccee',restColor:'#337755'},'enterocyte');
+        // Aquaporins (ring distribution, all cells)
         for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
             var aqn = granddaughterNuclei[aqi];
             aqn.aquaporins = [];
-            var aqCount = 3 + (aqi % 2); // 3-4 channels per cell
+            var aqCount = 3 + (aqi % 2);
             for (var aqj = 0; aqj < aqCount; aqj++) {
-                // Distribute channels around the membrane, avoiding microvilli angles
-                var aqAngle = aqn.cajalAngle + Math.PI + aqj * (2 * Math.PI / aqCount) + 0.5;
                 aqn.aquaporins.push({
-                    angle: aqAngle,
+                    angle: aqn.cajalAngle + Math.PI + aqj * (2 * Math.PI / aqCount) + 0.5,
                     phase: aqi * 0.7 + aqj * 1.3,
-                    channelColor: '#5599dd',    // channel pore (blue tetramer)
-                    waterColor: '#88ccff',       // transiting water molecule
-                    dimColor: '#4477aa',         // resting channel
+                    channelColor: '#5599dd', waterColor: '#88ccff', dimColor: '#4477aa',
                 });
             }
         }
@@ -775,211 +655,58 @@
             { filoIdxA: 2, filoIdxB: 0, color: '#ddbb88', pulsePhase: 3.0 },
         ];
 
-        // Peroxisomes
-        cellA.peroxisomes = [
-            { orbitR: 3.8, baseAngle: 0.3, speed: 0.6, color: '#66aa88' },
-            { orbitR: 2.0, baseAngle: 3.5, speed: -0.5, color: '#55bb77' },
-        ];
-        cellB.peroxisomes = [
-            { orbitR: 3.8, baseAngle: 1.8, speed: -0.6, color: '#66aa88' },
-            { orbitR: 2.0, baseAngle: 5.0, speed: 0.5, color: '#55bb77' },
-        ];
-
-        // Desmosomes: mechanical anchoring junctions
-        var desmosomes = [
-            { angleA: 2.0, angleB: 5.2, color: '#bb8844', anchorColor: '#998866' },
-            { angleA: 2.8, angleB: 5.9, color: '#bb8844', anchorColor: '#998866' },
-        ];
-
-        // Tight junctions: seal between cells
-        var tightJunctions = [];
-        var tjCount = 6;
-        for (var tji = 0; tji < tjCount; tji++) {
-            // Span a band of angles between the two cells (facing each other)
-            var baseA = Math.atan2(cellB.cy - cellA.cy, cellB.cx - cellA.cx);
-            var baseB = Math.atan2(cellA.cy - cellB.cy, cellA.cx - cellB.cx);
-            var spread = (tji - (tjCount - 1) / 2) * 0.18;
-            tightJunctions.push({
-                angleA: baseA + spread,
-                angleB: baseB + spread,
-                phase: tji * 0.9,
-            });
-        }
-
-        // Adherens junctions: E-cadherin adhesion belt connecting the two cells
-        // The fourth and final major junction type, linking to actin cytoskeleton
-        var adherensJunctions = [];
-        var ajCount = 4;
-        for (var aji = 0; aji < ajCount; aji++) {
-            var baseA2 = Math.atan2(cellB.cy - cellA.cy, cellB.cx - cellA.cx);
-            var baseB2 = Math.atan2(cellA.cy - cellB.cy, cellA.cx - cellB.cx);
-            var ajSpread = (aji - (ajCount - 1) / 2) * 0.25;
-            adherensJunctions.push({
-                angleA: baseA2 + ajSpread,
-                angleB: baseB2 + ajSpread,
-                phase: aji * 1.2,
-            });
-        }
-
-        // Actin stress fibers: cytoskeletal cables inside each cell
-        // Connect from adherens junction sites inward toward the nucleus
-        cellA.actinFibers = [];
-        cellB.actinFibers = [];
-        for (var afi = 0; afi < ajCount; afi++) {
-            var ajA = adherensJunctions[afi];
-            cellA.actinFibers.push({ junctionAngle: ajA.angleA, length: 3.5, phase: afi * 0.7 });
-            cellB.actinFibers.push({ junctionAngle: ajA.angleB, length: 3.5, phase: afi * 0.7 + 1.0 });
-        }
-
-        // Smooth ER: lipid synthesis tubules, distinct from rough ER (no ribosomes)
-        cellA.smoothER = [
-            { cx: 24, cy: 11, rx: 1.5, ry: 0.8, angle: 0.4 },
-            { cx: 18, cy: 7, rx: 1.2, ry: 0.6, angle: 2.1 },
-        ];
-        cellB.smoothER = [
-            { cx: 14, cy: 25, rx: 1.5, ry: 0.8, angle: 0.7 },
-            { cx: 8, cy: 21, rx: 1.2, ry: 0.6, angle: 2.5 },
-        ];
-
-        // Lysosomes: small digestive organelles orbiting in the cytoplasm
-        cellA.lysosomes = [
-            { orbitR: 2.5, baseAngle: 1.0, speed: 1.2, color: '#8855aa' },
-            { orbitR: 3.2, baseAngle: 4.0, speed: -0.9, color: '#9966bb' },
-        ];
-        cellB.lysosomes = [
-            { orbitR: 2.5, baseAngle: 2.5, speed: -1.1, color: '#8855aa' },
-            { orbitR: 3.2, baseAngle: 5.5, speed: 0.8, color: '#9966bb' },
-        ];
-
-        // Microtubules: radiate from centrosome (MTOC) outward through cytoplasm
-        // Each cell has 6 microtubule tracks; motor proteins carry cargo along them
-        cellA.microtubules = [];
-        cellB.microtubules = [];
-        for (var mti = 0; mti < 6; mti++) {
-            var mtAngle = mti * 2 * Math.PI / 6;
-            cellA.microtubules.push({ angle: mtAngle, length: 4.0, cargoPhase: mti * 0.5 });
-            cellB.microtubules.push({ angle: mtAngle + 0.3, length: 4.0, cargoPhase: mti * 0.5 + 0.25 });
-        }
-
-        // Intermediate filaments: third cytoskeletal element, cage around nucleus
-        // anchoring to desmosome sites — completes actin + microtubule + IF triad
-        cellA.intermediateFilaments = [];
-        cellB.intermediateFilaments = [];
-        // Each IF runs from near the nucleus outward toward a desmosome anchor point
-        for (var ifi = 0; ifi < desmosomes.length; ifi++) {
-            var desmo = desmosomes[ifi];
-            cellA.intermediateFilaments.push({ targetAngle: desmo.angleA, length: 3.8, phase: ifi * 1.1 });
-            cellB.intermediateFilaments.push({ targetAngle: desmo.angleB, length: 3.8, phase: ifi * 1.1 + 0.5 });
-        }
-        // Additional IF strands forming the perinuclear cage (not anchored to desmosomes)
-        for (var ifi2 = 0; ifi2 < 4; ifi2++) {
-            var cageAngle = ifi2 * Math.PI / 2 + 0.4; // 4 cage strands at ~90 degree intervals
-            cellA.intermediateFilaments.push({ targetAngle: cageAngle, length: 2.5, phase: ifi2 * 0.8 + 2.0 });
-            cellB.intermediateFilaments.push({ targetAngle: cageAngle + 0.2, length: 2.5, phase: ifi2 * 0.8 + 2.5 });
-        }
-
-        // Nuclear pores: channels on the nuclear envelope for mRNA export
-        // mRNA particles travel from nucleus outward toward ribosomes on rough ER
-        cellA.nuclearPores = [
-            { angle: 0.5, mRNAphase: 0 },
-            { angle: 1.8, mRNAphase: 0.33 },
-            { angle: 3.3, mRNAphase: 0.66 },
-            { angle: 4.7, mRNAphase: 0.5 },
-            { angle: 5.8, mRNAphase: 0.17 },
-        ];
-        cellB.nuclearPores = [
-            { angle: 0.8, mRNAphase: 0.15 },
-            { angle: 2.1, mRNAphase: 0.48 },
-            { angle: 3.6, mRNAphase: 0.82 },
-            { angle: 5.0, mRNAphase: 0.31 },
-            { angle: 5.5, mRNAphase: 0.64 },
-        ];
-
-        // Secretory vesicles: bud from Golgi, travel to membrane, fuse (exocytosis)
-        // Completes the central dogma: DNA → mRNA → ribosome → protein → Golgi → secretion
-        cellA.secretoryVesicles = [
-            { budAngle: 2.6, memAngle: 0.8, speed: 0.4, phase: 0, color: '#ddaa33' },
-            { budAngle: 2.9, memAngle: 4.5, speed: 0.35, phase: 0.33, color: '#ccbb44' },
-            { budAngle: 2.3, memAngle: 5.8, speed: 0.45, phase: 0.66, color: '#ddaa33' },
-        ];
-        cellB.secretoryVesicles = [
-            { budAngle: 2.8, memAngle: 1.2, speed: 0.38, phase: 0.15, color: '#ddaa33' },
-            { budAngle: 2.5, memAngle: 3.8, speed: 0.42, phase: 0.5, color: '#ccbb44' },
-            { budAngle: 3.1, memAngle: 5.2, speed: 0.36, phase: 0.82, color: '#ddaa33' },
-        ];
-
-        // Endocytic vesicles: receptor-mediated endocytosis, membrane pinches inward
-        // Vesicles travel from membrane toward lysosomes (completing endo/exo trafficking cycle)
-        cellA.endocyticVesicles = [
-            { memAngle: 0.3, targetAngle: 1.0, speed: 0.38, phase: 0, color: '#aa55cc' },
-            { memAngle: 2.5, targetAngle: 4.0, speed: 0.42, phase: 0.5, color: '#9944bb' },
-        ];
-        cellB.endocyticVesicles = [
-            { memAngle: 3.5, targetAngle: 2.5, speed: 0.4, phase: 0.25, color: '#aa55cc' },
-            { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
-        ];
+        // Mirror helper: set same-structure organelles on both parent cells
+        function mirrorOrg(field, dataA, dataB) { cellA[field] = dataA; cellB[field] = dataB; }
+        mirrorOrg('peroxisomes',
+            [{orbitR:3.8,baseAngle:0.3,speed:0.6,color:'#66aa88'},{orbitR:2.0,baseAngle:3.5,speed:-0.5,color:'#55bb77'}],
+            [{orbitR:3.8,baseAngle:1.8,speed:-0.6,color:'#66aa88'},{orbitR:2.0,baseAngle:5.0,speed:0.5,color:'#55bb77'}]);
+        var desmosomes = [{angleA:2.0,angleB:5.2,color:'#bb8844',anchorColor:'#998866'},{angleA:2.8,angleB:5.9,color:'#bb8844',anchorColor:'#998866'}];
+        // Junctions: tight, adherens — built from angle spread patterns
+        var baseAB = Math.atan2(cellB.cy-cellA.cy,cellB.cx-cellA.cx);
+        var baseBA = Math.atan2(cellA.cy-cellB.cy,cellA.cx-cellB.cx);
+        var tightJunctions = [], adherensJunctions = [];
+        for (var ji = 0; ji < 6; ji++) tightJunctions.push({angleA:baseAB+(ji-2.5)*0.18,angleB:baseBA+(ji-2.5)*0.18,phase:ji*0.9});
+        for (var ji2 = 0; ji2 < 4; ji2++) adherensJunctions.push({angleA:baseAB+(ji2-1.5)*0.25,angleB:baseBA+(ji2-1.5)*0.25,phase:ji2*1.2});
+        cellA.actinFibers=[]; cellB.actinFibers=[];
+        for (var afi=0;afi<4;afi++){var ajA2=adherensJunctions[afi];cellA.actinFibers.push({junctionAngle:ajA2.angleA,length:3.5,phase:afi*0.7});cellB.actinFibers.push({junctionAngle:ajA2.angleB,length:3.5,phase:afi*0.7+1.0});}
+        mirrorOrg('smoothER',
+            [{cx:24,cy:11,rx:1.5,ry:0.8,angle:0.4},{cx:18,cy:7,rx:1.2,ry:0.6,angle:2.1}],
+            [{cx:14,cy:25,rx:1.5,ry:0.8,angle:0.7},{cx:8,cy:21,rx:1.2,ry:0.6,angle:2.5}]);
+        mirrorOrg('lysosomes',
+            [{orbitR:2.5,baseAngle:1.0,speed:1.2,color:'#8855aa'},{orbitR:3.2,baseAngle:4.0,speed:-0.9,color:'#9966bb'}],
+            [{orbitR:2.5,baseAngle:2.5,speed:-1.1,color:'#8855aa'},{orbitR:3.2,baseAngle:5.5,speed:0.8,color:'#9966bb'}]);
+        cellA.microtubules=[]; cellB.microtubules=[];
+        for (var mti=0;mti<6;mti++){var mtA2=mti*2*Math.PI/6;cellA.microtubules.push({angle:mtA2,length:4.0,cargoPhase:mti*0.5});cellB.microtubules.push({angle:mtA2+0.3,length:4.0,cargoPhase:mti*0.5+0.25});}
+        cellA.intermediateFilaments=[]; cellB.intermediateFilaments=[];
+        for (var ifi=0;ifi<desmosomes.length;ifi++){cellA.intermediateFilaments.push({targetAngle:desmosomes[ifi].angleA,length:3.8,phase:ifi*1.1});cellB.intermediateFilaments.push({targetAngle:desmosomes[ifi].angleB,length:3.8,phase:ifi*1.1+0.5});}
+        for (var ifi2=0;ifi2<4;ifi2++){var ca2=ifi2*Math.PI/2+0.4;cellA.intermediateFilaments.push({targetAngle:ca2,length:2.5,phase:ifi2*0.8+2.0});cellB.intermediateFilaments.push({targetAngle:ca2+0.2,length:2.5,phase:ifi2*0.8+2.5});}
+        mirrorOrg('nuclearPores',
+            [{angle:0.5,mRNAphase:0},{angle:1.8,mRNAphase:0.33},{angle:3.3,mRNAphase:0.66},{angle:4.7,mRNAphase:0.5},{angle:5.8,mRNAphase:0.17}],
+            [{angle:0.8,mRNAphase:0.15},{angle:2.1,mRNAphase:0.48},{angle:3.6,mRNAphase:0.82},{angle:5.0,mRNAphase:0.31},{angle:5.5,mRNAphase:0.64}]);
+        mirrorOrg('secretoryVesicles',
+            [{budAngle:2.6,memAngle:0.8,speed:0.4,phase:0,color:'#ddaa33'},{budAngle:2.9,memAngle:4.5,speed:0.35,phase:0.33,color:'#ccbb44'},{budAngle:2.3,memAngle:5.8,speed:0.45,phase:0.66,color:'#ddaa33'}],
+            [{budAngle:2.8,memAngle:1.2,speed:0.38,phase:0.15,color:'#ddaa33'},{budAngle:2.5,memAngle:3.8,speed:0.42,phase:0.5,color:'#ccbb44'},{budAngle:3.1,memAngle:5.2,speed:0.36,phase:0.82,color:'#ddaa33'}]);
+        mirrorOrg('endocyticVesicles',
+            [{memAngle:0.3,targetAngle:1.0,speed:0.38,phase:0,color:'#aa55cc'},{memAngle:2.5,targetAngle:4.0,speed:0.42,phase:0.5,color:'#9944bb'}],
+            [{memAngle:3.5,targetAngle:2.5,speed:0.4,phase:0.25,color:'#aa55cc'},{memAngle:5.0,targetAngle:5.5,speed:0.36,phase:0.75,color:'#9944bb'}]);
 
         // Genome identity: PETARRAKOVI (encoded in chromatin, expressed via transcription)
 
-        // Cyclin-CDK complexes
-        cellA.cyclins = [
-            { orbitR: 3.0, baseAngle: 1.2, speed: 0.6, color: '#44bbaa' },
-        ];
-        cellB.cyclins = [
-            { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
-        ];
-
-        // PP1/PP2A phosphatases
-        cellA.phosphatases = [
-            { orbitR: 1.6, baseAngle: 0.9, speed: 0.7, color: '#44ddbb' },
-            { orbitR: 2.4, baseAngle: 3.1, speed: -0.6, color: '#33ccaa' },
-            { orbitR: 1.9, baseAngle: 5.4, speed: 0.55, color: '#44ddbb' },
-        ];
-        cellB.phosphatases = [
-            { orbitR: 1.6, baseAngle: 2.3, speed: -0.65, color: '#44ddbb' },
-            { orbitR: 2.4, baseAngle: 4.8, speed: 0.58, color: '#33ccaa' },
-            { orbitR: 1.9, baseAngle: 0.6, speed: -0.52, color: '#44ddbb' },
-        ];
-
-        // Phospho-Rb (inactivated)
-        cellA.checkpointKinases = [
-            { scanSpeed: 0.015, phase: 0, color: '#223322' },
-        ];
-        cellB.checkpointKinases = [
-            { scanSpeed: -0.015, phase: 0.15, color: '#223322' },
-        ];
-
-        // Cdc25 phosphatase: activates CDK1
-        cellA.cdc25 = [
-            { orbitR: 2.4, baseAngle: 0.6, speed: 0.5, color: '#338877' },
-            { orbitR: 3.2, baseAngle: 3.8, speed: -0.38, color: '#44aa88' },
-        ];
-        cellB.cdc25 = [
-            { orbitR: 2.4, baseAngle: 2.2, speed: -0.5, color: '#338877' },
-            { orbitR: 3.2, baseAngle: 5.5, speed: 0.4, color: '#44aa88' },
-        ];
-
-        // Cyclin A-CDK2: APC/C-Cdc20 degrades cyclin A at anaphase onset — mostly gone
-        cellA.cyclinA = [
-            { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#996677' },
-            { orbitR: 1.2, baseAngle: 0.3, speed: 0.65, color: '#aa7788' },
-        ];
-        cellB.cyclinA = [
-            { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#996677' },
-            { orbitR: 1.2, baseAngle: 3.2, speed: -0.6, color: '#aa7788' },
-        ];
-
-        // Cyclin D-CDK4/6: amber particles, some nuclear
-        cellA.cyclinD = [
-            { orbitR: 2.6, baseAngle: 0.9, speed: 0.45, color: '#ddaa33', nuclear: false },
-            { orbitR: 3.2, baseAngle: 3.4, speed: -0.38, color: '#ccaa44', nuclear: false },
-            { orbitR: 1.0, baseAngle: 1.8, speed: 0.7, color: '#eebb44', nuclear: true },
-        ];
-        cellB.cyclinD = [
-            { orbitR: 2.6, baseAngle: 3.8, speed: -0.42, color: '#ddaa33', nuclear: false },
-            { orbitR: 3.2, baseAngle: 0.5, speed: 0.4, color: '#ccaa44', nuclear: false },
-            { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
-        ];
+        // Cell cycle regulators (consolidated via mirror helper)
+        mirrorOrg('cyclins',[{orbitR:3.0,baseAngle:1.2,speed:0.6,color:'#44bbaa'}],[{orbitR:3.0,baseAngle:4.0,speed:-0.55,color:'#44bbaa'}]);
+        mirrorOrg('phosphatases',
+            [{orbitR:1.6,baseAngle:0.9,speed:0.7,color:'#44ddbb'},{orbitR:2.4,baseAngle:3.1,speed:-0.6,color:'#33ccaa'},{orbitR:1.9,baseAngle:5.4,speed:0.55,color:'#44ddbb'}],
+            [{orbitR:1.6,baseAngle:2.3,speed:-0.65,color:'#44ddbb'},{orbitR:2.4,baseAngle:4.8,speed:0.58,color:'#33ccaa'},{orbitR:1.9,baseAngle:0.6,speed:-0.52,color:'#44ddbb'}]);
+        mirrorOrg('checkpointKinases',[{scanSpeed:0.015,phase:0,color:'#223322'}],[{scanSpeed:-0.015,phase:0.15,color:'#223322'}]);
+        mirrorOrg('cdc25',
+            [{orbitR:2.4,baseAngle:0.6,speed:0.5,color:'#338877'},{orbitR:3.2,baseAngle:3.8,speed:-0.38,color:'#44aa88'}],
+            [{orbitR:2.4,baseAngle:2.2,speed:-0.5,color:'#338877'},{orbitR:3.2,baseAngle:5.5,speed:0.4,color:'#44aa88'}]);
+        mirrorOrg('cyclinA',
+            [{orbitR:2.8,baseAngle:4.0,speed:-0.4,color:'#996677'},{orbitR:1.2,baseAngle:0.3,speed:0.65,color:'#aa7788'}],
+            [{orbitR:2.8,baseAngle:1.0,speed:0.42,color:'#996677'},{orbitR:1.2,baseAngle:3.2,speed:-0.6,color:'#aa7788'}]);
+        mirrorOrg('cyclinD',
+            [{orbitR:2.6,baseAngle:0.9,speed:0.45,color:'#ddaa33',nuclear:false},{orbitR:3.2,baseAngle:3.4,speed:-0.38,color:'#ccaa44',nuclear:false},{orbitR:1.0,baseAngle:1.8,speed:0.7,color:'#eebb44',nuclear:true}],
+            [{orbitR:2.6,baseAngle:3.8,speed:-0.42,color:'#ddaa33',nuclear:false},{orbitR:3.2,baseAngle:0.5,speed:0.4,color:'#ccaa44',nuclear:false},{orbitR:1.0,baseAngle:4.5,speed:-0.65,color:'#eebb44',nuclear:true}]);
 
         // ABSCISSION complete: four granddaughter cells emerged
         function mkProphase(p1, p2) {
@@ -997,42 +724,16 @@
         // Cohesin rings: fully cleaved by separase (empty, resolved)
 
         // Topoisomerase II: resolves catenanes
-        cellA.topoII = [
-            { baseAngle: 1.5, orbitR: 1.0, speed: 0.3, color: '#dd6644' },
-            { baseAngle: 4.0, orbitR: 0.7, speed: -0.2, color: '#cc5533' },
-        ];
-        cellB.topoII = [
-            { baseAngle: 4.2, orbitR: 1.0, speed: -0.28, color: '#dd6644' },
-            { baseAngle: 1.0, orbitR: 0.7, speed: 0.22, color: '#cc5533' },
-        ];
-
-        // Cyclin B-CDK1: mostly degraded by APC/C — CDK1 activity near zero at telophase
-        cellA.cyclinB = [
-            { orbitR: 3.5, baseAngle: 0.4, speed: 0.5, color: '#228866', nuclear: false },
-        ];
-        cellB.cyclinB = [
-            { orbitR: 3.5, baseAngle: 2.8, speed: -0.48, color: '#228866', nuclear: false },
-        ];
-
-        // PLK1: master G2/M regulator
-        cellA.plk1 = [
-            { orbitR: 2.2, baseAngle: 1.5, speed: 0.55, color: '#ee6644' },
-            { orbitR: 3.0, baseAngle: 4.8, speed: -0.48, color: '#dd5533' },
-        ];
-        cellB.plk1 = [
-            { orbitR: 2.2, baseAngle: 4.2, speed: -0.52, color: '#ee6644' },
-            { orbitR: 3.0, baseAngle: 1.5, speed: 0.46, color: '#dd5533' },
-        ];
-
-        // Aurora A kinase: centrosome maturation
-        cellA.auroraA = [
-            { targetPole: 1, speed: 0.8, phase: 0, color: '#88ddff' },
-            { targetPole: 2, speed: 0.75, phase: 0.5, color: '#99eeff' },
-        ];
-        cellB.auroraA = [
-            { targetPole: 1, speed: -0.78, phase: 0.3, color: '#88ddff' },
-            { targetPole: 2, speed: -0.72, phase: 0.8, color: '#99eeff' },
-        ];
+        mirrorOrg('topoII',
+            [{baseAngle:1.5,orbitR:1.0,speed:0.3,color:'#dd6644'},{baseAngle:4.0,orbitR:0.7,speed:-0.2,color:'#cc5533'}],
+            [{baseAngle:4.2,orbitR:1.0,speed:-0.28,color:'#dd6644'},{baseAngle:1.0,orbitR:0.7,speed:0.22,color:'#cc5533'}]);
+        mirrorOrg('cyclinB',[{orbitR:3.5,baseAngle:0.4,speed:0.5,color:'#228866',nuclear:false}],[{orbitR:3.5,baseAngle:2.8,speed:-0.48,color:'#228866',nuclear:false}]);
+        mirrorOrg('plk1',
+            [{orbitR:2.2,baseAngle:1.5,speed:0.55,color:'#ee6644'},{orbitR:3.0,baseAngle:4.8,speed:-0.48,color:'#dd5533'}],
+            [{orbitR:2.2,baseAngle:4.2,speed:-0.52,color:'#ee6644'},{orbitR:3.0,baseAngle:1.5,speed:0.46,color:'#dd5533'}]);
+        mirrorOrg('auroraA',
+            [{targetPole:1,speed:0.8,phase:0,color:'#88ddff'},{targetPole:2,speed:0.75,phase:0.5,color:'#99eeff'}],
+            [{targetPole:1,speed:-0.78,phase:0.3,color:'#88ddff'},{targetPole:2,speed:-0.72,phase:0.8,color:'#99eeff'}]);
 
         // Wee1/ESCRT: fully resolved (abscission complete)
         var growthRate = 1.0;
@@ -2203,6 +1904,52 @@
                         set(mm.x + sparkOff, mm.y + sparkOff, '#ffdd88');
                     }
                 }
+            }
+            // Auerbach's (myenteric) plexus: nerve network between circular and longitudinal muscle
+            // Coordinates peristaltic rhythm — ICC (interstitial cells of Cajal) pace slow waves
+            // Ganglia are larger than Meissner's; dense axonal meshwork with serotonin/substance P
+            var tAP = (now % 20000) / 20000;
+            var auerbachGanglia = [
+                {x:31,y:7, color:'#9977bb', peerIdx:1},
+                {x:29,y:15, color:'#8866aa', peerIdx:2},
+                {x:26,y:22, color:'#9977bb', peerIdx:3},
+                {x:18,y:28, color:'#8866aa', peerIdx:0},
+            ];
+            for (var agi = 0; agi < auerbachGanglia.length; agi++) {
+                var ag = auerbachGanglia[agi];
+                var agP = Math.sin(tAP * 2 * Math.PI * 1.8 + agi * 2.5);
+                // Ganglion cell body: bright neuron soma
+                set(ag.x, ag.y, agP > 0 ? '#bbaadd' : ag.color);
+                // ICC pacemaker cell adjacent to ganglion — generates slow wave depolarization
+                var iccX = ag.x + (agi % 2 === 0 ? -1 : 0);
+                var iccY = ag.y + (agi % 2 === 0 ? 0 : -1);
+                var iccP = Math.sin(tAP * 2 * Math.PI * 3.0 + agi * 1.7);
+                // Slow wave: ICC brightens rhythmically, driving muscle contraction timing
+                set(iccX, iccY, iccP > 0.3 ? '#eebb55' : (iccP > -0.3 ? '#ccaa44' : '#aa8833'));
+                // Interneuron axon connecting to next ganglion in the plexus
+                var peer = auerbachGanglia[ag.peerIdx];
+                var axdx = peer.x - ag.x, axdy = peer.y - ag.y;
+                var axLen = Math.sqrt(axdx*axdx + axdy*axdy);
+                var axSteps = Math.ceil(axLen);
+                for (var axi2 = 1; axi2 < axSteps; axi2++) {
+                    var axF = axi2 / axSteps;
+                    var axX2 = Math.round(ag.x + axdx * axF);
+                    var axY2 = Math.round(ag.y + axdy * axF);
+                    var isVar = (axi2 % 4 === 0);
+                    var axP2 = Math.sin(tAP * 2 * Math.PI * 1.3 + agi * 1.8 + axi2 * 0.5);
+                    if (isVar) {
+                        // Substance P (red-orange) or serotonin (blue) at varicosities
+                        var ntC = axi2 % 8 === 0 ? '#dd8855' : '#6699cc';
+                        set(axX2, axY2, axP2 > 0 ? ntC : '#887799');
+                    } else {
+                        set(axX2, axY2, axP2 > 0.4 ? '#776699' : '#665588');
+                    }
+                }
+                // Slow wave propagation pulse along the inter-ganglion path
+                var swFrac = (tAP * 2.5 + agi * 0.25) % 1.0;
+                var swX = Math.round(ag.x + axdx * swFrac);
+                var swY = Math.round(ag.y + axdy * swFrac);
+                set(swX, swY, '#ffddaa');
             }
             return px;
         }
