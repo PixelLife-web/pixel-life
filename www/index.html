@@ -355,6 +355,26 @@
             }
         }
 
+        // Aquaporin water channels: AQP1/AQP2 tetramers embedded in granddaughter membranes
+        // Selective water transport across the sealed epithelium — osmotic homeostasis
+        // Water molecules (small blue dots) transit through channels on both apical and basal faces
+        for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
+            var aqn = granddaughterNuclei[aqi];
+            aqn.aquaporins = [];
+            var aqCount = 3 + (aqi % 2); // 3-4 channels per cell
+            for (var aqj = 0; aqj < aqCount; aqj++) {
+                // Distribute channels around the membrane, avoiding microvilli angles
+                var aqAngle = aqn.cajalAngle + Math.PI + aqj * (2 * Math.PI / aqCount) + 0.5;
+                aqn.aquaporins.push({
+                    angle: aqAngle,
+                    phase: aqi * 0.7 + aqj * 1.3,
+                    channelColor: '#5599dd',    // channel pore (blue tetramer)
+                    waterColor: '#88ccff',       // transiting water molecule
+                    dimColor: '#4477aa',         // resting channel
+                });
+            }
+        }
+
         // Zonula occludens (tight junctions) between adjacent granddaughter cells
         // Claudin/occludin strands seal the paracellular space — completing the epithelial barrier
         // Each junction connects neighboring GD cells at their closest membrane points
@@ -1951,6 +1971,31 @@
                     if (gdF >= gjF.bodyRadius - 0.3 && gdT >= gjT.bodyRadius - 0.3) {
                         var gtPulse = Math.sin(tGDTJ * 2 * Math.PI * 1.5 + gtj.phase + gts * 0.7);
                         set(gtx, gty, gtPulse > 0 ? gtj.color : gtj.dimColor);
+                    }
+                }
+            }
+            // Aquaporin water channels: water molecules transit through membrane pores
+            var tAQ = (now % 7000) / 7000;
+            for (var aqi2 = 0; aqi2 < granddaughterNuclei.length; aqi2++) {
+                var aqG = granddaughterNuclei[aqi2];
+                if (!aqG.aquaporins) continue;
+                var aqBR = aqG.bodyRadius;
+                for (var aqj2 = 0; aqj2 < aqG.aquaporins.length; aqj2++) {
+                    var aq = aqG.aquaporins[aqj2];
+                    // Channel pore sits on membrane
+                    var aqPx = Math.round(aqG.x + Math.cos(aq.angle) * aqBR);
+                    var aqPy = Math.round(aqG.y + Math.sin(aq.angle) * aqBR);
+                    var aqPulse = Math.sin(tAQ * 2 * Math.PI * 2.5 + aq.phase);
+                    set(aqPx, aqPy, aqPulse > 0 ? aq.channelColor : aq.dimColor);
+                    // Water molecule transiting through channel — oscillates in/out
+                    var wP = (tAQ * 3 + aq.phase * 0.3) % 1.0;
+                    var wDir = wP < 0.5 ? 1 : -1; // alternates inward/outward flow
+                    var wFrac = wP < 0.5 ? wP * 2 : (1.0 - wP) * 2; // 0→1→0
+                    var wR = aqBR + wDir * (0.3 + wFrac * 1.2);
+                    var wX = Math.round(aqG.x + Math.cos(aq.angle) * wR);
+                    var wY = Math.round(aqG.y + Math.sin(aq.angle) * wR);
+                    if (wFrac > 0.1 && wFrac < 0.9) {
+                        set(wX, wY, aq.waterColor);
                     }
                 }
             }
