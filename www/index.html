@@ -328,6 +328,16 @@
             { orbitR: 3.2, baseAngle: 5.5, speed: 0.8, color: '#9966bb' },
         ];
 
+        // Microtubules: radiate from centrosome (MTOC) outward through cytoplasm
+        // Each cell has 6 microtubule tracks; motor proteins carry cargo along them
+        cellA.microtubules = [];
+        cellB.microtubules = [];
+        for (var mti = 0; mti < 6; mti++) {
+            var mtAngle = mti * 2 * Math.PI / 6;
+            cellA.microtubules.push({ angle: mtAngle, length: 4.0, cargoPhase: mti * 0.5 });
+            cellB.microtubules.push({ angle: mtAngle + 0.3, length: 4.0, cargoPhase: mti * 0.5 + 0.25 });
+        }
+
         // G1 growth: cells slowly grow as they absorb nutrients
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -660,6 +670,43 @@
                 }
             }
 
+            // Microtubules: radiate from centrosome outward, with motor protein cargo
+            var mtPixels = {};
+            if (cell.microtubules && cell.centrosomes && cell.separated) {
+                var mtOrigin = cell.centrosomes[0]; // MTOC = centrosome
+                var tMT = (t * 8000 / 5000) % 1.0;
+                for (var mti = 0; mti < cell.microtubules.length; mti++) {
+                    var mt = cell.microtubules[mti];
+                    // Draw track from centrosome outward
+                    for (var ml = 1; ml <= Math.ceil(mt.length); ml++) {
+                        var mx3 = Math.round(mtOrigin.x + Math.cos(mt.angle) * ml);
+                        var my3 = Math.round(mtOrigin.y + Math.sin(mt.angle) * ml);
+                        // Stay within cell
+                        var mdx = mx3 - cell.cx;
+                        var mdy = my3 - cell.cy;
+                        if (Math.sqrt(mdx * mdx + mdy * mdy) < maxR - 1.2) {
+                            if (mx3 >= 0 && mx3 < size && my3 >= 0 && my3 < size) {
+                                mtPixels[mx3 + ',' + my3] = '#445566';
+                            }
+                        }
+                    }
+                    // Motor protein (kinesin) cargo: dot moving along the track
+                    var cargoPos = (tMT + mt.cargoPhase) % 1.0;
+                    // Cargo shuttles back and forth
+                    var cargoFrac = cargoPos < 0.5 ? cargoPos * 2 : (1.0 - cargoPos) * 2;
+                    var cargoDist = 1 + cargoFrac * (mt.length - 1);
+                    var cargoX = Math.round(mtOrigin.x + Math.cos(mt.angle) * cargoDist);
+                    var cargoY = Math.round(mtOrigin.y + Math.sin(mt.angle) * cargoDist);
+                    var cdx = cargoX - cell.cx;
+                    var cdy = cargoY - cell.cy;
+                    if (Math.sqrt(cdx * cdx + cdy * cdy) < maxR - 1.2) {
+                        if (cargoX >= 0 && cargoX < size && cargoY >= 0 && cargoY < size) {
+                            mtPixels[cargoX + ',' + cargoY] = cargoPos < 0.5 ? '#77ddff' : '#ffaa77';
+                        }
+                    }
+                }
+            }
+
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
             if (cell.filopodia) {
@@ -689,7 +736,8 @@
                 centPixels: centPixels, furrowPixels: furrowPixels,
                 lysoPixels: lysoPixels, filoPixels: filoPixels,
                 riboPixels: riboPixels, peroxPixels: peroxPixels,
-                serPixels: serPixels, actinPixels: actinPixels
+                serPixels: serPixels, actinPixels: actinPixels,
+                mtPixels: mtPixels
             };
         }
 
@@ -981,6 +1029,8 @@
                                 color = cc.membraneColors[mi];
                             } else if (dd.actinPixels && dd.actinPixels[key]) {
                                 color = dd.actinPixels[key];
+                            } else if (dd.mtPixels && dd.mtPixels[key]) {
+                                color = dd.mtPixels[key];
                             } else if (dd.riboPixels && dd.riboPixels[key]) {
                                 color = dd.riboPixels[key];
                             } else if (dd.serPixels && dd.serPixels[key]) {
