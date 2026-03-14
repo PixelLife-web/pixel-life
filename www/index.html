@@ -83,25 +83,24 @@
             '8,14': '#eebb66',
         };
 
-        // Prometaphase: nuclear envelope dissolving, chromosomes migrating to metaphase plate
-        // Chromosomes move from nucleus toward the midline between centrosomes
-        // Metaphase plate is the midpoint between centrosome1 and centrosome2
-        var metaphasePlateX = (centrosome1.x + centrosome2.x) / 2; // 12.5
-        var metaphasePlateY = (centrosome1.y + centrosome2.y) / 2; // 12
-        // Chromosomes now positioned near the metaphase plate, spread along the perpendicular axis
-        var chromatinSpots = [
-            { x: 11, y: 11 },
-            { x: 13, y: 11 },
-            { x: 11, y: 13 },
-            { x: 13, y: 13 },
-            { x: 12, y: 10 },
-            { x: 12, y: 14 },
-            { x: 14, y: 12 },
-            { x: 10, y: 12 },
+        // Anaphase: sister chromatids separate and migrate toward opposite poles
+        // Each original chromosome splits into two chromatids pulled by kinetochore fibers
+        // Group A moves toward centrosome1 (upper-right), Group B toward centrosome2 (lower-left)
+        var chromatidsA = [
+            { x: 14, y: 10 },
+            { x: 15, y: 10 },
+            { x: 14, y: 11 },
+            { x: 15, y: 11 },
         ];
-        var chromatinColor = '#771100'; // fully condensed chromosomes
+        var chromatidsB = [
+            { x: 10, y: 13 },
+            { x: 11, y: 14 },
+            { x: 10, y: 14 },
+            { x: 11, y: 13 },
+        ];
+        var chromatinColor = '#771100';
         var chromatinCondensed = '#550800';
-        // Nuclear envelope is breaking down - shown as faded, fragmented ring
+        // Nuclear envelope fully dissolved
         var envelopeBreaking = true;
 
         // Mitochondria with cristae: larger organelles with internal folds
@@ -131,10 +130,9 @@
             { angle: 5.0, color: '#cc9933', signalColor: '#eebb55' },
         ];
 
-        // Mitosis begins: centrosome has duplicated, two asters form at opposite poles
-        // The mitotic spindle stretches between them
-        var centrosome1 = { x: 15, y: 9 };  // upper-right pole
-        var centrosome2 = { x: 10, y: 15 }; // lower-left pole
+        // Anaphase: centrosomes move further apart as the cell elongates
+        var centrosome1 = { x: 16, y: 8 };  // upper-right pole (moved outward)
+        var centrosome2 = { x: 9, y: 16 };  // lower-left pole (moved outward)
         var centrosomeColor = '#ffcc33';
         // Aster microtubules radiate from each centrosome
         var aster1Tubules = [
@@ -207,6 +205,9 @@
             var t = (Date.now() % 8000) / 8000;
             var breath = Math.sin(t * 2 * Math.PI);
             var maxRadius = 6.5 + breath * 0.4;
+            // Anaphase elongation: cell stretches along the pole-to-pole axis
+            // Pole axis runs from centrosome1 (16,8) to centrosome2 (9,16): roughly diagonal
+            var elongation = 0.8; // pixels of extra stretch along pole axis
 
             // Nucleus pulse: faster counter-rhythm (5-second cycle)
             var t2 = (Date.now() % 5000) / 5000;
@@ -301,13 +302,15 @@
                 }
             }
 
-            // Chromosomes at metaphase plate: pulse between condensed shades (10-second cycle)
+            // Anaphase chromatids: two groups pulsing as they're pulled toward poles (10-second cycle)
             var tChromatin = (Date.now() % 10000) / 10000 * 2 * Math.PI;
             var chromatinPixels = {};
-            for (var chi = 0; chi < chromatinSpots.length; chi++) {
-                var cs = chromatinSpots[chi];
+            for (var chi = 0; chi < chromatidsA.length; chi++) {
+                var csA = chromatidsA[chi];
+                var csB = chromatidsB[chi];
                 var condensation = Math.sin(tChromatin + chi * 0.8);
-                chromatinPixels[cs.x + ',' + cs.y] = condensation > 0 ? chromatinCondensed : chromatinColor;
+                chromatinPixels[csA.x + ',' + csA.y] = condensation > 0 ? chromatinCondensed : chromatinColor;
+                chromatinPixels[csB.x + ',' + csB.y] = condensation > 0 ? chromatinColor : chromatinCondensed;
             }
 
             // Compute ribosome visibility (ribosomes pulse gently, 7-second cycle)
@@ -365,17 +368,29 @@
                     mtPixels[spx + ',' + spy] = spCol;
                 }
             }
-            // Kinetochore fibers: spindle fibers reach from each centrosome to nearby chromosomes
+            // Kinetochore fibers: short fibers pull chromatids toward their respective poles
             var kinetochoreColor = '#bb8833';
-            for (var ki = 0; ki < chromatinSpots.length; ki++) {
-                var chr = chromatinSpots[ki];
-                // Connect to nearest centrosome (first 4 to centrosome1, last 4 to centrosome2)
-                var pole = ki < 4 ? centrosome1 : centrosome2;
-                var kSteps = 4;
+            // Group A pulled toward centrosome1
+            for (var ki = 0; ki < chromatidsA.length; ki++) {
+                var chrA = chromatidsA[ki];
+                var kSteps = 3;
                 for (var ks = 1; ks < kSteps; ks++) {
                     var kf = ks / kSteps;
-                    var kx = Math.round(pole.x + (chr.x - pole.x) * kf);
-                    var ky = Math.round(pole.y + (chr.y - pole.y) * kf);
+                    var kx = Math.round(centrosome1.x + (chrA.x - centrosome1.x) * kf);
+                    var ky = Math.round(centrosome1.y + (chrA.y - centrosome1.y) * kf);
+                    if (kx >= 0 && kx < size && ky >= 0 && ky < size) {
+                        mtPixels[kx + ',' + ky] = kinetochoreColor;
+                    }
+                }
+            }
+            // Group B pulled toward centrosome2
+            for (var ki = 0; ki < chromatidsB.length; ki++) {
+                var chrB = chromatidsB[ki];
+                var kSteps = 3;
+                for (var ks = 1; ks < kSteps; ks++) {
+                    var kf = ks / kSteps;
+                    var kx = Math.round(centrosome2.x + (chrB.x - centrosome2.x) * kf);
+                    var ky = Math.round(centrosome2.y + (chrB.y - centrosome2.y) * kf);
                     if (kx >= 0 && kx < size && ky >= 0 && ky < size) {
                         mtPixels[kx + ',' + ky] = kinetochoreColor;
                     }
@@ -551,7 +566,17 @@
                 for (var x = 0; x < size; x++) {
                     var dx = x - center;
                     var dy = y - center;
-                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    // Elongate along pole axis (from centrosome1 toward centrosome2)
+                    // Pole axis direction: normalized (9-16, 16-8) = (-7, 8), norm ~10.6
+                    var poleNorm = 10.63;
+                    var poleDirX = -7 / poleNorm;
+                    var poleDirY = 8 / poleNorm;
+                    // Project displacement onto pole axis and perpendicular
+                    var projPole = dx * poleDirX + dy * poleDirY;
+                    var projPerp = dx * (-poleDirY) + dy * poleDirX;
+                    // Shrink pole-axis component to make cell appear elongated
+                    var scaledPole = projPole / (1 + elongation / maxRadius);
+                    var dist = Math.sqrt(scaledPole * scaledPole + projPerp * projPerp);
 
                     if (dist <= maxRadius) {
                         var color;
@@ -631,16 +656,8 @@
                                 color = chromatinPixels[x + ',' + y];
                                 isSpecial = true;
                             } else if (dist <= nucleusRadius) {
-                                // Nuclear envelope is dissolving: only fragments remain
-                                // Show the envelope as occasional edge pixels (every other pixel)
-                                var atEdge = dist > nucleusRadius - 0.8;
-                                var fragmentVisible = ((x + y) % 3 === 0); // fragmented pattern
-                                if (atEdge && fragmentVisible) {
-                                    color = '#d4740e'; // faint envelope remnant
-                                } else {
-                                    // Interior is now merging with cytoplasm
-                                    color = cytoColor;
-                                }
+                                // Nuclear envelope fully dissolved in anaphase
+                                color = cytoColor;
                             } else if (dist > maxRadius - 1.5) {
                                 var shell = maxRadius - dist;
                                 var mi = Math.floor(shell * membraneColors.length / 1.5);
