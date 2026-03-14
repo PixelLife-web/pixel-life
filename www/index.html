@@ -396,7 +396,22 @@
             { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
         ];
 
-        // G1 growth: cells slowly grow as they absorb nutrients
+        // S phase: DNA replication begins — replication forks flash inside nuclei
+        // Each cell gets replication bubbles that open along chromatin
+        cellA.replicationForks = [
+            { chrIdx: 0, speed: 0.3, phase: 0, color: '#66eeff' },
+            { chrIdx: 2, speed: 0.35, phase: 0.25, color: '#55ddee' },
+            { chrIdx: 4, speed: 0.28, phase: 0.5, color: '#66eeff' },
+            { chrIdx: 6, speed: 0.32, phase: 0.75, color: '#55ddee' },
+        ];
+        cellB.replicationForks = [
+            { chrIdx: 1, speed: 0.31, phase: 0.1, color: '#66eeff' },
+            { chrIdx: 3, speed: 0.34, phase: 0.4, color: '#55ddee' },
+            { chrIdx: 5, speed: 0.29, phase: 0.6, color: '#66eeff' },
+            { chrIdx: 7, speed: 0.33, phase: 0.85, color: '#55ddee' },
+        ];
+
+        // S phase growth: cells slowly grow as they absorb nutrients and replicate DNA
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
 
@@ -847,6 +862,40 @@
                 }
             }
 
+            // Replication forks: DNA helicase unwinding, showing S phase progression
+            var replPixels = {};
+            if (cell.replicationForks && cell.separated) {
+                var tRepl = (t * 8000 / 4000) % 1.0;
+                var allChr = cell.chromatin.concat(cell.sisterChromatin || []);
+                for (var rfi = 0; rfi < cell.replicationForks.length; rfi++) {
+                    var rf = cell.replicationForks[rfi];
+                    var chrIdx = rf.chrIdx % allChr.length;
+                    // Fork bubble expands and contracts as helicase works
+                    var forkPulse = (tRepl * rf.speed + rf.phase) % 1.0;
+                    var forkActive = Math.sin(forkPulse * 2 * Math.PI);
+                    // Position: oscillate around the chromatin position
+                    var chrR = 0.6 + Math.sin(tChromatin * 0.3 + chrIdx * 1.2) * 0.3;
+                    var chrAngle = chrIdx * 2 * Math.PI / allChr.length + tChromatin * 0.05;
+                    var chrX = cell.cx + Math.cos(chrAngle) * chrR;
+                    var chrY = cell.cy + Math.sin(chrAngle) * chrR;
+                    // Fork bubble: two bright pixels flanking the chromatin when active
+                    if (forkActive > 0.2) {
+                        var forkSpread = 0.6 + forkActive * 0.4;
+                        var fPerpAngle = chrAngle + Math.PI / 2;
+                        var fx1 = Math.round(chrX + Math.cos(fPerpAngle) * forkSpread);
+                        var fy1 = Math.round(chrY + Math.sin(fPerpAngle) * forkSpread);
+                        var fx2 = Math.round(chrX - Math.cos(fPerpAngle) * forkSpread);
+                        var fy2 = Math.round(chrY - Math.sin(fPerpAngle) * forkSpread);
+                        if (fx1 >= 0 && fx1 < size && fy1 >= 0 && fy1 < size) {
+                            replPixels[fx1 + ',' + fy1] = rf.color;
+                        }
+                        if (fx2 >= 0 && fx2 < size && fy2 >= 0 && fy2 < size) {
+                            replPixels[fx2 + ',' + fy2] = forkActive > 0.6 ? '#88ffff' : rf.color;
+                        }
+                    }
+                }
+            }
+
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
             if (cell.microtubules && cell.centrosomes && cell.separated) {
@@ -916,7 +965,7 @@
                 serPixels: serPixels, actinPixels: actinPixels,
                 mtPixels: mtPixels, ifPixels: ifPixels,
                 porePixels: porePixels, secVesPixels: secVesPixels,
-                endoPixels: endoPixels
+                endoPixels: endoPixels, replPixels: replPixels
             };
         }
 
@@ -1201,6 +1250,8 @@
                                 color = dd.porePixels[key];
                             } else if (dd.envPixels[key]) {
                                 color = dd.envPixels[key];
+                            } else if (dd.replPixels && dd.replPixels[key]) {
+                                color = dd.replPixels[key];
                             } else if (dd.chrPixels[key]) {
                                 color = dd.chrPixels[key];
                             } else if (dd.recPixels[key]) {
