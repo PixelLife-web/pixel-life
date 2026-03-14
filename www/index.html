@@ -2180,6 +2180,37 @@
                     if (inB(scfaX, scfaY)) set(scfaX, scfaY, '#bbdd77');
                 }
             }
+            // Intraepithelial lymphocytes (IELs): immune sentinel T cells patrolling between enterocytes
+            // CD8αα+ and γδ T cells squeeze through paracellular space, surveilling for antigen
+            // When activated, they release perforin/granzyme granules to destroy infected cells
+            var tIEL = (now % 22000) / 22000;
+            var iels = [
+                {homeX:16, homeY:16, patrolAngle:0.8, patrolR:2.5, color:'#6644bb', dimColor:'#553399', granzColor:'#aa77ee'},
+                {homeX:21, homeY:19, patrolAngle:3.5, patrolR:2.0, color:'#5533aa', dimColor:'#442288', granzColor:'#9966dd'},
+                {homeX:11, homeY:13, patrolAngle:5.8, patrolR:2.2, color:'#6644bb', dimColor:'#553399', granzColor:'#aa77ee'},
+            ];
+            for (var ieli = 0; ieli < iels.length; ieli++) {
+                var iel = iels[ieli];
+                // Patrol path: IELs crawl slowly between epithelial cells
+                var ielPhase = tIEL * 2 * Math.PI + ieli * 2.09;
+                var ielX = Math.round(iel.homeX + Math.cos(ielPhase) * iel.patrolR);
+                var ielY = Math.round(iel.homeY + Math.sin(ielPhase * 0.7 + ieli * 1.3) * iel.patrolR);
+                // Cell body: small round lymphocyte (1 pixel core)
+                var ielPulse = Math.sin(tIEL * 2 * Math.PI * 2.5 + ieli * 1.7);
+                if (inB(ielX, ielY)) set(ielX, ielY, ielPulse > 0 ? iel.color : iel.dimColor);
+                // Pseudopod: leading edge extends in direction of movement
+                var ielDirX = -Math.sin(ielPhase);
+                var ielDirY = Math.cos(ielPhase * 0.7 + ieli * 1.3) * 0.7;
+                var ielPodX = Math.round(ielX + ielDirX * 0.8);
+                var ielPodY = Math.round(ielY + ielDirY * 0.8);
+                if (inB(ielPodX, ielPodY) && ielPulse > -0.3) set(ielPodX, ielPodY, iel.dimColor);
+                // Cytotoxic granule release: periodic perforin/granzyme burst toward lumen
+                if (ielPulse > 0.7) {
+                    var grX = Math.round(ielX - ielDirX * 1.0);
+                    var grY = Math.round(ielY - ielDirY * 1.0);
+                    if (inB(grX, grY)) set(grX, grY, iel.granzColor);
+                }
+            }
             return px;
         }
 
