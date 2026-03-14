@@ -431,15 +431,13 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // LATE ANAPHASE: APC/C degrading cyclin B — CDK1 activity declining
-        // Only 2 particles remain per cell (3 destroyed by proteasome)
+        // TELOPHASE: cyclin B nearly gone — CDK1 inactive, phosphatases take over
+        // Only 1 dim particle remains per cell, APC/C finishing degradation
         cellA.cyclinB = [
-            { orbitR: 1.0, baseAngle: 4.2, speed: 0.75, color: '#ddbb44' },
-            { orbitR: 2.4, baseAngle: 1.5, speed: 0.5, color: '#cc8833' },
+            { orbitR: 1.8, baseAngle: 4.2, speed: 0.4, color: '#998833' },
         ];
         cellB.cyclinB = [
-            { orbitR: 1.0, baseAngle: 0.5, speed: -0.72, color: '#ddbb44' },
-            { orbitR: 2.4, baseAngle: 5.2, speed: -0.48, color: '#cc8833' },
+            { orbitR: 1.8, baseAngle: 0.5, speed: -0.38, color: '#998833' },
         ];
 
         // METAPHASE: checkpoint kinases silenced, SAC satisfied
@@ -507,44 +505,48 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // LATE ANAPHASE: sisters nearly at poles, central spindle midzone assembles
-        // Anaphase A (kinetochore fiber shortening) nearly complete
-        // Anaphase B (interpolar MT sliding) pushes poles further apart
-        // Aurora B + MKLP1/CYK-4 relocate to midzone → centralspindlin complex forms
-        // APC/C continues: cyclin B degradation accelerates, CDK1 activity declining
+        // TELOPHASE ONSET: sisters at poles, nuclear envelopes reforming
+        // CDK1 inactive → phosphatases (PP1/PP2A) dephosphorylate substrates
+        // Lamins dephosphorylate and reassemble → nuclear envelope reforms
+        // Chromosomes begin decondensing as condensin is released
+        // Contractile ring (actomyosin) assembles at cell equator → furrow initiates
         cellA.prophase = {
-            condensation: 1.0, // chromosomes still condensed
-            pole1Target: { x: 18, y: 6 },  // poles pushed further apart by anaphase B
-            pole2Target: { x: 24, y: 12 }, // expanded from 19,7/23,11
-            prometaphase: true,
-            metaphase: true,
-            anaphase: true,
-            lateAnaphase: true, // sisters near poles, midzone forming
-            spindleForming: true,
-            asterCount: 12,
-            laminPhospho: 1.0,
-            npcDisassembly: 1.0,
-            envelopeVesicles: true,
-            congressProgress: 1.0,
-            sacSatisfaction: 1.0,
-            auroraBActive: false, // Aurora B now at midzone, not kinetochores
-        };
-        cellB.prophase = {
-            condensation: 1.0,
-            pole1Target: { x: 8, y: 20 },  // poles pushed further apart
-            pole2Target: { x: 14, y: 26 }, // expanded from 9,21/13,25
+            condensation: 0.8, // chromosomes beginning to decondense
+            pole1Target: { x: 18, y: 6 },
+            pole2Target: { x: 24, y: 12 },
             prometaphase: true,
             metaphase: true,
             anaphase: true,
             lateAnaphase: true,
+            telophase: true, // nuclear envelopes reforming, chromosomes decondensing
             spindleForming: true,
-            asterCount: 12,
-            laminPhospho: 1.0,
-            npcDisassembly: 1.0,
-            envelopeVesicles: true,
+            asterCount: 10, // asters shrinking as spindle disassembles
+            laminPhospho: 0.3, // lamins dephosphorylating → envelope reassembly
+            npcDisassembly: 0.3, // NPCs reassembling into new envelopes
+            envelopeVesicles: false, // vesicles recruited back to reform envelope
             congressProgress: 1.0,
             sacSatisfaction: 1.0,
             auroraBActive: false,
+            furrowInitiation: 0.2, // contractile ring beginning to form
+        };
+        cellB.prophase = {
+            condensation: 0.8,
+            pole1Target: { x: 8, y: 20 },
+            pole2Target: { x: 14, y: 26 },
+            prometaphase: true,
+            metaphase: true,
+            anaphase: true,
+            lateAnaphase: true,
+            telophase: true,
+            spindleForming: true,
+            asterCount: 10,
+            laminPhospho: 0.3,
+            npcDisassembly: 0.3,
+            envelopeVesicles: false,
+            congressProgress: 1.0,
+            sacSatisfaction: 1.0,
+            auroraBActive: false,
+            furrowInitiation: 0.2,
         };
 
         // Condensin complexes: ring-shaped SMC proteins loading onto chromosomes
@@ -562,20 +564,13 @@
             { baseAngle: 6.0, speed: 0.11, color: '#dd7744' },
         ];
 
-        // LATE ANAPHASE: securin gone, separase fading (cohesin fully cleaved)
-        // Separase being inactivated by cyclin B-CDK1 decline
+        // TELOPHASE: securin and separase fully cleared — cohesin long cleaved
         cellA.securin = [];
         cellB.securin = [];
+        cellA.separase = [];
+        cellB.separase = [];
 
-        // Separase: fading — only 1 dim particle per cell, job done
-        cellA.separase = [
-            { orbitR: 0.7, baseAngle: 3.5, speed: -0.8, color: '#aa4444' },
-        ];
-        cellB.separase = [
-            { orbitR: 0.7, baseAngle: 5.0, speed: 0.75, color: '#aa4444' },
-        ];
-
-        // Late anaphase: sisters near poles, midzone forming, CDK1 declining
+        // Telophase: envelopes reform, chromosomes decondense, furrow initiates
         var growthRate = 0.8;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
