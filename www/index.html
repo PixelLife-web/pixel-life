@@ -401,25 +401,17 @@
             { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
         ];
 
-        // S PHASE: origins fired by cyclin E-CDK2, replication forks now fully active
-        // MCM helicase unwinding DNA at multiple origins simultaneously
+        // S PHASE COMPLETING: most replisomes have converged and terminated
+        // Only 3 final forks remain, completing the last unreplicated segments
         cellA.replicationForks = [
-            { chrIdx: 0, speed: 0.4, phase: 0, color: '#66eeff' },
-            { chrIdx: 1, speed: 0.38, phase: 0.15, color: '#55ddee' },
-            { chrIdx: 2, speed: 0.42, phase: 0.3, color: '#66eeff' },
-            { chrIdx: 3, speed: 0.36, phase: 0.45, color: '#55ddee' },
-            { chrIdx: 4, speed: 0.35, phase: 0.55, color: '#66eeff' },
-            { chrIdx: 5, speed: 0.39, phase: 0.7, color: '#55ddee' },
-            { chrIdx: 6, speed: 0.37, phase: 0.85, color: '#66eeff' },
+            { chrIdx: 1, speed: 0.3, phase: 0.1, color: '#55ddee' },
+            { chrIdx: 4, speed: 0.28, phase: 0.4, color: '#66eeff' },
+            { chrIdx: 6, speed: 0.32, phase: 0.75, color: '#55ddee' },
         ];
         cellB.replicationForks = [
-            { chrIdx: 0, speed: 0.39, phase: 0.05, color: '#66eeff' },
-            { chrIdx: 1, speed: 0.41, phase: 0.2, color: '#55ddee' },
-            { chrIdx: 2, speed: 0.35, phase: 0.35, color: '#66eeff' },
-            { chrIdx: 3, speed: 0.38, phase: 0.5, color: '#55ddee' },
-            { chrIdx: 4, speed: 0.36, phase: 0.65, color: '#66eeff' },
-            { chrIdx: 5, speed: 0.4, phase: 0.8, color: '#55ddee' },
-            { chrIdx: 6, speed: 0.37, phase: 0.9, color: '#66eeff' },
+            { chrIdx: 0, speed: 0.31, phase: 0.2, color: '#66eeff' },
+            { chrIdx: 3, speed: 0.29, phase: 0.55, color: '#55ddee' },
+            { chrIdx: 5, speed: 0.33, phase: 0.8, color: '#66eeff' },
         ];
 
         // Genome: "PETAR RAKOVI" encoded as nucleotide colors — the cell's genetic identity
@@ -482,54 +474,42 @@
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
 
-        // LATE S PHASE: Cyclin E nearly fully degraded — only 1 faint particle remains per cell
-        cellA.cyclinE = [
-            { orbitR: 2.8, baseAngle: 0.6, speed: 0.7, color: '#448877' },
-        ];
-        cellB.cyclinE = [
-            { orbitR: 2.8, baseAngle: 2.2, speed: -0.65, color: '#448877' },
-        ];
+        // S PHASE COMPLETING: Cyclin E fully degraded by SCF ubiquitin ligase — zero remain
+        cellA.cyclinE = [];
+        cellB.cyclinE = [];
 
-        // Cyclin A rising through late S phase — 4 particles now, dominant S/G2 cyclin
+        // Cyclin A-CDK2 dominant — 5 particles per cell, driving S/G2 transition
         cellA.cyclinA = [
             { orbitR: 2.3, baseAngle: 1.5, speed: 0.5, color: '#dd77aa' },
             { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
             { orbitR: 3.1, baseAngle: 0.2, speed: 0.55, color: '#dd77aa' },
             { orbitR: 2.5, baseAngle: 2.8, speed: 0.48, color: '#ee88bb' },
+            { orbitR: 2.0, baseAngle: 5.3, speed: -0.52, color: '#dd88aa' },
         ];
         cellB.cyclinA = [
             { orbitR: 2.3, baseAngle: 4.2, speed: -0.45, color: '#dd77aa' },
             { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
             { orbitR: 3.1, baseAngle: 5.8, speed: -0.5, color: '#dd77aa' },
             { orbitR: 2.5, baseAngle: 3.5, speed: -0.47, color: '#ee88bb' },
+            { orbitR: 2.0, baseAngle: 0.7, speed: 0.49, color: '#dd88aa' },
         ];
 
-        // PCNA sliding clamps: ring-shaped processivity factors loaded at replication forks
-        // They encircle DNA and tether DNA polymerase, enabling continuous synthesis
+        // PCNA sliding clamps: only at remaining active forks, most unloaded
         cellA.pcnaClamps = [
-            { chrIdx: 0, orbitPhase: 0, color: '#88ffaa' },
-            { chrIdx: 2, orbitPhase: 0.3, color: '#77ee99' },
-            { chrIdx: 4, orbitPhase: 0.6, color: '#88ffaa' },
-            { chrIdx: 6, orbitPhase: 0.85, color: '#77ee99' },
+            { chrIdx: 1, orbitPhase: 0.1, color: '#88ffaa' },
+            { chrIdx: 4, orbitPhase: 0.6, color: '#77ee99' },
         ];
         cellB.pcnaClamps = [
-            { chrIdx: 1, orbitPhase: 0.1, color: '#88ffaa' },
-            { chrIdx: 3, orbitPhase: 0.4, color: '#77ee99' },
-            { chrIdx: 5, orbitPhase: 0.7, color: '#88ffaa' },
-            { chrIdx: 6, orbitPhase: 0.9, color: '#77ee99' },
+            { chrIdx: 0, orbitPhase: 0.2, color: '#88ffaa' },
+            { chrIdx: 3, orbitPhase: 0.55, color: '#77ee99' },
         ];
 
-        // Topoisomerase II: relieves supercoiling ahead of replication forks
-        // Bright yellow-green flashes as topo II cuts and re-ligates DNA
+        // Topoisomerase II: winding down, only at last active forks
         cellA.topoII = [
-            { chrIdx: 0, phase: 0.1, color: '#aaee44' },
-            { chrIdx: 2, phase: 0.4, color: '#99dd33' },
-            { chrIdx: 5, phase: 0.7, color: '#aaee44' },
+            { chrIdx: 4, phase: 0.4, color: '#99dd33' },
         ];
         cellB.topoII = [
-            { chrIdx: 1, phase: 0.2, color: '#aaee44' },
             { chrIdx: 3, phase: 0.5, color: '#99dd33' },
-            { chrIdx: 6, phase: 0.8, color: '#aaee44' },
         ];
 
         // Histone chaperones (CAF-1): deposit new nucleosomes on daughter strands behind forks
@@ -545,13 +525,28 @@
             { chrIdx: 4, phase: 0.65, color: '#bb8855' },
         ];
 
-        // S PHASE: cells have entered S phase, replication origins firing
-        // prophase cleared — APC/C has degraded all mitotic cyclins
+        // DNA Ligase I: seals Okazaki fragment gaps on lagging strands
+        // Bright white-blue flashes as phosphodiester bonds close
+        cellA.dnaLigase = [
+            { chrIdx: 0, phase: 0.0, color: '#aaccff' },
+            { chrIdx: 2, phase: 0.25, color: '#99bbee' },
+            { chrIdx: 3, phase: 0.5, color: '#aaccff' },
+            { chrIdx: 5, phase: 0.7, color: '#99bbee' },
+        ];
+        cellB.dnaLigase = [
+            { chrIdx: 1, phase: 0.1, color: '#aaccff' },
+            { chrIdx: 2, phase: 0.35, color: '#99bbee' },
+            { chrIdx: 4, phase: 0.6, color: '#aaccff' },
+            { chrIdx: 6, phase: 0.85, color: '#99bbee' },
+        ];
+
+        // LATE S → G2 TRANSITION: final replication forks converging
+        // DNA ligase I sealing last Okazaki fragments; prophase cleared
         cellA.prophase = null;
         cellB.prophase = null;
 
-        // Late S phase: nucleus swelling, DNA content approaching 4n
-        var growthRate = 0.6; // increased growth — nearing full replication
+        // S phase completing: nucleus at maximum swell, DNA content nearly 4n
+        var growthRate = 0.7; // near-peak growth — genome almost fully duplicated
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -1283,7 +1278,7 @@
                 }
             }
 
-            // LATE S PHASE: most origins replicated, remaining forks completing final segments
+            // S PHASE COMPLETING: last 3 forks converging, replication nearly done
             var replPixels = {};
             if (cell.replicationForks && cell.separated) {
                 var tRepl = (t * 8000 / 4000) % 1.0;
@@ -1381,6 +1376,27 @@
                         var histPulse = Math.sin(tHist * 2 * Math.PI * 2 + hc.phase * 5);
                         // Pulse as each nucleosome is deposited
                         histPixels[hX + ',' + hY] = histPulse > 0.2 ? '#cc9966' : hc.color;
+                    }
+                }
+            }
+
+            // DNA Ligase I: seals Okazaki fragments, flashes where lagging strand gaps close
+            var ligasePixels = {};
+            if (cell.dnaLigase && cell.separated) {
+                var tLig = (t * 8000 / 3600) % 1.0;
+                var allChrLig = cell.chromatin.concat(cell.sisterChromatin || []);
+                for (var lgi = 0; lgi < cell.dnaLigase.length; lgi++) {
+                    var lig = cell.dnaLigase[lgi];
+                    var lIdx = lig.chrIdx % allChrLig.length;
+                    var lAngle = lIdx * 2 * Math.PI / allChrLig.length + tChromatin * 0.05;
+                    var lR = 0.6 + Math.sin(tChromatin * 0.3 + lIdx * 1.2) * 0.3;
+                    // Ligase works slightly behind the fork, on the lagging strand side
+                    var lX = Math.round(cell.cx + Math.cos(lAngle - 0.3) * (lR + 0.2));
+                    var lY = Math.round(cell.cy + Math.sin(lAngle - 0.3) * (lR + 0.2));
+                    if (lX >= 0 && lX < size && lY >= 0 && lY < size) {
+                        var ligPulse = Math.sin(tLig * 2 * Math.PI * 2.5 + lig.phase * 5);
+                        // Bright flash when sealing a nick, dimmer between
+                        ligasePixels[lX + ',' + lY] = ligPulse > 0.4 ? '#ccddff' : lig.color;
                     }
                 }
             }
@@ -1712,7 +1728,8 @@
                 cycAPixels: cycAPixels,
                 pcnaPixels: pcnaPixels,
                 topoPixels: topoPixels,
-                histPixels: histPixels
+                histPixels: histPixels,
+                ligasePixels: ligasePixels
             };
         }
 
@@ -2023,6 +2040,8 @@
                                 color = dd.replPixels[key];
                             } else if (dd.histPixels && dd.histPixels[key]) {
                                 color = dd.histPixels[key];
+                            } else if (dd.ligasePixels && dd.ligasePixels[key]) {
+                                color = dd.ligasePixels[key];
                             } else if (dd.sacPixels && dd.sacPixels[key]) {
                                 color = dd.sacPixels[key];
                             } else if (dd.e2fPixels && dd.e2fPixels[key]) {
