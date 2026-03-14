@@ -343,6 +343,23 @@
             }
         }
 
+        for (var igi = 0; igi < granddaughterNuclei.length; igi++) {
+            var ign = granddaughterNuclei[igi];
+            var igBasalA = Math.atan2(blCenter.y - ign.y, blCenter.x - ign.x);
+            ign.pigr = [];
+            var pigrCount = 2 + (igi % 2);
+            for (var pgi = 0; pgi < pigrCount; pgi++) {
+                ign.pigr.push({
+                    basalAngle: igBasalA + (pgi - (pigrCount-1)/2) * 0.40,
+                    phase: igi * 0.7 + pgi * 1.3,
+                    receptorColor: '#55bb99',
+                    igaColor: '#ddaa77',
+                    vesicleColor: '#ccbb88',
+                    releaseColor: '#eedd99',
+                });
+            }
+        }
+
         var blCenter = { x: 16, y: 22 };
         function initTransporters(field, face, count, spread, angleOff, phaseMul, phaseStep, props, cellFilter) {
             for (var ti = 0; ti < granddaughterNuclei.length; ti++) {
@@ -499,43 +516,14 @@
             });
         }
 
-        cellA.filopodia = [];
-        cellB.filopodia = [];
-        for (var fpi = 0; fpi < 3; fpi++) {
-            var baseAngleA = Math.atan2(cellB.cy - cellA.cy, cellB.cx - cellA.cx);
-            var spreadA = (fpi - 1) * 0.35;
-            cellA.filopodia.push({
-                angle: baseAngleA + spreadA,
-                maxLength: 4 + fpi * 0.5,
-                phase: fpi * 0.8,
-                tipColor: '#aa7755',
-                stalkColor: '#997766',
-            });
-            var baseAngleB = Math.atan2(cellA.cy - cellB.cy, cellA.cx - cellB.cx);
-            var spreadB = (fpi - 1) * 0.35;
-            cellB.filopodia.push({
-                angle: baseAngleB + spreadB,
-                maxLength: 4 + fpi * 0.5,
-                phase: fpi * 0.8 + 1.5,
-                tipColor: '#aa7755',
-                stalkColor: '#997766',
-            });
-        }
+        cellA.filopodia=[]; cellB.filopodia=[];
+        var filoAB=Math.atan2(cellB.cy-cellA.cy,cellB.cx-cellA.cx),filoBA=filoAB+Math.PI;
+        for(var fpi=0;fpi<3;fpi++){var fsp=(fpi-1)*0.35;
+        cellA.filopodia.push({angle:filoAB+fsp,maxLength:4+fpi*0.5,phase:fpi*0.8,tipColor:'#aa7755',stalkColor:'#997766'});
+        cellB.filopodia.push({angle:filoBA+fsp,maxLength:4+fpi*0.5,phase:fpi*0.8+1.5,tipColor:'#aa7755',stalkColor:'#997766'});}
 
-        cellA.ribosomes = [
-            { erIdx: 0, pos: 0.3, color: '#553322' },
-            { erIdx: 0, pos: 0.7, color: '#553322' },
-            { erIdx: 1, pos: 0.5, color: '#553322' },
-            { erIdx: 2, pos: 0.4, color: '#553322' },
-            { erIdx: 3, pos: 0.6, color: '#553322' },
-        ];
-        cellB.ribosomes = [
-            { erIdx: 0, pos: 0.4, color: '#553322' },
-            { erIdx: 1, pos: 0.3, color: '#553322' },
-            { erIdx: 1, pos: 0.8, color: '#553322' },
-            { erIdx: 2, pos: 0.5, color: '#553322' },
-            { erIdx: 3, pos: 0.4, color: '#553322' },
-        ];
+        cellA.ribosomes=[[0,.3],[0,.7],[1,.5],[2,.4],[3,.6]].map(function(d){return{erIdx:d[0],pos:d[1],color:'#553322'};});
+        cellB.ribosomes=[[0,.4],[1,.3],[1,.8],[2,.5],[3,.4]].map(function(d){return{erIdx:d[0],pos:d[1],color:'#553322'};});
 
         var gapJunctions = [
             { filoIdxA: 0, filoIdxB: 2, color: '#ddbb88', pulsePhase: 0 },
@@ -2293,6 +2281,41 @@
                     var cMidY = Math.round((ma.y + cAnc.y) / 2 + Math.sin(ma.angle) * (innerMR + 1.0));
                     var cMP = Math.sin(tMuc * 2 * Math.PI * 1.3 + mai * 3.5);
                     if (inB(cMidX, cMidY)) set(cMidX, cMidY, cMP > 0 ? '#ddeecc' : '#bbddbb');
+                }
+            }
+            var tIgA = (now % 16000) / 16000;
+            for (var igai = 0; igai < granddaughterNuclei.length; igai++) {
+                var igaG = granddaughterNuclei[igai];
+                if (!igaG.pigr) continue;
+                var igaBR = igaG.bodyRadius;
+                var igaApA = Math.atan2(igaG.y - blCenter.y, igaG.x - blCenter.x);
+                for (var igaj = 0; igaj < igaG.pigr.length; igaj++) {
+                    var pgr = igaG.pigr[igaj];
+                    var pgrCyc = (tIgA * 1.8 + pgr.phase * 0.25) % 1.0;
+                    var pgrPulse = Math.sin(tIgA * 2 * Math.PI * 2.5 + pgr.phase);
+                    var bX = Math.round(igaG.x + Math.cos(pgr.basalAngle) * igaBR);
+                    var bY = Math.round(igaG.y + Math.sin(pgr.basalAngle) * igaBR);
+                    set(bX, bY, pgrPulse > 0.2 ? pgr.receptorColor : '#448877');
+                    if (pgrCyc < 0.25) {
+                        var igaDR = igaBR + 0.5 + (0.25 - pgrCyc) * 4.0;
+                        var igaDX = Math.round(igaG.x + Math.cos(pgr.basalAngle) * igaDR);
+                        var igaDY = Math.round(igaG.y + Math.sin(pgr.basalAngle) * igaDR);
+                        set(igaDX, igaDY, pgrPulse > 0 ? pgr.igaColor : '#bb9966');
+                    } else if (pgrCyc < 0.65) {
+                        var tcyFrac = (pgrCyc - 0.25) / 0.40;
+                        var tcyA = pgr.basalAngle + tcyFrac * (igaApA - pgr.basalAngle);
+                        var tcyR = igaBR * (0.8 - tcyFrac * 0.6);
+                        var tcyX = Math.round(igaG.x + Math.cos(tcyA) * tcyR);
+                        var tcyY = Math.round(igaG.y + Math.sin(tcyA) * tcyR);
+                        setR(tcyX, tcyY, tcyFrac < 0.5 ? pgr.vesicleColor : '#bbaa77', igaG.x, igaG.y, igaBR);
+                    } else if (pgrCyc < 0.80) {
+                        var relFrac = (pgrCyc - 0.65) / 0.15;
+                        var relR = igaBR + 0.3 + relFrac * 2.5;
+                        var relA = igaApA + Math.sin(tIgA * 2 * Math.PI + igaj * 1.8) * 0.10;
+                        var relX = Math.round(igaG.x + Math.cos(relA) * relR);
+                        var relY = Math.round(igaG.y + Math.sin(relA) * relR);
+                        set(relX, relY, relFrac < 0.4 ? pgr.releaseColor : '#ddcc88');
+                    }
                 }
             }
             return px;
