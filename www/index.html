@@ -11,7 +11,7 @@
     </style>
 </head>
 <body>
-    <canvas id="c" width="15" height="15"></canvas>
+    <canvas id="c" width="19" height="19"></canvas>
     <script>
         var canvas = document.getElementById('c');
         var ctx = canvas.getContext('2d');
@@ -19,9 +19,9 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The cell matures. Internal structure crystallizes.
-        var size = 15;
-        var center = 7;
+        // The cell reaches outward. Cilia sprout from the membrane.
+        var size = 19;
+        var center = 9;
 
         // Outer membrane colors (dark to light, edge inward)
         var membraneColors = ['#777777', '#555555', '#331100', '#4a1a00'];
@@ -41,15 +41,24 @@
         // Endoplasmic reticulum: fixed network of channels radiating from nucleus
         // Defined as line segments from near-nucleus to mid-cytoplasm
         var erSegments = [
-            { x1: 5, y1: 5, x2: 3, y2: 3 },
-            { x1: 9, y1: 5, x2: 11, y2: 3 },
-            { x1: 5, y1: 9, x2: 3, y2: 11 },
-            { x1: 9, y1: 9, x2: 11, y2: 11 },
-            { x1: 7, y1: 4, x2: 7, y2: 2 },
-            { x1: 7, y1: 10, x2: 7, y2: 12 },
-            { x1: 4, y1: 7, x2: 2, y2: 7 },
-            { x1: 10, y1: 7, x2: 12, y2: 7 },
+            { x1: 7, y1: 7, x2: 5, y2: 5 },
+            { x1: 11, y1: 7, x2: 13, y2: 5 },
+            { x1: 7, y1: 11, x2: 5, y2: 13 },
+            { x1: 11, y1: 11, x2: 13, y2: 13 },
+            { x1: 9, y1: 6, x2: 9, y2: 4 },
+            { x1: 9, y1: 12, x2: 9, y2: 14 },
+            { x1: 6, y1: 9, x2: 4, y2: 9 },
+            { x1: 12, y1: 9, x2: 14, y2: 9 },
         ];
+
+        // Cilia: hair-like projections at fixed angles around the membrane
+        // Each cilium has an angle (position on membrane), length, and wave phase
+        var cilia = [];
+        var numCilia = 12;
+        for (var ci = 0; ci < numCilia; ci++) {
+            var angle = ci * 2 * Math.PI / numCilia;
+            cilia.push({ angle: angle, length: 2, phase: ci * 0.3 });
+        }
 
         // Precompute ER pixel set and ordered paths for vesicle transport
         var erPixels = {};
@@ -114,11 +123,37 @@
                 vesiclePixels.push({ x: path[idx].x, y: path[idx].y, color: v.color });
             }
 
+            // Compute cilia pixel positions (wave with 4-second cycle)
+            var tCilia = (Date.now() % 4000) / 4000 * 2 * Math.PI;
+            var ciliaPixels = {};
+            for (var ci = 0; ci < cilia.length; ci++) {
+                var c = cilia[ci];
+                var waveOffset = Math.sin(tCilia + c.phase) * 0.3;
+                var baseAngle = c.angle + waveOffset;
+                for (var cl = 1; cl <= c.length; cl++) {
+                    var cr = maxRadius + cl;
+                    var cx = Math.round(center + Math.cos(baseAngle) * cr);
+                    var cy = Math.round(center + Math.sin(baseAngle) * cr);
+                    if (cx >= 0 && cx < size && cy >= 0 && cy < size) {
+                        // Fade cilia color with distance
+                        var ciliaAlpha = cl === 1 ? '#997755' : '#aa9977';
+                        ciliaPixels[cx + ',' + cy] = ciliaAlpha;
+                    }
+                }
+            }
+
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
                     var dx = x - center;
                     var dy = y - center;
                     var dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Draw cilia outside the cell
+                    var ciliaKey = x + ',' + y;
+                    if (dist > maxRadius && ciliaPixels[ciliaKey]) {
+                        ctx.fillStyle = ciliaPixels[ciliaKey];
+                        ctx.fillRect(x, y, 1, 1);
+                    }
 
                     if (dist <= maxRadius) {
                         var color;
