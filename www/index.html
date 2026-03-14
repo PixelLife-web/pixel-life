@@ -401,18 +401,10 @@
             { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
         ];
 
-        // S PHASE COMPLETING: most replisomes have converged and terminated
-        // Only 3 final forks remain, completing the last unreplicated segments
-        cellA.replicationForks = [
-            { chrIdx: 1, speed: 0.3, phase: 0.1, color: '#55ddee' },
-            { chrIdx: 4, speed: 0.28, phase: 0.4, color: '#66eeff' },
-            { chrIdx: 6, speed: 0.32, phase: 0.75, color: '#55ddee' },
-        ];
-        cellB.replicationForks = [
-            { chrIdx: 0, speed: 0.31, phase: 0.2, color: '#66eeff' },
-            { chrIdx: 3, speed: 0.29, phase: 0.55, color: '#55ddee' },
-            { chrIdx: 5, speed: 0.33, phase: 0.8, color: '#66eeff' },
-        ];
+        // G2 PHASE: S phase complete, all replication forks terminated
+        // Genome fully duplicated — 4n DNA content achieved
+        cellA.replicationForks = [];
+        cellB.replicationForks = [];
 
         // Genome: "PETAR RAKOVI" encoded as nucleotide colors — the cell's genetic identity
         // Each letter maps to a base color; the sequence is read during S phase replication
@@ -439,26 +431,32 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // G1 PHASE: Cyclin D-CDK4/6 begins accumulating — drives toward restriction point
-        // Cyclin B fully degraded by APC/C after mitosis exit
+        // G2 PHASE: Cyclin B-CDK1 accumulates rapidly, held inactive by Wee1 kinase
+        // Will trigger mitosis entry once Cdc25 activates CDK1 at threshold
         cellA.cyclinB = [
             { orbitR: 2.6, baseAngle: 0.8, speed: 0.55, color: '#dd9944' },
             { orbitR: 3.4, baseAngle: 3.2, speed: -0.45, color: '#ccaa55' },
+            { orbitR: 2.2, baseAngle: 1.9, speed: 0.6, color: '#ee9933' },
+            { orbitR: 3.0, baseAngle: 5.0, speed: -0.52, color: '#ddaa44' },
         ];
         cellB.cyclinB = [
             { orbitR: 2.6, baseAngle: 2.0, speed: -0.5, color: '#dd9944' },
             { orbitR: 3.4, baseAngle: 5.1, speed: 0.48, color: '#ccaa55' },
+            { orbitR: 2.2, baseAngle: 0.5, speed: -0.58, color: '#ee9933' },
+            { orbitR: 3.0, baseAngle: 3.8, speed: 0.5, color: '#ddaa44' },
         ];
 
-        // RESTRICTION POINT PASSED: Cyclin D-CDK4/6 has phosphorylated Rb
-        // Rb is now inactive (dim, greenish) — E2F released to activate S-phase genes
+        // G2 CHECKPOINT: ATM/ATR kinases scan fully replicated genome for damage
+        // Brighter green — actively verifying 4n DNA integrity before mitosis entry
         cellA.checkpointKinases = [
-            { scanSpeed: 0.15, phase: 0, color: '#558855' },
-            { scanSpeed: -0.12, phase: 0.5, color: '#447744' },
+            { scanSpeed: 0.18, phase: 0, color: '#66bb66' },
+            { scanSpeed: -0.15, phase: 0.33, color: '#55aa55' },
+            { scanSpeed: 0.12, phase: 0.66, color: '#66bb66' },
         ];
         cellB.checkpointKinases = [
-            { scanSpeed: 0.14, phase: 0.2, color: '#558855' },
-            { scanSpeed: -0.13, phase: 0.7, color: '#447744' },
+            { scanSpeed: 0.17, phase: 0.15, color: '#66bb66' },
+            { scanSpeed: -0.14, phase: 0.5, color: '#55aa55' },
+            { scanSpeed: 0.13, phase: 0.82, color: '#66bb66' },
         ];
 
         // E2F transcription factors: released from phospho-Rb, activate cyclin E and S-phase genes
@@ -474,7 +472,7 @@
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
 
-        // S PHASE COMPLETING: Cyclin E fully degraded by SCF ubiquitin ligase — zero remain
+        // G2: Cyclin E long gone (degraded in S phase), E2F silenced by cyclin A
         cellA.cyclinE = [];
         cellB.cyclinE = [];
 
@@ -494,59 +492,24 @@
             { orbitR: 2.0, baseAngle: 0.7, speed: 0.49, color: '#dd88aa' },
         ];
 
-        // PCNA sliding clamps: only at remaining active forks, most unloaded
-        cellA.pcnaClamps = [
-            { chrIdx: 1, orbitPhase: 0.1, color: '#88ffaa' },
-            { chrIdx: 4, orbitPhase: 0.6, color: '#77ee99' },
-        ];
-        cellB.pcnaClamps = [
-            { chrIdx: 0, orbitPhase: 0.2, color: '#88ffaa' },
-            { chrIdx: 3, orbitPhase: 0.55, color: '#77ee99' },
-        ];
+        // G2: All S-phase replication machinery cleared
+        // PCNA clamps unloaded, topo II released, ligase done, chaperones dispersed
+        cellA.pcnaClamps = [];
+        cellB.pcnaClamps = [];
+        cellA.topoII = [];
+        cellB.topoII = [];
+        cellA.histoneChaperones = [];
+        cellB.histoneChaperones = [];
+        cellA.dnaLigase = [];
+        cellB.dnaLigase = [];
 
-        // Topoisomerase II: winding down, only at last active forks
-        cellA.topoII = [
-            { chrIdx: 4, phase: 0.4, color: '#99dd33' },
-        ];
-        cellB.topoII = [
-            { chrIdx: 3, phase: 0.5, color: '#99dd33' },
-        ];
-
-        // Histone chaperones (CAF-1): deposit new nucleosomes on daughter strands behind forks
-        // Small warm-brown dots trailing the replication machinery
-        cellA.histoneChaperones = [
-            { chrIdx: 1, phase: 0.2, color: '#bb8855' },
-            { chrIdx: 3, phase: 0.5, color: '#aa7744' },
-            { chrIdx: 5, phase: 0.75, color: '#bb8855' },
-        ];
-        cellB.histoneChaperones = [
-            { chrIdx: 0, phase: 0.15, color: '#bb8855' },
-            { chrIdx: 2, phase: 0.45, color: '#aa7744' },
-            { chrIdx: 4, phase: 0.65, color: '#bb8855' },
-        ];
-
-        // DNA Ligase I: seals Okazaki fragment gaps on lagging strands
-        // Bright white-blue flashes as phosphodiester bonds close
-        cellA.dnaLigase = [
-            { chrIdx: 0, phase: 0.0, color: '#aaccff' },
-            { chrIdx: 2, phase: 0.25, color: '#99bbee' },
-            { chrIdx: 3, phase: 0.5, color: '#aaccff' },
-            { chrIdx: 5, phase: 0.7, color: '#99bbee' },
-        ];
-        cellB.dnaLigase = [
-            { chrIdx: 1, phase: 0.1, color: '#aaccff' },
-            { chrIdx: 2, phase: 0.35, color: '#99bbee' },
-            { chrIdx: 4, phase: 0.6, color: '#aaccff' },
-            { chrIdx: 6, phase: 0.85, color: '#99bbee' },
-        ];
-
-        // LATE S → G2 TRANSITION: final replication forks converging
-        // DNA ligase I sealing last Okazaki fragments; prophase cleared
+        // G2 PHASE: DNA replication complete, 4n genome achieved
+        // Cell prepares for mitosis — cyclin B accumulates, checkpoint verifies integrity
         cellA.prophase = null;
         cellB.prophase = null;
 
-        // S phase completing: nucleus at maximum swell, DNA content nearly 4n
-        var growthRate = 0.7; // near-peak growth — genome almost fully duplicated
+        // G2: nucleus at full 4n swell, cell at maximum pre-mitotic size
+        var growthRate = 0.8; // peak growth — genome fully duplicated
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -562,9 +525,9 @@
             }
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            // Cytokinesis: daughter nuclei fully reformed
-            var nucSwell = 0.5;
-            var nucR = cell.nucleusRadius * 0.85 + nucleusPulse * 0.05;
+            // G2: nucleus fully swollen with 4n DNA, maximum pre-mitotic size
+            var nucSwell = 0.6;
+            var nucR = cell.nucleusRadius * 0.9 + nucleusPulse * 0.05;
 
             // Compute mitochondria
             var mitoPixels = {};
