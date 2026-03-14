@@ -1166,32 +1166,6 @@
                     }
                 }
             }
-            var tBE = (now % 9500) / 9500;
-            if (g.brushEnzymes) {
-                for (var bei2 = 0; bei2 < g.brushEnzymes.length; bei2++) {
-                    var be = g.brushEnzymes[bei2];
-                    var beSway = Math.sin(tMV2 + be.phase) * 0.08;
-                    var beA = be.angle + beSway;
-                    var beTipR = bR + be.mvLength + 0.3;
-                    var beTipX = Math.round(g.x + Math.cos(beA) * beTipR);
-                    var beTipY = Math.round(g.y + Math.sin(beA) * beTipR);
-                    var beCycle = (tBE * 1.6 + be.phase * 0.3) % 1.0;
-                    var beActive = Math.sin(tBE * 2 * Math.PI * 2.2 + be.phase);
-                    set(beTipX, beTipY, beActive > 0 ? be.activeColor : be.enzymeColor);
-                    if (beCycle < 0.4) {
-                        var beSubR = beTipR + 1.5 - beCycle * 4.0;
-                        var beSubX = Math.round(g.x + Math.cos(beA) * beSubR);
-                        var beSubY = Math.round(g.y + Math.sin(beA) * beSubR);
-                        if (beCycle > 0.05 && beCycle < 0.35) set(beSubX, beSubY, be.substrateColor);
-                    }
-                    if (beCycle > 0.5 && beCycle < 0.85) {
-                        var beProdR = beTipR - (beCycle - 0.5) * 3.0;
-                        var beProdX = Math.round(g.x + Math.cos(beA) * beProdR);
-                        var beProdY = Math.round(g.y + Math.sin(beA) * beProdR);
-                        set(beProdX, beProdY, be.productColor);
-                    }
-                }
-            }
             var tTNT = (now % 10000) / 10000;
             for (var ti = 0; ti < tunnelingNanotubes.length; ti++) {
                 var tnt = tunnelingNanotubes[ti];
@@ -1949,6 +1923,31 @@
                     var dbA=Math.atan2(it.y-16,it.x-16);
                     var dbX=Math.round(it.x+Math.cos(dbA)*0.7),dbY=Math.round(it.y+Math.sin(dbA)*0.7);
                     if(inB(dbX,dbY))s(dbX,dbY,'#996655');}
+                }},
+                {period:21000, phaseStep:1.57, items:[
+                    {x:17,y:12,color:'#cc6644',dimColor:'#993322',gA:Math.PI*1.5},
+                    {x:21,y:14,color:'#bb5533',dimColor:'#882211',gA:Math.PI*1.7},
+                    {x:13,y:15,color:'#cc6644',dimColor:'#993322',gA:Math.PI*1.3},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var lumA=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    for(var gi2=0;gi2<4;gi2++){var gA=it.gA+(gi2-1.5)*0.30;
+                    var gR=0.5+gi2*0.15;
+                    var gX=Math.round(it.x+Math.cos(gA)*gR),gY=Math.round(it.y+Math.sin(gA)*gR);
+                    var gPulse=Math.sin(ph*1.5+gi2*2.3+idx*0.8);
+                    if(inB(gX,gY))s(gX,gY,gPulse>0?'#ee9977':'#cc7755');}
+                    var secPh=(t*2.0+idx*0.35)%1.0;
+                    if(secPh<0.45){var dR=0.8+secPh*5.0;
+                    var dA=lumA+Math.sin(ph*0.4+idx*1.3)*0.15;
+                    var dX=Math.round(it.x+Math.cos(dA)*dR),dY=Math.round(it.y+Math.sin(dA)*dR);
+                    if(inB(dX,dY))s(dX,dY,secPh<0.15?'#ffcc88':(secPh<0.30?'#eebb66':'#ddaa55'));}
+                    if(p>0.2){var lyzA=lumA+0.35;var lyzR=1.2+p*0.6;
+                    s(Math.round(it.x+Math.cos(lyzA)*lyzR),Math.round(it.y+Math.sin(lyzA)*lyzR),Math.sin(ph*2.2+idx*1.5)>0?'#ffdd77':'#eebb55');}
+                    if(Math.sin(ph*2.8+idx*2.0)>0.3){var defR=2.5+Math.sin(ph*0.9)*0.5;
+                    var defA=lumA+Math.sin(ph*0.6+idx*0.7)*0.20;
+                    var defX=Math.round(it.x+Math.cos(defA)*defR),defY=Math.round(it.y+Math.sin(defA)*defR);
+                    if(inB(defX,defY))s(defX,defY,'#ffeeaa');}
+                    if(p>0.5){var wntA=Math.atan2(it.y-16,it.x-16);
+                    s(Math.round(it.x+Math.cos(wntA)*1.0),Math.round(it.y+Math.sin(wntA)*1.0),'#88dd66');}
                 }},
             ]);
             var tArt = (now % 27000) / 27000;
