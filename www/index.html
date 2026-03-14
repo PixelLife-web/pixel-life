@@ -355,6 +355,28 @@
             }
         }
 
+        // Na+/K+ ATPase: basolateral ion pumps establishing electrochemical gradient
+        // 3 Na+ out, 2 K+ in per ATP hydrolyzed — the engine of epithelial transport
+        // Positioned on basolateral face (toward basal lamina), opposite apical microvilli
+        for (var nki = 0; nki < granddaughterNuclei.length; nki++) {
+            var nkn = granddaughterNuclei[nki];
+            var blCtr = { x: 16, y: 22 };
+            var basalAngle = Math.atan2(blCtr.y - nkn.y, blCtr.x - nkn.x);
+            nkn.naKPumps = [];
+            var nkCount = 2 + (nki % 2); // 2-3 pumps per cell
+            for (var nkj = 0; nkj < nkCount; nkj++) {
+                var nkSpread = (nkj - (nkCount - 1) / 2) * 0.45;
+                nkn.naKPumps.push({
+                    angle: basalAngle + nkSpread,
+                    phase: nki * 0.8 + nkj * 1.5,
+                    pumpColor: '#dd6644',       // ATPase alpha subunit (red-orange)
+                    naColor: '#ffaa33',          // Na+ ions (gold, moving out)
+                    kColor: '#7744dd',           // K+ ions (purple, moving in)
+                    restColor: '#aa4433',        // resting pump
+                });
+            }
+        }
+
         // Aquaporin water channels: AQP1/AQP2 tetramers embedded in granddaughter membranes
         // Selective water transport across the sealed epithelium — osmotic homeostasis
         // Water molecules (small blue dots) transit through channels on both apical and basal faces
@@ -1996,6 +2018,46 @@
                     var wY = Math.round(aqG.y + Math.sin(aq.angle) * wR);
                     if (wFrac > 0.1 && wFrac < 0.9) {
                         set(wX, wY, aq.waterColor);
+                    }
+                }
+            }
+            // Na+/K+ ATPase ion pumps: basolateral active transport
+            var tNK = (now % 8000) / 8000;
+            for (var nki2 = 0; nki2 < granddaughterNuclei.length; nki2++) {
+                var nkG = granddaughterNuclei[nki2];
+                if (!nkG.naKPumps) continue;
+                var nkBR = nkG.bodyRadius;
+                for (var nkj2 = 0; nkj2 < nkG.naKPumps.length; nkj2++) {
+                    var nk = nkG.naKPumps[nkj2];
+                    // Pump sits on basolateral membrane
+                    var nkPx2 = Math.round(nkG.x + Math.cos(nk.angle) * nkBR);
+                    var nkPy2 = Math.round(nkG.y + Math.sin(nk.angle) * nkBR);
+                    // ATP hydrolysis cycle: pump flashes when active
+                    var nkCycle = (tNK * 2.5 + nk.phase * 0.3) % 1.0;
+                    var nkActive = Math.sin(tNK * 2 * Math.PI * 3 + nk.phase);
+                    set(nkPx2, nkPy2, nkActive > 0 ? nk.pumpColor : nk.restColor);
+                    // Na+ ions ejected outward (3 ions per cycle, staggered)
+                    for (var nai = 0; nai < 3; nai++) {
+                        var naPhase = (nkCycle + nai * 0.12) % 1.0;
+                        if (naPhase < 0.5) { // outward stroke
+                            var naR = nkBR + 0.3 + naPhase * 2.4;
+                            var naSpread = (nai - 1) * 0.18;
+                            var naX = Math.round(nkG.x + Math.cos(nk.angle + naSpread) * naR);
+                            var naY = Math.round(nkG.y + Math.sin(nk.angle + naSpread) * naR);
+                            if (naPhase > 0.05 && naPhase < 0.45) set(naX, naY, nk.naColor);
+                        }
+                    }
+                    // K+ ions pulled inward (2 ions per cycle, staggered)
+                    for (var ki = 0; ki < 2; ki++) {
+                        var kPhase = (nkCycle + 0.5 + ki * 0.15) % 1.0;
+                        if (kPhase > 0.5) { // inward stroke
+                            var kFrac = (kPhase - 0.5) * 2; // 0→1
+                            var kR = nkBR + 1.2 - kFrac * 1.5;
+                            var kSpread = (ki - 0.5) * 0.2;
+                            var kX = Math.round(nkG.x + Math.cos(nk.angle + kSpread) * kR);
+                            var kY = Math.round(nkG.y + Math.sin(nk.angle + kSpread) * kR);
+                            if (kFrac > 0.1 && kFrac < 0.85) set(kX, kY, nk.kColor);
+                        }
                     }
                 }
             }
