@@ -11,7 +11,7 @@
     </style>
 </head>
 <body>
-    <canvas id="c" width="7" height="7"></canvas>
+    <canvas id="c" width="9" height="9"></canvas>
     <script>
         var canvas = document.getElementById('c');
         var ctx = canvas.getContext('2d');
@@ -19,16 +19,17 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The cross grows outward — each tip extends, a diamond emerges
-        var size = 7;
-        var center = 3;
-        var radius = 2;
+        // The diamond expands and differentiates — concentric rings emerge
+        var size = 9;
+        var center = 4;
+        var radius = 3;
+        var shades = ['#000000', '#333333', '#777777', '#bbbbbb'];
 
         for (var y = 0; y < size; y++) {
             for (var x = 0; x < size; x++) {
                 var dist = Math.abs(x - center) + Math.abs(y - center);
                 if (dist <= radius) {
-                    ctx.fillStyle = '#000000';
+                    ctx.fillStyle = shades[dist];
                     ctx.fillRect(x, y, 1, 1);
                 }
             }
