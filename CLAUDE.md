@@ -60,3 +60,4 @@ The cell is a living system. It must not remain static. After building internal 
 
 _Generation 0 at iteration 0._
 _Generation 1 at iteration 20: added Lifecycle rules — the cell must eventually divide and reproduce across multiple iterations_
+_Generation 2 at iteration 30: second cell cycle underway — daughter cells must complete G2 and divide again, four granddaughter cells should eventually emerge_

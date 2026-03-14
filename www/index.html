@@ -51,11 +51,16 @@
             ],
             golgiPixels: { '18,11': '#cc9944', '18,12': '#cc9944', '17,11': '#ddaa55' },
             chromatin: [
-                { x: 20, y: 9, rep: 0 }, { x: 21, y: 10, rep: 0 }, { x: 20, y: 11, rep: 0 }, { x: 19, y: 10, rep: 0 },
+                { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
             ],
-            // S phase: replicated chromatin appears adjacent to originals
-            replicatedChromatin: [
+            // G2: all sister chromatids now fully replicated
+            sisterChromatin: [
                 { x: 21, y: 9 }, { x: 21, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 9 },
+            ],
+            // G2: centrosome has duplicated, two centrosomes sit near the nucleus
+            centrosomes: [
+                { x: 22, y: 9 },
+                { x: 18, y: 11 },
             ],
             cilia: [],
             receptors: [
@@ -88,11 +93,16 @@
             ],
             golgiPixels: { '10,23': '#cc9944', '10,24': '#cc9944', '9,23': '#ddaa55' },
             chromatin: [
-                { x: 12, y: 21, rep: 0 }, { x: 13, y: 22, rep: 0 }, { x: 12, y: 23, rep: 0 }, { x: 11, y: 22, rep: 0 },
+                { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
             ],
-            // S phase: replicated chromatin appears adjacent to originals
-            replicatedChromatin: [
+            // G2: all sister chromatids now fully replicated
+            sisterChromatin: [
                 { x: 13, y: 21 }, { x: 13, y: 23 }, { x: 11, y: 23 }, { x: 11, y: 21 },
+            ],
+            // G2: centrosome has duplicated
+            centrosomes: [
+                { x: 14, y: 21 },
+                { x: 10, y: 23 },
             ],
             cilia: [],
             receptors: [
@@ -173,9 +183,8 @@
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            // S phase: nucleus swells slightly as DNA content doubles
-            var tSphaseNuc = (t * 8000 / 14000) % 1.0;
-            var nucSwell = tSphaseNuc * 0.3; // gradual swelling during replication
+            // G2: nucleus is swollen with doubled DNA content
+            var nucSwell = 0.3;
             var nucR = cell.nucleusRadius + nucleusPulse * 0.2 + nucSwell;
 
             // Compute mitochondria
@@ -214,30 +223,36 @@
             // Nucleolus
             nucPixels[cell.nucleusCx + ',' + cell.nucleusCy] = cell.nucleolusColor;
 
-            // Chromatin inside nucleus — S phase DNA replication
+            // Chromatin inside nucleus — G2 phase, all DNA fully replicated
             var chrPixels = {};
-            // S phase progress: slow cycle determines which chromatin has replicated
-            var tSphase = (t * 8000 / 14000) % 1.0; // 14-second S phase cycle
             for (var chi = 0; chi < cell.chromatin.length; chi++) {
                 var ch = cell.chromatin[chi];
                 var cPulse = Math.sin(tChromatin + chi * 0.8);
-                // Replication fork: chromatin flickers bright when being copied
-                var replicating = (tSphase > chi * 0.2 && tSphase < chi * 0.2 + 0.15);
-                if (replicating) {
-                    chrPixels[ch.x + ',' + ch.y] = '#ffee88'; // bright replication fork
-                } else {
-                    chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#bb6644' : '#aa5533';
+                chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#bb6644' : '#aa5533';
+            }
+            // Sister chromatids: all visible now, paired with originals
+            if (cell.sisterChromatin) {
+                for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
+                    var rc = cell.sisterChromatin[rci];
+                    var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
+                    chrPixels[rc.x + ',' + rc.y] = rcPulse > 0 ? '#cc7755' : '#bb6644';
                 }
             }
-            // Replicated sister chromatids appear progressively
-            if (cell.replicatedChromatin) {
-                for (var rci = 0; rci < cell.replicatedChromatin.length; rci++) {
-                    // Each replicated chromatin appears after its original is copied
-                    var repThreshold = rci * 0.2 + 0.15;
-                    if (tSphase > repThreshold) {
-                        var rc = cell.replicatedChromatin[rci];
-                        var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
-                        chrPixels[rc.x + ',' + rc.y] = rcPulse > 0 ? '#cc7755' : '#bb6644';
+
+            // Centrosomes: duplicated, pulsing as they prepare spindle microtubules
+            var centPixels = {};
+            if (cell.centrosomes) {
+                var tCent = (t * 8000 / 3000) % 1.0;
+                for (var csi = 0; csi < cell.centrosomes.length; csi++) {
+                    var cs = cell.centrosomes[csi];
+                    var centPulse = Math.sin(tCent * 2 * Math.PI + csi * Math.PI);
+                    centPixels[cs.x + ',' + cs.y] = centPulse > 0 ? '#eedd55' : '#ccbb33';
+                    // Short microtubule aster radiating from each centrosome
+                    var asterAngle = tCent * 2 * Math.PI + csi * 1.5;
+                    var astX = Math.round(cs.x + Math.cos(asterAngle) * 1);
+                    var astY = Math.round(cs.y + Math.sin(asterAngle) * 1);
+                    if (astX >= 0 && astX < size && astY >= 0 && astY < size) {
+                        centPixels[astX + ',' + astY] = '#ddcc44';
                     }
                 }
             }
@@ -319,7 +334,8 @@
                 mitoPixels: mitoPixels, envPixels: envPixels,
                 nucPixels: nucPixels, chrPixels: chrPixels,
                 cilPixels: cilPixels, recPixels: recPixels,
-                vesPixels: vesPixels, atpPixels: atpPixels
+                vesPixels: vesPixels, atpPixels: atpPixels,
+                centPixels: centPixels
             };
         }
 
@@ -410,8 +426,10 @@
 
                         if (dist <= dd.maxR) {
                             inAnyCell = true;
-                            // Layer priority: vesicles > atp > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
-                            if (dd.vesPixels[key]) {
+                            // Layer priority: centrosomes > vesicles > atp > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
+                            if (dd.centPixels[key]) {
+                                color = dd.centPixels[key];
+                            } else if (dd.vesPixels[key]) {
                                 color = dd.vesPixels[key];
                             } else if (dd.atpPixels[key]) {
                                 color = dd.atpPixels[key];
