@@ -431,56 +431,43 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // G2→M TRANSITION: Cdc25 activates cyclin B-CDK1, Wee1 degraded
-        // Active CDK1 begins nuclear import — some complexes move to inner orbits
-        // 5 particles now: 2 importing into nucleus (small orbit), 3 in cytoplasm
+        // PROPHASE: cyclin B-CDK1 now fully nuclear — drives condensation + NEB
+        // Most particles at small orbits (inside nucleus), 1 remains in cytoplasm
         cellA.cyclinB = [
-            { orbitR: 1.4, baseAngle: 0.8, speed: 0.7, color: '#ffaa33' },
-            { orbitR: 1.2, baseAngle: 3.5, speed: -0.65, color: '#ffbb44' },
-            { orbitR: 2.6, baseAngle: 1.9, speed: 0.55, color: '#dd9944' },
-            { orbitR: 3.0, baseAngle: 5.0, speed: -0.52, color: '#ccaa55' },
-            { orbitR: 2.2, baseAngle: 4.2, speed: 0.6, color: '#ee9933' },
+            { orbitR: 0.8, baseAngle: 0.8, speed: 0.9, color: '#ffcc44' },
+            { orbitR: 0.9, baseAngle: 2.5, speed: -0.85, color: '#ffbb44' },
+            { orbitR: 1.0, baseAngle: 4.2, speed: 0.75, color: '#ffcc44' },
+            { orbitR: 1.1, baseAngle: 5.8, speed: -0.7, color: '#ffdd55' },
+            { orbitR: 2.4, baseAngle: 1.5, speed: 0.5, color: '#dd9944' },
         ];
         cellB.cyclinB = [
-            { orbitR: 1.4, baseAngle: 2.0, speed: -0.68, color: '#ffaa33' },
-            { orbitR: 1.2, baseAngle: 5.5, speed: 0.72, color: '#ffbb44' },
-            { orbitR: 2.6, baseAngle: 0.5, speed: -0.5, color: '#dd9944' },
-            { orbitR: 3.0, baseAngle: 3.8, speed: 0.48, color: '#ccaa55' },
-            { orbitR: 2.2, baseAngle: 1.5, speed: -0.58, color: '#ee9933' },
+            { orbitR: 0.8, baseAngle: 2.0, speed: -0.88, color: '#ffcc44' },
+            { orbitR: 0.9, baseAngle: 4.5, speed: 0.82, color: '#ffbb44' },
+            { orbitR: 1.0, baseAngle: 0.5, speed: -0.72, color: '#ffcc44' },
+            { orbitR: 1.1, baseAngle: 3.0, speed: 0.68, color: '#ffdd55' },
+            { orbitR: 2.4, baseAngle: 5.2, speed: -0.48, color: '#dd9944' },
         ];
 
-        // G2 CHECKPOINT PASSED: ATM/ATR verified genome integrity, all clear
-        // Kinases slow down — scan complete, no damage found
+        // PROPHASE: checkpoint kinases silenced, cell committed to mitosis
+        // Dim remnants drift in nucleus — no longer scanning
         cellA.checkpointKinases = [
-            { scanSpeed: 0.06, phase: 0, color: '#55aa55' },
-            { scanSpeed: -0.05, phase: 0.33, color: '#449944' },
+            { scanSpeed: 0.03, phase: 0, color: '#446644' },
         ];
         cellB.checkpointKinases = [
-            { scanSpeed: 0.05, phase: 0.15, color: '#55aa55' },
-            { scanSpeed: -0.06, phase: 0.5, color: '#449944' },
+            { scanSpeed: -0.03, phase: 0.15, color: '#446644' },
         ];
 
-        // Cdc25 phosphatase: activates CDK1 by removing inhibitory phosphates
-        // Bright cyan-green flashes as it dephosphorylates cyclin B-CDK1 complexes
+        // Cdc25 phosphatase: job done, being degraded — only 1 fading particle remains
         cellA.cdc25 = [
-            { orbitR: 2.4, baseAngle: 0.6, speed: 0.9, color: '#44ddaa' },
-            { orbitR: 2.8, baseAngle: 3.0, speed: -0.7, color: '#55eebb' },
-            { orbitR: 2.1, baseAngle: 5.2, speed: 0.8, color: '#44ddaa' },
+            { orbitR: 2.4, baseAngle: 0.6, speed: 0.5, color: '#338877' },
         ];
         cellB.cdc25 = [
-            { orbitR: 2.4, baseAngle: 2.2, speed: -0.85, color: '#44ddaa' },
-            { orbitR: 2.8, baseAngle: 4.8, speed: 0.75, color: '#55eebb' },
-            { orbitR: 2.1, baseAngle: 1.0, speed: -0.8, color: '#44ddaa' },
+            { orbitR: 2.4, baseAngle: 2.2, speed: -0.5, color: '#338877' },
         ];
 
-        // Wee1 kinase: being degraded via SCF ubiquitin ligase
-        // Dim, fading particles — phosphorylated and targeted for proteasomal destruction
-        cellA.wee1 = [
-            { orbitR: 2.0, baseAngle: 1.8, speed: 0.3, color: '#885544' },
-        ];
-        cellB.wee1 = [
-            { orbitR: 2.0, baseAngle: 4.5, speed: -0.3, color: '#885544' },
-        ];
+        // Wee1 kinase: fully degraded — proteasome has cleared it
+        cellA.wee1 = [];
+        cellB.wee1 = [];
 
         // E2F transcription factors: released from phospho-Rb, activate cyclin E and S-phase genes
         // Bright cyan particles orbit inside nucleus, triggering gene transcription
@@ -526,13 +513,25 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // G2→M TRANSITION: checkpoint passed, Cdc25 activates CDK1
-        // Wee1 degraded, cyclin B-CDK1 imports to nucleus — mitosis commitment
-        cellA.prophase = null;
-        cellB.prophase = null;
+        // PROPHASE BEGINS: CDK1 fully active, triggers chromatin condensation
+        // Condensin complexes load onto chromosomes, centrosomes begin migration
+        cellA.prophase = {
+            condensation: 0.3, // early condensation — chromosomes becoming visible
+            pole1Target: { x: 19, y: 7 },  // upper pole
+            pole2Target: { x: 23, y: 11 }, // lower pole
+            spindleForming: false, // not yet — NEB hasn't occurred
+            asterCount: 6,
+        };
+        cellB.prophase = {
+            condensation: 0.3,
+            pole1Target: { x: 9, y: 21 },  // upper pole
+            pole2Target: { x: 13, y: 25 }, // lower pole
+            spindleForming: false,
+            asterCount: 6,
+        };
 
-        // G2→M: nucleus at full 4n swell, CDK1 importing, cell commits to mitosis
-        var growthRate = 0.8; // peak growth — genome fully duplicated
+        // Prophase: nucleus swollen, CDK1 driving condensation
+        var growthRate = 0.8;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
