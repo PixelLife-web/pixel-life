@@ -2182,6 +2182,55 @@
                     }
                 }
             }
+            // Notch lateral inhibition: transit-amplifying progenitors resolve fate
+            // High Notch (signal-receiving) → absorptive enterocyte fate (blue tint)
+            // High Delta (signal-sending, low Notch) → secretory goblet/enteroendocrine fate (magenta tint)
+            // Adjacent progenitor pairs exchange Delta-Notch signals; mutual inhibition breaks symmetry
+            var tNotch = (now % 22000) / 22000;
+            var progenitors = [
+                {x:15, y:15, pair:1, color:'#5588cc', dimColor:'#446699', notchHigh:true},  // absorptive
+                {x:17, y:14, pair:1, color:'#cc5588', dimColor:'#994466', notchHigh:false}, // secretory
+                {x:20, y:16, pair:2, color:'#5588cc', dimColor:'#446699', notchHigh:true},  // absorptive
+                {x:22, y:15, pair:2, color:'#cc5588', dimColor:'#994466', notchHigh:false}, // secretory
+                {x:13, y:14, pair:3, color:'#cc5588', dimColor:'#994466', notchHigh:false}, // secretory
+                {x:11, y:15, pair:3, color:'#5588cc', dimColor:'#446699', notchHigh:true},  // absorptive
+            ];
+            for (var pri = 0; pri < progenitors.length; pri++) {
+                var prog = progenitors[pri];
+                var progPhase = tNotch * 2 * Math.PI + pri * 1.05;
+                var progPulse = Math.sin(progPhase);
+                // Progenitor cell body
+                if (inB(prog.x, prog.y)) set(prog.x, prog.y, progPulse > 0 ? prog.color : prog.dimColor);
+                // Notch/Delta signaling ligand display between paired cells
+                var partner = null;
+                for (var pj = 0; pj < progenitors.length; pj++) {
+                    if (pj !== pri && progenitors[pj].pair === prog.pair && progenitors[pj].notchHigh !== prog.notchHigh) {
+                        partner = progenitors[pj]; break;
+                    }
+                }
+                if (partner && progPulse > 0.1) {
+                    // Signal bridge: Delta ligand from secretory, Notch receptor on absorptive
+                    var sigX = Math.round((prog.x + partner.x) / 2);
+                    var sigY = Math.round((prog.y + partner.y) / 2);
+                    var sigColor = prog.notchHigh ? '#88bbee' : '#ee88bb'; // NICD vs DLL1
+                    var sigPulse = Math.sin(progPhase * 2.3 + pri * 0.7);
+                    if (inB(sigX, sigY) && sigPulse > 0) set(sigX, sigY, sigColor);
+                    // Hes1 transcription factor pulse in Notch-high (absorptive) cells
+                    if (prog.notchHigh && progPulse > 0.5) {
+                        var hesAngle = Math.atan2(prog.y - 16, prog.x - 16);
+                        var hesX = Math.round(prog.x - Math.cos(hesAngle) * 0.9);
+                        var hesY = Math.round(prog.y - Math.sin(hesAngle) * 0.9);
+                        if (inB(hesX, hesY)) set(hesX, hesY, '#aaddff');
+                    }
+                    // Atoh1/Math1 transcription factor in Delta-high (secretory) cells
+                    if (!prog.notchHigh && progPulse > 0.5) {
+                        var atohAngle = Math.atan2(prog.y - 16, prog.x - 16);
+                        var atohX = Math.round(prog.x - Math.cos(atohAngle) * 0.9);
+                        var atohY = Math.round(prog.y - Math.sin(atohAngle) * 0.9);
+                        if (inB(atohX, atohY)) set(atohX, atohY, '#ffaacc');
+                    }
+                }
+            }
             return px;
         }
 
