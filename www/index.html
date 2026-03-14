@@ -11,7 +11,7 @@
     </style>
 </head>
 <body>
-    <canvas id="c" width="11" height="11"></canvas>
+    <canvas id="c" width="13" height="13"></canvas>
     <script>
         var canvas = document.getElementById('c');
         var ctx = canvas.getContext('2d');
@@ -19,16 +19,23 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The cell lives. A nucleus forms within.
-        var size = 11;
-        var center = 5;
+        // The cell grows. Organelles stir in the cytoplasm.
+        var size = 13;
+        var center = 6;
 
         // Outer membrane colors (dark to light, edge inward)
-        var membraneColors = ['#888888', '#555555', '#331100', '#4a1a00'];
+        var membraneColors = ['#777777', '#555555', '#331100', '#4a1a00'];
         // Cytoplasm
         var cytoColor = '#6b2a00';
-        // Nucleus colors (bright core)
-        var nucleusColors = ['#d4740e', '#ff9933'];
+        // Nucleus colors (bright core with nucleolus)
+        var nucleusColors = ['#ffbb44', '#d4740e', '#ff9933'];
+        // Organelle definitions: each orbits the nucleus at a fixed radius and speed
+        // angle = baseAngle + speed * t, where t is wall-clock driven
+        var organelles = [
+            { radius: 3.2, baseAngle: 0,          speed: 1, color: '#44aa66' },  // green - mitochondrion
+            { radius: 3.5, baseAngle: Math.PI*0.7, speed: -0.7, color: '#44aa66' },  // green - mitochondrion
+            { radius: 2.8, baseAngle: Math.PI*1.4, speed: 0.5, color: '#8866cc' },  // purple - ribosome cluster
+        ];
 
         function draw() {
             ctx.clearRect(0, 0, size, size);
@@ -36,12 +43,23 @@
             // Breathing: slow sine wave synced to wall clock (8-second cycle)
             var t = (Date.now() % 8000) / 8000;
             var breath = Math.sin(t * 2 * Math.PI);
-            var maxRadius = 4.6 + breath * 0.4;
+            var maxRadius = 5.6 + breath * 0.4;
 
             // Nucleus pulse: faster counter-rhythm (5-second cycle)
             var t2 = (Date.now() % 5000) / 5000;
             var nucleusPulse = Math.sin(t2 * 2 * Math.PI);
-            var nucleusRadius = 1.2 + nucleusPulse * 0.3;
+            var nucleusRadius = 1.5 + nucleusPulse * 0.3;
+
+            // Compute organelle pixel positions (wall-clock driven, 12-second orbit period)
+            var tOrbit = (Date.now() % 12000) / 12000 * 2 * Math.PI;
+            var organellePixels = [];
+            for (var oi = 0; oi < organelles.length; oi++) {
+                var o = organelles[oi];
+                var angle = o.baseAngle + o.speed * tOrbit;
+                var ox = Math.round(center + Math.cos(angle) * o.radius);
+                var oy = Math.round(center + Math.sin(angle) * o.radius);
+                organellePixels.push({ x: ox, y: oy, color: o.color });
+            }
 
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
@@ -51,20 +69,33 @@
 
                     if (dist <= maxRadius) {
                         var color;
-                        if (dist <= nucleusRadius) {
-                            // Nucleus: bright inner glow
-                            var ni = Math.floor(dist * nucleusColors.length / (nucleusRadius + 0.3));
-                            if (ni >= nucleusColors.length) ni = nucleusColors.length - 1;
-                            color = nucleusColors[ni];
-                        } else if (dist > maxRadius - 1.5) {
-                            // Membrane: outer ring
-                            var shell = maxRadius - dist; // 0 at edge, 1.5 at inner
-                            var mi = Math.floor(shell * membraneColors.length / 1.5);
-                            if (mi >= membraneColors.length) mi = membraneColors.length - 1;
-                            color = membraneColors[mi];
-                        } else {
-                            // Cytoplasm: the space between
-                            color = cytoColor;
+
+                        // Check if this pixel is an organelle
+                        var isOrganelle = false;
+                        for (var oi = 0; oi < organellePixels.length; oi++) {
+                            if (organellePixels[oi].x === x && organellePixels[oi].y === y) {
+                                color = organellePixels[oi].color;
+                                isOrganelle = true;
+                                break;
+                            }
+                        }
+
+                        if (!isOrganelle) {
+                            if (dist <= nucleusRadius) {
+                                // Nucleus: bright inner glow with nucleolus
+                                var ni = Math.floor(dist * nucleusColors.length / (nucleusRadius + 0.3));
+                                if (ni >= nucleusColors.length) ni = nucleusColors.length - 1;
+                                color = nucleusColors[ni];
+                            } else if (dist > maxRadius - 1.5) {
+                                // Membrane: outer ring
+                                var shell = maxRadius - dist;
+                                var mi = Math.floor(shell * membraneColors.length / 1.5);
+                                if (mi >= membraneColors.length) mi = membraneColors.length - 1;
+                                color = membraneColors[mi];
+                            } else {
+                                // Cytoplasm: the space between
+                                color = cytoColor;
+                            }
                         }
                         ctx.fillStyle = color;
                         ctx.fillRect(x, y, 1, 1);
