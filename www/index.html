@@ -1967,39 +1967,6 @@
                     if (adx >= 0 && adx < size && ady >= 0 && ady < size) set(adx, ady, adP > 0 ? '#eedd99' : '#ddcc88');
                 }
             }
-            // Enteroendocrine cells: nutrient sensors, basolateral hormone secretion
-            var tEEC = (now % 24000) / 24000;
-            var eecCells = [
-                {x:15, y:14, hormone:'5HT', color:'#dd55aa', dimColor:'#aa3388', secretColor:'#ff88cc', senseColor:'#ee77bb'},
-                {x:20, y:18, hormone:'CCK', color:'#55aadd', dimColor:'#3388aa', secretColor:'#88ccff', senseColor:'#77bbee'},
-                {x:12, y:19, hormone:'GIP', color:'#aadd55', dimColor:'#88aa33', secretColor:'#ccff88', senseColor:'#bbee77'},
-            ];
-            for (var eeci = 0; eeci < eecCells.length; eeci++) {
-                var eec = eecCells[eeci];
-                var eecPhase = tEEC * 2 * Math.PI + eeci * 2.09;
-                var eecPulse = Math.sin(eecPhase);
-                // Cell body: flask-shaped neuroendocrine cell wedged between epithelial cells
-                if (inB(eec.x, eec.y)) set(eec.x, eec.y, eecPulse > 0 ? eec.color : eec.dimColor);
-                // Apical chemosensor: narrow neck reaches toward lumen to taste nutrients
-                var senseAngle = Math.atan2(eec.y - 16, eec.x - 16) + Math.PI; // toward lumen
-                var senseX = Math.round(eec.x + Math.cos(senseAngle) * 1.0);
-                var senseY = Math.round(eec.y + Math.sin(senseAngle) * 1.0);
-                var sensePulse = Math.sin(eecPhase * 1.5 + eeci * 0.9);
-                if (inB(senseX, senseY)) set(senseX, senseY, sensePulse > 0.2 ? eec.senseColor : eec.dimColor);
-                // Basolateral secretion: hormone granules released toward lamina propria
-                if (eecPulse > 0.4) {
-                    var secAngle = Math.atan2(eec.y - 16, eec.x - 16); // toward basal/tissue
-                    var secX = Math.round(eec.x + Math.cos(secAngle) * 1.2);
-                    var secY = Math.round(eec.y + Math.sin(secAngle) * 1.2);
-                    if (inB(secX, secY)) set(secX, secY, eec.secretColor);
-                    // Hormone diffusion: second pixel further into lamina propria
-                    if (eecPulse > 0.7) {
-                        var difX = Math.round(eec.x + Math.cos(secAngle) * 2.0);
-                        var difY = Math.round(eec.y + Math.sin(secAngle) * 2.0);
-                        if (inB(difX, difY)) set(difX, difY, eec.dimColor);
-                    }
-                }
-            }
             // Generic tissue cell renderer: renders positioned cells with drift, pulse, and secondary emissions
             // spec: {period, items:[{x,y,color,dimColor,...}], drift, emitThresh, emitFn(item,pulse,phase,tNorm)}
             function renderTissueCells(specs) {
@@ -2158,27 +2125,60 @@
                     }else if(anPh<0.7){if(inB(ix,iy))s(ix,iy,it.fragColor);var fa=ph*2+idx*3.0;s(Math.round(ix+Math.cos(fa)),Math.round(iy+Math.sin(fa)),it.fragColor);
                     }else{if(p>0.4&&inB(ix,iy))s(ix,iy,'#554433');}
                 }},
-                // Lamina propria plasma cells: secrete dimeric IgA toward epithelial basolateral pIgR
-                // IgA binds pIgR → transcytosed through epithelial cell → cleaved as secretory IgA (sIgA)
-                // sIgA released into lumen coats bacteria for immune exclusion
+                // Plasma cells + sIgA transcytosis (consolidated from iter 146)
                 {period:26000, phaseStep:2.09, items:[
                     {x:25,y:17,color:'#cc88dd',dimColor:'#9955aa'},{x:22,y:24,color:'#bb77cc',dimColor:'#884499'},
                     {x:17,y:25,color:'#cc88dd',dimColor:'#9955aa'},
                 ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    // Dimeric IgA secretion toward epithelium (inward, toward tissue center)
                     var epiA=Math.atan2(16-it.y,16-it.x);
-                    if(p>0.2){s(Math.round(it.x+Math.cos(epiA)*1.0),Math.round(it.y+Math.sin(epiA)*1.0),'#ddaaee');}
-                    // pIgR binding + transcytosis vesicle: IgA cargo moving through epithelium toward lumen
-                    var tcyP=(t*1.5+idx*0.3)%1.0;
-                    var lumA3=epiA; // toward lumen center
-                    var tcyR2=1.5+tcyP*2.5;
-                    var tcyX2=Math.round(it.x+Math.cos(lumA3)*tcyR2),tcyY2=Math.round(it.y+Math.sin(lumA3)*tcyR2);
+                    if(p>0.2)s(Math.round(it.x+Math.cos(epiA)*1.0),Math.round(it.y+Math.sin(epiA)*1.0),'#ddaaee');
+                    var tcyP=(t*1.5+idx*0.3)%1.0,tcyR2=1.5+tcyP*2.5;
+                    var tcyX2=Math.round(it.x+Math.cos(epiA)*tcyR2),tcyY2=Math.round(it.y+Math.sin(epiA)*tcyR2);
                     if(inB(tcyX2,tcyY2))s(tcyX2,tcyY2,tcyP<0.4?'#eeccff':'#ffddcc');
-                    // sIgA released into lumen: secretory component coating, drifts outward
-                    if(tcyP>0.7){
-                        var sigR=tcyR2+1.2;
-                        var sigX=Math.round(it.x+Math.cos(lumA3)*sigR),sigY=Math.round(it.y+Math.sin(lumA3)*sigR);
-                        if(inB(sigX,sigY))s(sigX,sigY,Math.sin(ph*2.0+idx*1.5)>0?'#ffeecc':'#eeddbb');
+                    if(tcyP>0.7){var sigR=tcyR2+1.2;var sigX=Math.round(it.x+Math.cos(epiA)*sigR),sigY=Math.round(it.y+Math.sin(epiA)*sigR);
+                    if(inB(sigX,sigY))s(sigX,sigY,Math.sin(ph*2.0+idx*1.5)>0?'#ffeecc':'#eeddbb');}
+                }},
+                // Enteroendocrine cells (consolidated): flask-shaped, apical chemosensor + basolateral hormone secretion
+                {period:24000, phaseStep:2.09, items:[
+                    {x:15,y:14,color:'#dd55aa',dimColor:'#aa3388',secC:'#ff88cc',senC:'#ee77bb'},
+                    {x:20,y:18,color:'#55aadd',dimColor:'#3388aa',secC:'#88ccff',senC:'#77bbee'},
+                    {x:12,y:19,color:'#aadd55',dimColor:'#88aa33',secC:'#ccff88',senC:'#bbee77'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    var lumA4=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    var sx=Math.round(it.x+Math.cos(lumA4)*1.0),sy=Math.round(it.y+Math.sin(lumA4)*1.0);
+                    if(inB(sx,sy))s(sx,sy,Math.sin(ph*1.5+idx*0.9)>0.2?it.senC:it.dimColor);
+                    if(p>0.4){var ba=lumA4+Math.PI;s(Math.round(it.x+Math.cos(ba)*1.2),Math.round(it.y+Math.sin(ba)*1.2),it.secC);
+                    if(p>0.7)s(Math.round(it.x+Math.cos(ba)*2.0),Math.round(it.y+Math.sin(ba)*2.0),it.dimColor);}
+                }},
+                // Peyer's patch germinal center: organized lymphoid follicle beneath M cells
+                // B cells undergo somatic hypermutation + affinity maturation; FDCs display antigen
+                // Dark zone (centroblasts proliferate) → light zone (centrocytes selected by FDC/Tfh)
+                {period:28000, phaseStep:1.57, items:[
+                    // Dark zone centroblasts: rapidly dividing B cells
+                    {x:26,y:14,color:'#5566bb',dimColor:'#334488',zone:'dark'},
+                    {x:27,y:16,color:'#4455aa',dimColor:'#223377',zone:'dark'},
+                    // Light zone: FDCs + centrocytes undergoing selection
+                    {x:28,y:13,color:'#ddbb55',dimColor:'#bbaa44',zone:'fdc'},
+                    {x:29,y:15,color:'#ddbb55',dimColor:'#bbaa44',zone:'fdc'},
+                    // Tfh cells: provide survival signals to high-affinity centrocytes
+                    {x:27,y:12,color:'#55bb88',dimColor:'#338866',zone:'tfh'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    if(it.zone==='dark'){
+                        // Centroblast mitotic figures: rapid proliferation
+                        var mitP=Math.sin(ph*2.5+idx*1.8);
+                        if(mitP>0.3){var ma=ph*1.2+idx*2.0;
+                        s(Math.round(ix+Math.cos(ma)*0.8),Math.round(iy+Math.sin(ma)*0.8),mitP>0.6?'#8899dd':'#6677bb');}
+                        // SHM sparks: AID-mediated somatic hypermutation flashes
+                        if(Math.sin(ph*3.5+idx*2.3)>0.5)s(ix,iy,'#aabbff');
+                    }else if(it.zone==='fdc'){
+                        // FDC dendrites: immune complex display on dendritic processes
+                        for(var di=0;di<3;di++){var da=ph*0.3+di*2.09+idx*1.0;
+                        var dx2=Math.round(ix+Math.cos(da)*1.0),dy2=Math.round(iy+Math.sin(da)*1.0);
+                        if(inB(dx2,dy2))s(dx2,dy2,Math.sin(ph*1.5+di*2.0)>0?'#eedd77':'#ccbb55');}
+                    }else if(it.zone==='tfh'){
+                        // CD40L/IL-21 signals to centrocytes: survival vs apoptosis selection
+                        if(p>0.2){var tfhA=Math.atan2(14-iy,26-ix);
+                        s(Math.round(ix+Math.cos(tfhA)*1.0),Math.round(iy+Math.sin(tfhA)*1.0),p>0.5?'#88ddaa':'#66bb88');}
                     }
                 }},
             ]);
