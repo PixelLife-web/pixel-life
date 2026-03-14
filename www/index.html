@@ -353,6 +353,19 @@
                         dimColor: '#339966',
                     });
                 }
+                // Mucin exocytosis: MUC2 granules fuse with apical membrane via SNARE-mediated exocytosis
+                // Released mucin hydrates 600-fold, expanding into a protective gel blanket over the epithelium
+                gn.mucinSecretion = [];
+                for (var msi = 0; msi < mgCount; msi++) {
+                    gn.mucinSecretion.push({
+                        angle: apicalAngle + (msi - (mgCount - 1) / 2) * 0.50,
+                        phase: gbi * 0.4 + msi * 1.1,
+                        granuleColor: '#aaddcc',    // mucin granule approaching membrane
+                        fusionColor: '#ccffee',     // bright flash at membrane fusion
+                        gelColor: '#99ddbb',        // secreted mucus gel (hydrated MUC2)
+                        gelDimColor: '#77bbaa',      // resting mucus layer
+                    });
+                }
             } else {
                 // Brush border enzymes: alkaline phosphatase/peptidase on microvillar surface
                 gn.brushEnzymes = [];
@@ -1670,6 +1683,43 @@
                         var mgHX = Math.round(g.x + Math.cos(mgA) * (mg.dist + 0.6));
                         var mgHY = Math.round(g.y + Math.sin(mgA) * (mg.dist + 0.6));
                         setR(mgHX, mgHY, mgP > 0 ? '#99ccbb' : mg.shellColor, g.x, g.y, bR);
+                    }
+                }
+                // Mucin exocytosis: granules migrate apically, fuse with membrane, release MUC2 gel
+                if (g.mucinSecretion) {
+                    var tMS = (now % 12000) / 12000;
+                    for (var msi2 = 0; msi2 < g.mucinSecretion.length; msi2++) {
+                        var ms = g.mucinSecretion[msi2];
+                        // Exocytosis cycle: 0-0.3 granule approaches, 0.3-0.4 fusion, 0.4-1.0 gel expansion
+                        var msCycle = (tMS * 1.5 + ms.phase * 0.25) % 1.0;
+                        if (msCycle < 0.3) {
+                            // Granule migrating toward apical membrane from cytoplasm
+                            var msGranR = bR * 0.4 + msCycle * (bR * 0.6 / 0.3);
+                            var msGX = Math.round(g.x + Math.cos(ms.angle) * msGranR);
+                            var msGY = Math.round(g.y + Math.sin(ms.angle) * msGranR);
+                            setR(msGX, msGY, ms.granuleColor, g.x, g.y, bR);
+                        } else if (msCycle < 0.4) {
+                            // Membrane fusion: bright flash at apical surface (SNARE complex engagement)
+                            var msFuseX = Math.round(g.x + Math.cos(ms.angle) * bR);
+                            var msFuseY = Math.round(g.y + Math.sin(ms.angle) * bR);
+                            set(msFuseX, msFuseY, ms.fusionColor);
+                        } else {
+                            // Secreted mucin expands outward, hydrating into gel layer
+                            var msExpand = (msCycle - 0.4) / 0.6; // 0→1
+                            var msGelR = bR + 0.4 + msExpand * 2.0;
+                            var msGelX = Math.round(g.x + Math.cos(ms.angle) * msGelR);
+                            var msGelY = Math.round(g.y + Math.sin(ms.angle) * msGelR);
+                            var msGelPulse = Math.sin(tMS * 2 * Math.PI * 2.0 + ms.phase);
+                            set(msGelX, msGelY, msGelPulse > 0 ? ms.gelColor : ms.gelDimColor);
+                            // Second gel pixel slightly offset — mucin expands radially
+                            if (msExpand > 0.3) {
+                                var msGel2R = msGelR + 0.8;
+                                var msGel2A = ms.angle + Math.sin(tMS * 4 + msi2) * 0.15;
+                                var msGel2X = Math.round(g.x + Math.cos(msGel2A) * msGel2R);
+                                var msGel2Y = Math.round(g.y + Math.sin(msGel2A) * msGel2R);
+                                set(msGel2X, msGel2Y, ms.gelDimColor);
+                            }
+                        }
                     }
                 }
                 if (g.brushEnzymes) {
