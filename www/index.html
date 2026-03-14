@@ -141,6 +141,17 @@
         // Midbody remnant: a faint trace left between the two cells at the division site
         var midbodyRemnant = { x: 16, y: 16 };
 
+        // Intercellular signaling: daughter cells communicate via chemical signals
+        var signals = [
+            // Signal from A to B (paracrine signaling)
+            { fromCell: 'A', toCell: 'B', color: '#ff66aa', speed: 0.0004, phase: 0 },
+            { fromCell: 'A', toCell: 'B', color: '#ff66aa', speed: 0.0004, phase: 0.33 },
+            { fromCell: 'A', toCell: 'B', color: '#ff66aa', speed: 0.0004, phase: 0.66 },
+            // Signal from B to A (response signaling)
+            { fromCell: 'B', toCell: 'A', color: '#66aaff', speed: 0.0003, phase: 0.15 },
+            { fromCell: 'B', toCell: 'A', color: '#66aaff', speed: 0.0003, phase: 0.55 },
+        ];
+
         function drawCell(cell, t, tOrbit, tCilia, tChromatin) {
             var breath = Math.sin(t * 2 * Math.PI);
             var maxR = cell.radius + breath * 0.3;
@@ -269,6 +280,30 @@
             var midbodyVisible = tMidbody < 0.5;
             var midbodyColor = '#ccbb33';
 
+            // Signal molecule positions
+            var signalPx = {};
+            var tSig = Date.now();
+            for (var si = 0; si < signals.length; si++) {
+                var sig = signals[si];
+                var fromC = sig.fromCell === 'A' ? cellA : cellB;
+                var toC = sig.toCell === 'A' ? cellA : cellB;
+                // Progress along the path from source to target
+                var progress = ((tSig * sig.speed) + sig.phase) % 1.0;
+                // Interpolate position between cell edges
+                var sx = fromC.cx + (toC.cx - fromC.cx) * progress;
+                var sy = fromC.cy + (toC.cy - fromC.cy) * progress;
+                var spx = Math.round(sx);
+                var spy = Math.round(sy);
+                // Only visible while in the extracellular space (between cells)
+                var dFromA = Math.sqrt((spx - cellA.cx) * (spx - cellA.cx) + (spy - cellA.cy) * (spy - cellA.cy));
+                var dFromB = Math.sqrt((spx - cellB.cx) * (spx - cellB.cx) + (spy - cellB.cy) * (spy - cellB.cy));
+                if (dFromA > dA.maxR + 0.5 && dFromB > dB.maxR + 0.5) {
+                    if (spx >= 0 && spx < size && spy >= 0 && spy < size) {
+                        signalPx[spx + ',' + spy] = sig.color;
+                    }
+                }
+            }
+
             // Render all pixels
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
@@ -337,6 +372,10 @@
                                 color = cells[ci].d.cilPixels[key];
                                 drawn = true;
                             }
+                        }
+                        if (!drawn && signalPx[key]) {
+                            color = signalPx[key];
+                            drawn = true;
                         }
                         if (!drawn && midbodyVisible && x === midbodyRemnant.x && y === midbodyRemnant.y) {
                             color = midbodyColor;
