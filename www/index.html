@@ -430,8 +430,8 @@
             });
         }
 
-        // G1: APC/C has degraded cyclin A and B — only trace cyclin E begins to appear
-        // as cells approach the restriction point
+        // G1: Cyclin D-CDK4/6 mono-phosphorylates Rb, partial E2F release
+        // Trace cyclin E appears as E2F begins transcribing its gene
         cellA.cyclins = [
             { orbitR: 3.0, baseAngle: 1.2, speed: 0.6, color: '#44bbaa' },
         ];
@@ -482,20 +482,26 @@
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
 
-        // Cyclin A-CDK2 dominant — 5 particles per cell, driving S/G2 transition
+        // Cyclin A: suppressed in G1 by APC/C-Cdh1 — only trace amounts
         cellA.cyclinA = [
-            { orbitR: 2.3, baseAngle: 1.5, speed: 0.5, color: '#dd77aa' },
             { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
-            { orbitR: 3.1, baseAngle: 0.2, speed: 0.55, color: '#dd77aa' },
-            { orbitR: 2.5, baseAngle: 2.8, speed: 0.48, color: '#ee88bb' },
-            { orbitR: 2.0, baseAngle: 5.3, speed: -0.52, color: '#dd88aa' },
         ];
         cellB.cyclinA = [
-            { orbitR: 2.3, baseAngle: 4.2, speed: -0.45, color: '#dd77aa' },
             { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
-            { orbitR: 3.1, baseAngle: 5.8, speed: -0.5, color: '#dd77aa' },
-            { orbitR: 2.5, baseAngle: 3.5, speed: -0.47, color: '#ee88bb' },
-            { orbitR: 2.0, baseAngle: 0.7, speed: 0.49, color: '#dd88aa' },
+        ];
+
+        // Cyclin D-CDK4/6: mitogen-responsive G1 cyclin, driven by MAPK/ERK cascade
+        // Accumulates in response to growth factor signaling, mono-phosphorylates Rb
+        // Amber/gold particles orbit in cytoplasm, some entering nucleus
+        cellA.cyclinD = [
+            { orbitR: 2.6, baseAngle: 0.9, speed: 0.45, color: '#ddaa33', nuclear: false },
+            { orbitR: 3.2, baseAngle: 3.4, speed: -0.38, color: '#ccaa44', nuclear: false },
+            { orbitR: 1.0, baseAngle: 1.8, speed: 0.7, color: '#eebb44', nuclear: true },
+        ];
+        cellB.cyclinD = [
+            { orbitR: 2.6, baseAngle: 3.8, speed: -0.42, color: '#ddaa33', nuclear: false },
+            { orbitR: 3.2, baseAngle: 0.5, speed: 0.4, color: '#ccaa44', nuclear: false },
+            { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
         // G1 INTERPHASE: mitosis complete, daughters are independent cells
@@ -1512,6 +1518,42 @@
                 }
             }
 
+            // Cyclin D-CDK4/6: amber particles, some cytoplasmic, some nuclear
+            var cycDPixels = {};
+            if (cell.cyclinD && cell.separated) {
+                var tCycD = (t * 8000 / 6200) % 1.0;
+                for (var cdi2 = 0; cdi2 < cell.cyclinD.length; cdi2++) {
+                    var cyd = cell.cyclinD[cdi2];
+                    var cydAngle = cyd.baseAngle + cyd.speed * tOrbit;
+                    var cydR = cyd.nuclear ? cyd.orbitR : cyd.orbitR;
+                    var cydx = Math.round(cell.cx + Math.cos(cydAngle) * cydR);
+                    var cydy = Math.round(cell.cy + Math.sin(cydAngle) * cydR);
+                    var cydPulse = Math.sin(tCycD * 2 * Math.PI + cdi2 * 1.6);
+                    var cydDx = cydx - cell.cx;
+                    var cydDy = cydy - cell.cy;
+                    var cydDist = Math.sqrt(cydDx * cydDx + cydDy * cydDy);
+                    // Nuclear cyclin D stays inside nucleus, cytoplasmic stays outside
+                    var inRange = cyd.nuclear
+                        ? (cydDist < nucR + 0.5)
+                        : (cydDist < maxR - 1.0 && cydDist > nucR + 0.8);
+                    if (inRange && cydx >= 0 && cydx < size && cydy >= 0 && cydy < size) {
+                        // Nuclear cyclin D glows brighter when phosphorylating Rb
+                        cycDPixels[cydx + ',' + cydy] = cyd.nuclear
+                            ? (cydPulse > 0.1 ? '#ffcc55' : '#eebb44')
+                            : (cydPulse > 0.3 ? '#eebb55' : cyd.color);
+                    }
+                    // Phosphorylation spark: nuclear cyclin D emits a brief spark at Rb
+                    if (cyd.nuclear && cydPulse > 0.6) {
+                        var sparkAngle = cydAngle + 0.5;
+                        var sparkX = Math.round(cell.cx + Math.cos(sparkAngle) * (cydR + 0.5));
+                        var sparkY = Math.round(cell.cy + Math.sin(sparkAngle) * (cydR + 0.5));
+                        if (sparkX >= 0 && sparkX < size && sparkY >= 0 && sparkY < size) {
+                            cycDPixels[sparkX + ',' + sparkY] = '#ffdd88';
+                        }
+                    }
+                }
+            }
+
             // Cdc25 phosphatase: bright particles that flash when activating CDK1
             var cdc25Pixels = {};
             if (cell.cdc25 && cell.separated) {
@@ -1759,6 +1801,7 @@
                 e2fPixels: e2fPixels,
                 cycAPixels: cycAPixels,
                 cdc25Pixels: cdc25Pixels,
+                cycDPixels: cycDPixels,
                 phosphPixels: phosphPixels,
                 gfPixels: gfPixels
             };
@@ -2053,6 +2096,8 @@
                                 color = dd.cycAPixels[key];
                             } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
                                 color = dd.cdc25Pixels[key];
+                            } else if (dd.cycDPixels && dd.cycDPixels[key]) {
+                                color = dd.cycDPixels[key];
                             } else if (dd.phosphPixels && dd.phosphPixels[key]) {
                                 color = dd.phosphPixels[key];
                             } else if (dd.mitoPixels[key]) {
