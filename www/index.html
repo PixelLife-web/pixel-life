@@ -53,16 +53,15 @@
             chromatin: [
                 { x: 21, y: 8 }, { x: 22, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 9 },
             ],
-            // Abscission complete: single unified nucleus with merged chromatin
+            // G1: chromatin fully decondensed, merged into single interphase nucleus
             sisterChromatin: [
                 { x: 22, y: 8 }, { x: 22, y: 10 }, { x: 20, y: 10 }, { x: 20, y: 8 },
             ],
-            // Centrosomes reset to single body near nucleus for G1
+            // Centrosomes: single unduplicated centrosome at G1 (will duplicate in S phase)
             centrosomes: [
                 { x: 23, y: 8 },
-                { x: 19, y: 10 },
+                { x: 23, y: 9 },
             ],
-            // Abscission complete — cell fully separated
             furrowProgress: 0,
             separated: true,
             cilia: [],
@@ -98,16 +97,15 @@
             chromatin: [
                 { x: 11, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 24 }, { x: 10, y: 23 },
             ],
-            // Abscission complete: single unified nucleus
+            // G1: chromatin fully decondensed, merged into single interphase nucleus
             sisterChromatin: [
                 { x: 12, y: 22 }, { x: 12, y: 24 }, { x: 10, y: 24 }, { x: 10, y: 22 },
             ],
-            // Centrosomes reset to single body near nucleus for G1
+            // Centrosomes: single unduplicated centrosome at G1
             centrosomes: [
-                { x: 14, y: 20 },
-                { x: 8, y: 26 },
+                { x: 13, y: 22 },
+                { x: 13, y: 23 },
             ],
-            // Abscission complete — cell fully separated
             furrowProgress: 0,
             separated: true,
             cilia: [],
@@ -167,13 +165,11 @@
         // Abscission scar: remnant of the midbody left in the medium after separation
         var abscissionScar = { x: 16, y: 16, color: '#aa9933' };
 
-        // Midbody remnants (Flemming bodies): released after ESCRT-III severs the bridge
-        // Each dividing cell releases one — small vesicles drifting in the medium
+        // Midbody remnants (Flemming bodies): degrading via autophagy after release
+        // Dimmer and drifting further from division sites as they break down
         var midbodyRemnants = [
-            // From cellA's division (midpoint between its two poles)
-            { x: 21, y: 9, color: '#88ccdd', glowColor: '#aaddee' },
-            // From cellB's division
-            { x: 11, y: 23, color: '#88ccdd', glowColor: '#aaddee' },
+            { x: 23, y: 5, color: '#668899', glowColor: '#7799aa' },
+            { x: 8, y: 27, color: '#668899', glowColor: '#7799aa' },
         ];
 
         // Intercellular signaling: daughter cells communicate via chemical signals
@@ -436,76 +432,45 @@
             });
         }
 
-        // Cyclin-CDK complexes: molecular switches accumulating during S phase
-        // Cyclin A builds up to drive cell into G2; visible as glowing particles in cytoplasm
+        // G1: APC/C has degraded cyclin A and B — only trace cyclin E begins to appear
+        // as cells approach the restriction point
         cellA.cyclins = [
-            { orbitR: 2.8, baseAngle: 0.7, speed: 0.9, color: '#44ddaa' },
-            { orbitR: 3.6, baseAngle: 2.2, speed: -0.7, color: '#33ccbb' },
-            { orbitR: 1.8, baseAngle: 4.1, speed: 1.1, color: '#44ddaa' },
-            { orbitR: 4.0, baseAngle: 5.5, speed: -0.8, color: '#33ccbb' },
+            { orbitR: 3.0, baseAngle: 1.2, speed: 0.6, color: '#44bbaa' },
         ];
         cellB.cyclins = [
-            { orbitR: 2.8, baseAngle: 1.3, speed: -0.85, color: '#44ddaa' },
-            { orbitR: 3.6, baseAngle: 3.8, speed: 0.75, color: '#33ccbb' },
-            { orbitR: 1.8, baseAngle: 5.6, speed: -1.0, color: '#44ddaa' },
-            { orbitR: 4.0, baseAngle: 0.9, speed: 0.65, color: '#33ccbb' },
+            { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // G2 transition: S phase completing, cells grow as replicated DNA fills the nucleus
-        // Replication forks fade, nucleus swells with 4n DNA content
-        // Cyclin B-CDK1 complexes begin accumulating, priming for mitosis
+        // G1 PHASE: Cyclin D-CDK4/6 begins accumulating — drives toward restriction point
+        // Cyclin B fully degraded by APC/C after mitosis exit
         cellA.cyclinB = [
-            { orbitR: 3.2, baseAngle: 1.1, speed: 1.0, color: '#dd66aa' },
-            { orbitR: 2.4, baseAngle: 3.7, speed: -0.85, color: '#cc5599' },
-            { orbitR: 4.2, baseAngle: 5.2, speed: 0.7, color: '#dd66aa' },
+            { orbitR: 2.6, baseAngle: 0.8, speed: 0.55, color: '#dd9944' },
+            { orbitR: 3.4, baseAngle: 3.2, speed: -0.45, color: '#ccaa55' },
         ];
         cellB.cyclinB = [
-            { orbitR: 3.2, baseAngle: 2.4, speed: -0.95, color: '#dd66aa' },
-            { orbitR: 2.4, baseAngle: 4.9, speed: 0.8, color: '#cc5599' },
-            { orbitR: 4.2, baseAngle: 0.6, speed: -0.75, color: '#dd66aa' },
+            { orbitR: 2.6, baseAngle: 2.0, speed: -0.5, color: '#dd9944' },
+            { orbitR: 3.4, baseAngle: 5.1, speed: 0.48, color: '#ccaa55' },
         ];
 
-        // G2 DNA damage checkpoint: ATM/ATR kinases scan chromatin for replication errors
-        // Checkpoint proteins orbit inside the nucleus, sampling each chromatin locus
-        // Once all loci verified, a green "checkpoint passed" signal pulses outward
+        // G1 RESTRICTION POINT: Rb protein guards the checkpoint, preventing premature S entry
+        // Rb orbits inside nucleus as a sentinel — glows red when active (blocking)
+        // Cyclin D-CDK4/6 must phosphorylate Rb to pass the restriction point
         cellA.checkpointKinases = [
-            { scanSpeed: 0.45, phase: 0, color: '#33ffaa' },
-            { scanSpeed: -0.38, phase: 0.5, color: '#22ee99' },
+            { scanSpeed: 0.3, phase: 0, color: '#ff5544' },
+            { scanSpeed: -0.25, phase: 0.5, color: '#ee4433' },
         ];
         cellB.checkpointKinases = [
-            { scanSpeed: 0.42, phase: 0.2, color: '#33ffaa' },
-            { scanSpeed: -0.4, phase: 0.7, color: '#22ee99' },
+            { scanSpeed: 0.28, phase: 0.2, color: '#ff5544' },
+            { scanSpeed: -0.27, phase: 0.7, color: '#ee4433' },
         ];
 
-        // TELOPHASE: chromatids at poles, nuclear envelopes reform, chromosomes decondense
-        // Cleavage furrow begins ingressing at the cell equator
-        cellA.prophase = {
-            condensation: 0.15, // chromosomes nearly fully decondensed — returning to interphase
-            pole1Target: { x: 24, y: 5 },
-            pole2Target: { x: 18, y: 13 },
-            asterCount: 2, // asters nearly gone, spindle fully disassembled
-            spindleForming: true,
-            prometaphase: true,
-            metaphase: true,
-            anaphase: true,
-            telophase: true,
-            abscission: true, // ESCRT-III has severed the bridge — cells fully separated
-        };
-        cellB.prophase = {
-            condensation: 0.15,
-            pole1Target: { x: 14, y: 19 },
-            pole2Target: { x: 8, y: 27 },
-            asterCount: 2,
-            spindleForming: true,
-            prometaphase: true,
-            metaphase: true,
-            anaphase: true,
-            telophase: true,
-            abscission: true,
-        };
+        // G1 PHASE: mitotic machinery fully dismantled, cells return to interphase
+        // prophase cleared — APC/C has degraded all mitotic cyclins
+        cellA.prophase = null;
+        cellB.prophase = null;
 
-        // G2 growth: cells grow larger than S phase as they prepare for division
-        var growthRate = 0.6; // increased from 0.55 — G2 cells swell further
+        // G1 growth: daughter cells are small after division, slowly growing back
+        var growthRate = 0.35; // reduced — G1 cells grow gradually
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -1346,7 +1311,7 @@
                 }
             }
 
-            // Cyclin B-CDK1: mitosis-promoting factor accumulating in G2
+            // Cyclin D-CDK4/6: G1 driver accumulating toward restriction point
             var cycBPixels = {};
             if (cell.cyclinB && cell.separated) {
                 var tCycB = (t * 8000 / 6000) % 1.0;
@@ -1355,14 +1320,14 @@
                     var cybAngle = cyb.baseAngle + cyb.speed * tOrbit;
                     var cbx = Math.round(cell.cx + Math.cos(cybAngle) * cyb.orbitR);
                     var cby = Math.round(cell.cy + Math.sin(cybAngle) * cyb.orbitR);
-                    // Cyclin B pulses with a distinct pinkish glow
+                    // Cyclin D pulses with warm amber glow (distinct from mitotic pink)
                     var cybPulse = Math.sin(tCycB * 2 * Math.PI + cbi * 1.8);
                     var cdx3 = cbx - cell.cx;
                     var cdy3 = cby - cell.cy;
                     var cbDist = Math.sqrt(cdx3 * cdx3 + cdy3 * cdy3);
                     if (cbDist < maxR - 1.0 && cbDist > nucR + 1.0) {
                         if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
-                            cycBPixels[cbx + ',' + cby] = cybPulse > 0.3 ? '#ee77bb' : cyb.color;
+                            cycBPixels[cbx + ',' + cby] = cybPulse > 0.3 ? '#eeaa55' : cyb.color;
                         }
                     }
                 }
@@ -1381,30 +1346,29 @@
                     var ckX = Math.round(cell.cx + Math.cos(ckAngle) * ckR);
                     var ckY = Math.round(cell.cy + Math.sin(ckAngle) * ckR);
                     if (ckX >= 0 && ckX < size && ckY >= 0 && ckY < size) {
-                        // Kinase glows green when sampling, dimmer between samples
+                        // Rb protein glows red when active — blocking S phase entry
                         var samplePulse = Math.sin(tCheck * 2 * Math.PI * 3 + cki * 1.5);
-                        checkPixels[ckX + ',' + ckY] = samplePulse > 0.2 ? '#44ffbb' : ck.color;
+                        checkPixels[ckX + ',' + ckY] = samplePulse > 0.2 ? '#ff6655' : ck.color;
                     }
-                    // Checkpoint verification flash: brief radial pulse when kinase confirms a locus
+                    // Rb sentinel pulse: brief flash showing E2F suppression
                     if (samplePulse > 0.7) {
-                        var verAngle = ckAngle + Math.PI; // flash opposite side
+                        var verAngle = ckAngle + Math.PI;
                         var vx = Math.round(cell.cx + Math.cos(verAngle) * (unifiedNucR3 * 0.3));
                         var vy = Math.round(cell.cy + Math.sin(verAngle) * (unifiedNucR3 * 0.3));
                         if (vx >= 0 && vx < size && vy >= 0 && vy < size) {
-                            checkPixels[vx + ',' + vy] = '#aaffdd';
+                            checkPixels[vx + ',' + vy] = '#ffaa88';
                         }
                     }
                 }
-                // Checkpoint passed signal: green pulse on nuclear envelope when kinases align
+                // Restriction point barrier: red-orange pulse on nuclear envelope = "S phase blocked"
                 var alignPulse = Math.sin(tCheck * 2 * Math.PI * 0.5);
                 if (alignPulse > 0.6) {
-                    // Brief green flash on 4 envelope points = "all clear for mitosis"
                     for (var cpe = 0; cpe < 4; cpe++) {
                         var cpAngle = cpe * Math.PI / 2 + tCheck * 0.5;
                         var cpx = Math.round(cell.cx + Math.cos(cpAngle) * unifiedNucR3);
                         var cpy = Math.round(cell.cy + Math.sin(cpAngle) * unifiedNucR3);
                         if (cpx >= 0 && cpx < size && cpy >= 0 && cpy < size) {
-                            checkPixels[cpx + ',' + cpy] = '#88ffcc';
+                            checkPixels[cpx + ',' + cpy] = '#ff8866';
                         }
                     }
                 }
