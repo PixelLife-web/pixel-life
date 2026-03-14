@@ -468,24 +468,27 @@
             { scanSpeed: -0.4, phase: 0.7, color: '#22ee99' },
         ];
 
-        // PROPHASE: condensation advancing, nuclear envelope breaking down
-        // Mitotic spindle forming between separating centrosomes
+        // PROMETAPHASE: nuclear envelope fully dissolved, kinetochores capture spindle fibers
+        // Chromosomes congress toward the metaphase plate between the two poles
         cellA.prophase = {
-            condensation: 0.9, // nearly fully condensed chromosomes
-            // Centrosome migration targets: poles on opposite sides of nucleus
+            condensation: 1.0, // fully condensed chromosomes
+            // Centrosomes have reached their poles
             pole1Target: { x: 23, y: 6 },
             pole2Target: { x: 19, y: 12 },
             // Aster microtubules radiate from each centrosome
-            asterCount: 6,
-            // Spindle microtubules forming between poles
+            asterCount: 8,
+            // Spindle fully formed, kinetochore fibers pulling chromosomes
             spindleForming: true,
+            // Prometaphase: chromosomes move toward metaphase plate
+            prometaphase: true,
         };
         cellB.prophase = {
-            condensation: 0.9,
+            condensation: 1.0,
             pole1Target: { x: 13, y: 20 },
             pole2Target: { x: 9, y: 26 },
-            asterCount: 6,
+            asterCount: 8,
             spindleForming: true,
+            prometaphase: true,
         };
 
         // G2 growth: cells grow larger than S phase as they prepare for division
@@ -533,12 +536,18 @@
                 // Nucleus — in prophase, envelope starts to become discontinuous
                 var unifiedNucR = nucR + 0.9;
                 var isProphase = cell.prophase ? true : false;
+                var isPrometa = cell.prophase && cell.prophase.prometaphase;
                 for (var ea = 0; ea < 24; ea++) {
                     var eAngle = ea * 2 * Math.PI / 24;
-                    // In prophase, nuclear envelope breaking down — more gaps appear
-                    if (isProphase && (ea % 4 === 0 || ea % 6 === 2)) {
+                    // Prometaphase: nuclear envelope fully dissolved — only faint remnant fragments
+                    if (isPrometa) {
+                        // Only 2-3 fragments remain, flickering as they dissolve into ER
+                        if (ea % 8 !== 0) continue;
+                        var flickerT = Math.sin(t * 2 * Math.PI * 4 + ea * 1.2);
+                        if (flickerT > -0.4) continue;
+                    } else if (isProphase && (ea % 4 === 0 || ea % 6 === 2)) {
                         var flickerT = Math.sin(t * 2 * Math.PI * 3 + ea * 0.8);
-                        if (flickerT > -0.1) continue; // wider gaps as NEBD progresses
+                        if (flickerT > -0.1) continue;
                     }
                     var ex = Math.round(cell.cx + Math.cos(eAngle) * unifiedNucR);
                     var ey = Math.round(cell.cy + Math.sin(eAngle) * unifiedNucR);
@@ -578,22 +587,62 @@
             if (cell.separated) {
                 var allChromatin = cell.chromatin.concat(cell.sisterChromatin || []);
                 var cond = cell.prophase ? cell.prophase.condensation : 0;
+                var isPrometa = cell.prophase && cell.prophase.prometaphase;
+                // Metaphase plate: midpoint between the two poles
+                var plateX = cell.cx;
+                var plateY = cell.cy;
+                if (isPrometa && cell.prophase.pole1Target && cell.prophase.pole2Target) {
+                    plateX = (cell.prophase.pole1Target.x + cell.prophase.pole2Target.x) / 2;
+                    plateY = (cell.prophase.pole1Target.y + cell.prophase.pole2Target.y) / 2;
+                }
                 for (var chi = 0; chi < allChromatin.length; chi++) {
-                    // Condensing: radius shrinks as condensation increases
-                    var diffuseR = (1.0 - cond) * 0.6 + cond * 0.2 + Math.sin(tChromatin * 0.3 + chi * 1.2) * (0.15 * (1.0 - cond));
-                    var diffAngle = chi * 2 * Math.PI / allChromatin.length + tChromatin * 0.02 * (1.0 - cond);
-                    var driftX = Math.round(cell.cx + Math.cos(diffAngle) * diffuseR);
-                    var driftY = Math.round(cell.cy + Math.sin(diffAngle) * diffuseR);
+                    var diffuseR, diffAngle, driftX, driftY;
+                    if (isPrometa) {
+                        // Prometaphase: chromosomes congress toward metaphase plate
+                        // Each chromosome oscillates near the plate as kinetochores are captured
+                        var congressFrac = 0.5 + Math.sin(tChromatin * 0.08 + chi * 0.9) * 0.25;
+                        // Spread chromosomes along the plate perpendicular to spindle axis
+                        var spindleAngle = Math.atan2(
+                            cell.prophase.pole2Target.y - cell.prophase.pole1Target.y,
+                            cell.prophase.pole2Target.x - cell.prophase.pole1Target.x
+                        );
+                        var perpAngle = spindleAngle + Math.PI / 2;
+                        var plateSpread = (chi - allChromatin.length / 2) * 0.35;
+                        // Chromosomes drift from cell center toward plate
+                        var fromCenterX = cell.cx + Math.cos(diffAngle = chi * 2 * Math.PI / allChromatin.length) * 0.3;
+                        var fromCenterY = cell.cy + Math.sin(chi * 2 * Math.PI / allChromatin.length) * 0.3;
+                        var targetX = plateX + Math.cos(perpAngle) * plateSpread;
+                        var targetY = plateY + Math.sin(perpAngle) * plateSpread;
+                        // Jittery congression — not all chromosomes have been captured yet
+                        var jitter = Math.sin(tChromatin * 0.2 + chi * 2.1) * 0.4;
+                        driftX = Math.round(fromCenterX + (targetX - fromCenterX) * congressFrac + jitter);
+                        driftY = Math.round(fromCenterY + (targetY - fromCenterY) * congressFrac + jitter);
+                    } else {
+                        // Condensing: radius shrinks as condensation increases
+                        diffuseR = (1.0 - cond) * 0.6 + cond * 0.2 + Math.sin(tChromatin * 0.3 + chi * 1.2) * (0.15 * (1.0 - cond));
+                        diffAngle = chi * 2 * Math.PI / allChromatin.length + tChromatin * 0.02 * (1.0 - cond);
+                        driftX = Math.round(cell.cx + Math.cos(diffAngle) * diffuseR);
+                        driftY = Math.round(cell.cy + Math.sin(diffAngle) * diffuseR);
+                    }
                     // Condensed chromosomes are brighter, thicker — condensin complexes glow
                     var condPulse = Math.sin(tChromatin * 0.15 + chi * 0.7);
                     var chrColor = cond > 0.5 ? (condPulse > 0 ? '#e0a070' : '#d09060') : (condPulse > 0.3 ? '#d09060' : '#c08050');
-                    chrPixels[driftX + ',' + driftY] = chrColor;
-                    // At high condensation, each chromosome shows a paired sister chromatid (adjacent pixel)
-                    if (cond > 0.5) {
-                        var sisterAngle = diffAngle + 0.4;
-                        var sisterR = diffuseR + 0.15;
-                        var sx = Math.round(cell.cx + Math.cos(sisterAngle) * sisterR);
-                        var sy = Math.round(cell.cy + Math.sin(sisterAngle) * sisterR);
+                    // Prometaphase: kinetochore glow on captured chromosomes
+                    if (isPrometa) {
+                        var kineGlow = Math.sin(tChromatin * 0.12 + chi * 1.3);
+                        chrColor = kineGlow > 0.2 ? '#f0b878' : '#e0a868';
+                    }
+                    if (driftX >= 0 && driftX < size && driftY >= 0 && driftY < size) {
+                        chrPixels[driftX + ',' + driftY] = chrColor;
+                    }
+                    // Paired sister chromatid (adjacent pixel)
+                    if (cond > 0.5 || isPrometa) {
+                        var sAngle = isPrometa
+                            ? Math.atan2(cell.prophase.pole2Target.y - cell.prophase.pole1Target.y,
+                                         cell.prophase.pole2Target.x - cell.prophase.pole1Target.x)
+                            : (chi * 2 * Math.PI / allChromatin.length + tChromatin * 0.02);
+                        var sx = Math.round(driftX + Math.cos(sAngle) * 0.6);
+                        var sy = Math.round(driftY + Math.sin(sAngle) * 0.6);
                         if (sx >= 0 && sx < size && sy >= 0 && sy < size) {
                             chrPixels[sx + ',' + sy] = condPulse > 0 ? '#d8a068' : '#c89058';
                         }
@@ -630,7 +679,8 @@
                     var cs = cell.centrosomes[0];
                     var tCentMig = (t * 8000 / 9000) % 1.0;
                     // Interpolate centrosome positions toward their pole targets
-                    var migFrac = 0.6 + Math.sin(tCentMig * 2 * Math.PI * 0.2) * 0.08; // advancing toward poles
+                    // Prometaphase: poles have reached their targets
+                    var migFrac = cell.prophase.prometaphase ? 0.95 : 0.6 + Math.sin(tCentMig * 2 * Math.PI * 0.2) * 0.08;
                     var p1x = cs.x + (cell.prophase.pole1Target.x - cs.x) * migFrac;
                     var p1y = cs.y + (cell.prophase.pole1Target.y - cs.y) * migFrac;
                     var p2x = cs.x + (cell.prophase.pole2Target.x - cs.x) * migFrac;
@@ -679,22 +729,55 @@
                             }
                         }
                     }
-                    // SPINDLE MICROTUBULES: forming between the two poles
+                    // SPINDLE MICROTUBULES: fully formed between the two poles
                     if (cell.prophase.spindleForming) {
-                        var spindleCount = 4;
+                        var spindleCount = cell.prophase.prometaphase ? 6 : 4;
                         for (var spi = 0; spi < spindleCount; spi++) {
                             var spFrac = (spi + 1) / (spindleCount + 1);
                             // Interpolate between pole1 and pole2
                             var spx = p1x + (p2x - p1x) * spFrac;
                             var spy = p1y + (p2y - p1y) * spFrac;
-                            // Slight lateral wobble to show dynamic instability
-                            var spWobble = Math.sin(tCentMig * 2 * Math.PI * 2 + spi * 1.7) * 0.6;
+                            // Dynamic instability wobble — less in prometaphase (stabilized by kinetochore capture)
+                            var wobbleAmp = cell.prophase.prometaphase ? 0.3 : 0.6;
+                            var spWobble = Math.sin(tCentMig * 2 * Math.PI * 2 + spi * 1.7) * wobbleAmp;
                             var spPerpAngle = Math.atan2(p2y - p1y, p2x - p1x) + Math.PI / 2;
                             var spxF = Math.round(spx + Math.cos(spPerpAngle) * spWobble);
                             var spyF = Math.round(spy + Math.sin(spPerpAngle) * spWobble);
                             if (spxF >= 0 && spxF < size && spyF >= 0 && spyF < size) {
                                 var spPulse = Math.sin(tCentMig * 2 * Math.PI + spi * 0.9);
                                 centPixels[spxF + ',' + spyF] = spPulse > 0 ? '#5588aa' : '#447799';
+                            }
+                        }
+                    }
+                    // KINETOCHORE FIBERS: in prometaphase, fibers reach from each pole to metaphase plate
+                    if (cell.prophase.prometaphase) {
+                        var kfCount = 3; // kinetochore fibers per pole
+                        var kfPlateX = (cell.prophase.pole1Target.x + cell.prophase.pole2Target.x) / 2;
+                        var kfPlateY = (cell.prophase.pole1Target.y + cell.prophase.pole2Target.y) / 2;
+                        var kfPerpAngle = Math.atan2(p2y - p1y, p2x - p1x) + Math.PI / 2;
+                        for (var kfi = 0; kfi < kfCount; kfi++) {
+                            var kfSpread = (kfi - 1) * 0.6;
+                            var kfTargetX = kfPlateX + Math.cos(kfPerpAngle) * kfSpread;
+                            var kfTargetY = kfPlateY + Math.sin(kfPerpAngle) * kfSpread;
+                            // Fiber from pole1 to plate
+                            for (var kfl = 1; kfl <= 3; kfl++) {
+                                var kfFrac = kfl / 4;
+                                var kfx1 = Math.round(p1x + (kfTargetX - p1x) * kfFrac);
+                                var kfy1 = Math.round(p1y + (kfTargetY - p1y) * kfFrac);
+                                if (kfx1 >= 0 && kfx1 < size && kfy1 >= 0 && kfy1 < size) {
+                                    var kfPulse = Math.sin(tCentMig * 2 * Math.PI * 1.5 + kfi * 1.2 + kfl);
+                                    centPixels[kfx1 + ',' + kfy1] = kfPulse > 0 ? '#66aacc' : '#5599bb';
+                                }
+                            }
+                            // Fiber from pole2 to plate
+                            for (var kfl2 = 1; kfl2 <= 3; kfl2++) {
+                                var kfFrac2 = kfl2 / 4;
+                                var kfx2 = Math.round(p2x + (kfTargetX - p2x) * kfFrac2);
+                                var kfy2 = Math.round(p2y + (kfTargetY - p2y) * kfFrac2);
+                                if (kfx2 >= 0 && kfx2 < size && kfy2 >= 0 && kfy2 < size) {
+                                    var kfPulse2 = Math.sin(tCentMig * 2 * Math.PI * 1.5 + kfi * 1.2 + kfl2 + 2);
+                                    centPixels[kfx2 + ',' + kfy2] = kfPulse2 > 0 ? '#66aacc' : '#5599bb';
+                                }
                             }
                         }
                     }
