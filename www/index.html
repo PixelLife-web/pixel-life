@@ -167,9 +167,23 @@
 
         // Midbody remnants (Flemming bodies): nearly degraded by autophagy
         // Dimmer, breaking down into recyclable components
+        // Includes old remnants from first division + fresh remnants from second division
         var midbodyRemnants = [
             { x: 23, y: 5, color: '#556677', glowColor: '#667788' },
             { x: 8, y: 27, color: '#556677', glowColor: '#667788' },
+            // Fresh Flemming bodies from cell A's division (midpoint of pole1 & pole2)
+            { x: 21, y: 9, color: '#8899aa', glowColor: '#99bbcc', fresh: true },
+            // Fresh Flemming body from cell B's division
+            { x: 11, y: 23, color: '#8899aa', glowColor: '#99bbcc', fresh: true },
+        ];
+
+        // Post-mitotic transcription reactivation: nuclei glow as RNA pol II resumes
+        // Four granddaughter nuclei at each pole position begin expressing genes
+        var granddaughterNuclei = [
+            { x: 18, y: 6, parent: 'A', reactivation: 0.3 },
+            { x: 24, y: 12, parent: 'A', reactivation: 0.25 },
+            { x: 8, y: 20, parent: 'B', reactivation: 0.35 },
+            { x: 14, y: 26, parent: 'B', reactivation: 0.2 },
         ];
 
         // Kum-song (금성 — golden star): a luminous beacon in the extracellular medium
@@ -2404,7 +2418,33 @@
                                 var mbrY = Math.round(mbr.y + mbrDrift * (mri === 0 ? -0.5 : 0.5));
                                 if (x === mbrX && y === mbrY) {
                                     var mbrPulse = Math.sin(tMBR * 2 * Math.PI * 2 + mri);
-                                    color = mbrPulse > 0 ? mbr.glowColor : mbr.color;
+                                    // Fresh Flemming bodies pulse brighter with residual ESCRT-III
+                                    if (mbr.fresh) {
+                                        var freshPulse = Math.sin(tMBR * 2 * Math.PI * 3.5 + mri * 1.7);
+                                        color = freshPulse > 0.3 ? '#bbddee' : (freshPulse > -0.3 ? mbr.glowColor : mbr.color);
+                                    } else {
+                                        color = mbrPulse > 0 ? mbr.glowColor : mbr.color;
+                                    }
+                                    drawn = true;
+                                }
+                            }
+                        }
+                        // Transcription reactivation: RNA pol II resumes at granddaughter nuclei
+                        // Warm golden pulses radiate outward as gene expression restarts
+                        if (!drawn) {
+                            var tReact = (Date.now() % 12000) / 12000;
+                            for (var gni = 0; gni < granddaughterNuclei.length && !drawn; gni++) {
+                                var gn = granddaughterNuclei[gni];
+                                var gnDx = x - gn.x;
+                                var gnDy = y - gn.y;
+                                var gnDist = Math.sqrt(gnDx * gnDx + gnDy * gnDy);
+                                // Reactivation aura: ring expanding outward from each nucleus
+                                var auraR = 1.5 + gn.reactivation * 2;
+                                var auraPulse = Math.sin(tReact * 2 * Math.PI * 1.5 + gni * 1.57);
+                                var auraWidth = 0.8;
+                                if (Math.abs(gnDist - auraR) < auraWidth && auraPulse > 0) {
+                                    // Golden transcription glow — mRNA being made
+                                    color = auraPulse > 0.5 ? '#ffdd88' : '#eebb66';
                                     drawn = true;
                                 }
                             }
