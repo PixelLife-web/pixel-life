@@ -513,26 +513,29 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // LATE PROPHASE: condensation nearly complete, NPC disassembly begins
-        // CDK1 heavily phosphorylates lamin B — envelope losing integrity
-        // Nuclear pore complexes (NPCs) disassemble — Nup proteins disperse into cytoplasm
+        // NEB IMMINENT: condensation nearly complete, envelope fragmenting into vesicles
+        // CDK1 saturates lamin B phosphorylation — lamina meshwork dissolving into subunits
+        // NPCs mostly disassembled — Nup107/160 released, importin/exportin leak freely
+        // Envelope vesiculates: ER-derived membranes absorb nuclear membrane fragments
         cellA.prophase = {
-            condensation: 0.72, // late prophase — chromosomes thick, individualized
+            condensation: 0.85, // chromosomes fully individualized, thick rods visible
             pole1Target: { x: 19, y: 7 },  // upper pole
             pole2Target: { x: 23, y: 11 }, // lower pole
-            spindleForming: false, // not yet — NEB imminent but not complete
-            asterCount: 10, // asters lengthening, gamma-tubulin recruitment accelerates
-            laminPhospho: 0.45, // heavy lamin phosphorylation — lamina meshwork dissolving
-            npcDisassembly: 0.3, // NPCs beginning to disassemble, some pores lost
+            spindleForming: false, // not yet — envelope must fully break before spindle captures
+            asterCount: 12, // asters maximal, gamma-tubulin ring complexes saturated
+            laminPhospho: 0.65, // critical threshold — lamina meshwork fragmenting into soluble dimers
+            npcDisassembly: 0.6, // most NPCs gone, only remnant scaffold clusters remain
+            envelopeVesicles: true, // nuclear membrane breaking into ER-absorbed vesicles
         };
         cellB.prophase = {
-            condensation: 0.72,
+            condensation: 0.85,
             pole1Target: { x: 9, y: 21 },  // upper pole
             pole2Target: { x: 13, y: 25 }, // lower pole
             spindleForming: false,
-            asterCount: 10,
-            laminPhospho: 0.45,
-            npcDisassembly: 0.3,
+            asterCount: 12,
+            laminPhospho: 0.65,
+            npcDisassembly: 0.6,
+            envelopeVesicles: true,
         };
 
         // Condensin complexes: ring-shaped SMC proteins loading onto chromosomes
@@ -634,8 +637,10 @@
                         // Lamin phosphorylation: envelope flickers more as CDK1 weakens lamina
                         var flickerT = Math.sin(t * 2 * Math.PI * 3 + ea * 0.8);
                         var laminThresh = -0.3 + cell.prophase.laminPhospho * 0.8;
-                        // At high phosphorylation, more envelope positions become gaps
-                        var gapPositions = cell.prophase.laminPhospho > 0.35
+                        // At critical phosphorylation (>0.6), most envelope positions are gaps
+                        var gapPositions = cell.prophase.laminPhospho > 0.6
+                            ? (ea % 2 === 0 || ea % 3 === 0 || ea % 5 === 1)
+                            : cell.prophase.laminPhospho > 0.35
                             ? (ea % 3 === 0 || ea % 5 === 1 || ea % 7 === 3)
                             : (ea % 4 === 0 || ea % 6 === 2);
                         if (gapPositions && flickerT > laminThresh) continue;
@@ -646,9 +651,9 @@
                     var ex = Math.round(cell.cx + Math.cos(eAngle) * unifiedNucR);
                     var ey = Math.round(cell.cy + Math.sin(eAngle) * unifiedNucR);
                     if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
-                        // Lamin phosphorylation dims envelope — CDK1 weakening the lamina meshwork
+                        // Lamin phosphorylation dims envelope — lamina dissolving into soluble dimers
                         var envColor = isProphase
-                            ? (cell.prophase.laminPhospho > 0.35 ? '#bb8822' : (cell.prophase.laminPhospho > 0.1 ? '#cc9933' : '#ddaa33'))
+                            ? (cell.prophase.laminPhospho > 0.6 ? '#997711' : (cell.prophase.laminPhospho > 0.35 ? '#bb8822' : (cell.prophase.laminPhospho > 0.1 ? '#cc9933' : '#ddaa33')))
                             : cell.nucleusEdge;
                         envPixels[ex + ',' + ey] = envColor;
                     }
@@ -656,6 +661,22 @@
                 nucPixels[cell.cx + ',' + cell.cy] = cell.nucleolusColor;
                 nucPixels[(cell.cx + 1) + ',' + cell.cy] = cell.nucleusColor;
                 nucPixels[(cell.cx - 1) + ',' + cell.cy] = cell.nucleusColor;
+                // Envelope vesicles: membrane fragments drifting outward as NE breaks apart
+                if (cell.prophase && cell.prophase.envelopeVesicles) {
+                    var tVes2 = (t * 8000 / 6000) % 1.0;
+                    for (var evi = 0; evi < 6; evi++) {
+                        var evAngle = evi * 2 * Math.PI / 6 + tVes2 * 0.5;
+                        // Vesicles drift outward from nucleus edge
+                        var evDrift = unifiedNucR + 0.5 + ((tVes2 + evi * 0.17) % 1.0) * 2.0;
+                        var evx = Math.round(cell.cx + Math.cos(evAngle) * evDrift);
+                        var evy = Math.round(cell.cy + Math.sin(evAngle) * evDrift);
+                        var evDist = Math.sqrt((evx - cell.cx) * (evx - cell.cx) + (evy - cell.cy) * (evy - cell.cy));
+                        if (evDist < maxR - 0.5 && evx >= 0 && evx < size && evy >= 0 && evy < size) {
+                            var evPulse = Math.sin(tVes2 * 2 * Math.PI + evi * 1.3);
+                            envPixels[evx + ',' + evy] = evPulse > 0 ? '#aa8833' : '#887722';
+                        }
+                    }
+                }
             } else if (cell.centrosomes && cell.centrosomes.length >= 2) {
                 var pole0 = cell.centrosomes[0];
                 var pole1 = cell.centrosomes[1];
@@ -883,7 +904,7 @@
                     }
                     // ASTER MICROTUBULES: radial fibers from each centrosome
                     var asterCount = cell.prophase.asterCount || 6;
-                    var asterLen = asterCount >= 10 ? 3 : 2; // longer asters as centrosomes recruit more gamma-tubulin
+                    var asterLen = asterCount >= 12 ? 4 : (asterCount >= 10 ? 3 : 2); // asters lengthen as gamma-TuRC saturates
                     for (var ai = 0; ai < asterCount; ai++) {
                         var astAngle = ai * 2 * Math.PI / asterCount + tCentMig * 0.3;
                         for (var al = 1; al <= asterLen; al++) {
@@ -1238,8 +1259,9 @@
                     // NPC disassembly: some pores disappear, replaced by dispersing Nup particles
                     if (npcDisasm > 0) {
                         var poreFlicker = Math.sin(tPore * 2 * Math.PI * 2 + npi * 2.3);
-                        // Higher disassembly = more pores lost
-                        if (poreFlicker > (1.0 - npcDisasm * 2.5) && npi % 2 === 0) {
+                        // Higher disassembly = more pores lost; at >0.5, odd pores also begin to go
+                        var poreVulnerable = npcDisasm > 0.5 ? true : (npi % 2 === 0);
+                        if (poreFlicker > (1.0 - npcDisasm * 2.5) && poreVulnerable) {
                             // Dispersing Nup protein — drifts outward from former pore site
                             var nupDrift = (tPore + npi * 0.2) % 1.0;
                             var nupDist = unifiedNucR2 + nupDrift * 1.8;
