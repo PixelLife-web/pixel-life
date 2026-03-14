@@ -113,6 +113,15 @@
             { mitoIdx: 1, angleOffset: 1.0, distOffset: 2.2 },
         ];
 
+        // Membrane receptors: proteins embedded in the membrane that sense the environment
+        // Each receptor sits at a fixed angle on the membrane and triggers signaling cascades
+        var receptors = [
+            { angle: 0.3, color: '#33cc99', signalColor: '#55eebb' },
+            { angle: 1.9, color: '#cc3399', signalColor: '#ee55bb' },
+            { angle: 3.5, color: '#3399cc', signalColor: '#55bbee' },
+            { angle: 5.0, color: '#cc9933', signalColor: '#eebb55' },
+        ];
+
         // Cytoskeleton: microtubules radiate from a centrosome near the nucleus
         // Each microtubule is defined by an angle and length (in pixels from centrosome)
         var centrosome = { x: 14, y: 11 }; // just outside the nucleus
@@ -320,6 +329,32 @@
                 }
             }
 
+            // Compute receptor positions and signal cascade (11-second cycle)
+            var tSignal = (Date.now() % 11000) / 11000;
+            var receptorPixels = {};
+            var signalPixels = {};
+            for (var rci = 0; rci < receptors.length; rci++) {
+                var rec = receptors[rci];
+                // Receptor sits on the membrane edge
+                var recR = maxRadius - 0.5;
+                var recX = Math.round(center + Math.cos(rec.angle) * recR);
+                var recY = Math.round(center + Math.sin(rec.angle) * recR);
+                receptorPixels[recX + ',' + recY] = rec.color;
+                // Signal cascade: a dot travels from receptor toward nucleus
+                // Each receptor fires at a staggered time
+                var sigPhase = (tSignal + rci * 0.25) % 1.0;
+                // Signal is active for half the cycle, then rests
+                if (sigPhase < 0.5) {
+                    var sigProgress = sigPhase * 2.0; // 0 to 1 from membrane to nucleus
+                    var sigR = recR - sigProgress * (recR - nucleusRadius - 0.5);
+                    var sigX = Math.round(center + Math.cos(rec.angle) * sigR);
+                    var sigY = Math.round(center + Math.sin(rec.angle) * sigR);
+                    if (sigX !== recX || sigY !== recY) {
+                        signalPixels[sigX + ',' + sigY] = rec.signalColor;
+                    }
+                }
+            }
+
             // Compute nutrient drift (slow 20-second cycle, small oscillation)
             var tNutrient = (Date.now() % 20000) / 20000 * 2 * Math.PI;
             var nutrientPixels = {};
@@ -374,6 +409,18 @@
                                     break;
                                 }
                             }
+                        }
+
+                        // Check receptor proteins on membrane
+                        if (!isSpecial && receptorPixels[x + ',' + y]) {
+                            color = receptorPixels[x + ',' + y];
+                            isSpecial = true;
+                        }
+
+                        // Check signal cascade molecules
+                        if (!isSpecial && signalPixels[x + ',' + y]) {
+                            color = signalPixels[x + ',' + y];
+                            isSpecial = true;
                         }
 
                         // Check Golgi apparatus
