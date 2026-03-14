@@ -2199,29 +2199,13 @@
             var commC=[['#55cc77','#339955'],['#77bb55','#558833'],['#99aa44','#778822']];
             var commensals=[[3,1,0,1,.30,0],[7,3,1,0,.25,.4],[1,5,0,1,.35,.8],[10,1,2,0,.28,1.2],[5,0,1,1,.32,1.6],[12,3,0,0,.22,2],[0,10,2,1,.30,2.4],[2,8,1,0,.26,2.8]].map(function(d){return{x:d[0],y:d[1],color:commC[d[2]][0],dimColor:commC[d[2]][1],coated:!!d[3],speed:d[4],phase:d[5]};});
             for (var baci = 0; baci < commensals.length; baci++) {
-                var bac = commensals[baci];
-                var bacPh = tMicro * 2 * Math.PI + bac.phase;
-                var bacP = Math.sin(bacPh);
-                var bacDX = Math.sin(tMicro * 2 * Math.PI * bac.speed * 3 + bac.phase * 2.0) * 1.5;
-                var bacDY = Math.cos(tMicro * 2 * Math.PI * bac.speed * 2.5 + bac.phase * 3.0) * 1.2;
-                var bacX = Math.round(bac.x + bacDX);
-                var bacY = Math.round(bac.y + bacDY);
-                if (inB(bacX, bacY)) {
-                    set(bacX, bacY, bacP > 0 ? bac.color : bac.dimColor);
-                    if (bac.coated && bacP > -0.3) {
-                        var sigAP = Math.sin(bacPh * 2.0 + baci * 1.7);
-                        var coatA = bacPh * 0.3 + baci * 1.57;
-                        var coatX = Math.round(bacX + Math.cos(coatA) * 0.8);
-                        var coatY = Math.round(bacY + Math.sin(coatA) * 0.8);
-                        if (inB(coatX, coatY)) set(coatX, coatY, sigAP > 0 ? '#eedd88' : '#ccbb66');
-                    }
-                    if (bacP > 0.7) {
-                        var divA = bacPh * 0.5 + baci * 2.3;
-                        var divX = Math.round(bacX + Math.cos(divA) * 0.9);
-                        var divY = Math.round(bacY + Math.sin(divA) * 0.9);
-                        if (inB(divX, divY)) set(divX, divY, bac.dimColor);
-                    }
-                }
+                var bac=commensals[baci],bacPh=tMicro*2*Math.PI+bac.phase,bacP=Math.sin(bacPh);
+                var bacX=Math.round(bac.x+Math.sin(tMicro*2*Math.PI*bac.speed*3+bac.phase*2)*1.5);
+                var bacY=Math.round(bac.y+Math.cos(tMicro*2*Math.PI*bac.speed*2.5+bac.phase*3)*1.2);
+                if(!inB(bacX,bacY))continue;
+                set(bacX,bacY,bacP>0?bac.color:bac.dimColor);
+                if(bac.coated&&bacP>-0.3){var coatA=bacPh*0.3+baci*1.57;set(Math.round(bacX+Math.cos(coatA)*0.8),Math.round(bacY+Math.sin(coatA)*0.8),Math.sin(bacPh*2+baci*1.7)>0?'#eedd88':'#ccbb66');}
+                if(bacP>0.7){var divA=bacPh*0.5+baci*2.3;set(Math.round(bacX+Math.cos(divA)*0.9),Math.round(bacY+Math.sin(divA)*0.9),bac.dimColor);}
             }
             var tMcell=(now%20000)/20000,mCells=[{x:27,y:13,pA:Math.PI*0.7,c:'#77bbaa',d:'#559988'},{x:28,y:15,pA:Math.PI*0.5,c:'#66aa99',d:'#448877'}];
             for(var mci=0;mci<mCells.length;mci++){var mc=mCells[mci],mcPh=tMcell*2*Math.PI+mci*3.14,mcP=Math.sin(mcPh),lumA6=Math.atan2(mc.y-16,mc.x-16)+Math.PI;
@@ -2271,6 +2255,46 @@
                     }
                 }
             }
+            var tMuc = (now % 19000) / 19000;
+            var mucusAnchors = [];
+            for (var mi2 = 0; mi2 < granddaughterNuclei.length; mi2++) {
+                var mg2 = granddaughterNuclei[mi2];
+                if (mg2.cellType === 'goblet') {
+                    var mucA = Math.atan2(mg2.y - blCenter.y, mg2.x - blCenter.x);
+                    mucusAnchors.push({x: mg2.x, y: mg2.y, angle: mucA, bR: mg2.bodyRadius});
+                }
+            }
+            for (var mai = 0; mai < mucusAnchors.length; mai++) {
+                var ma = mucusAnchors[mai], innerMR = ma.bR + 2.5, outerMR = ma.bR + 4.5;
+                for (var mla = -3; mla <= 3; mla++) {
+                    var mlAngle = ma.angle + mla * 0.22;
+                    var mucSway = Math.sin(tMuc * 2 * Math.PI * 0.8 + mai * 2.3 + mla * 1.4) * 0.12;
+                    var imR = innerMR + Math.sin(tMuc * 2 * Math.PI * 1.2 + mla * 0.9) * 0.3;
+                    var imx = Math.round(ma.x + Math.cos(mlAngle + mucSway) * imR);
+                    var imy = Math.round(ma.y + Math.sin(mlAngle + mucSway) * imR);
+                    var imP = Math.sin(tMuc * 2 * Math.PI * 1.5 + mai * 1.7 + mla * 2.1);
+                    if (inB(imx, imy)) set(imx, imy, imP > 0 ? '#bbddcc' : '#99ccbb');
+                    var omR = outerMR + Math.sin(tMuc * 2 * Math.PI * 0.6 + mla * 1.3 + mai * 3.0) * 0.5;
+                    var omx = Math.round(ma.x + Math.cos(mlAngle + mucSway * 1.5) * omR);
+                    var omy = Math.round(ma.y + Math.sin(mlAngle + mucSway * 1.5) * omR);
+                    var omP = Math.sin(tMuc * 2 * Math.PI * 0.9 + mai * 2.5 + mla * 1.8);
+                    if (inB(omx, omy)) set(omx, omy, omP > 0 ? '#aaccbb' : '#88bbaa');
+                    if (mla % 2 === 0) {
+                        var mmR = (imR + omR) * 0.5;
+                        var mmx = Math.round(ma.x + Math.cos(mlAngle + mucSway * 0.7) * mmR);
+                        var mmy = Math.round(ma.y + Math.sin(mlAngle + mucSway * 0.7) * mmR);
+                        var mmP = Math.sin(tMuc * 2 * Math.PI * 2.0 + mai * 1.3 + mla * 2.5);
+                        if (inB(mmx, mmy)) set(mmx, mmy, mmP > 0 ? '#cceecc' : '#aaddbb');
+                    }
+                }
+                if (mai === 0 && mucusAnchors.length > 1) {
+                    var cAnc = mucusAnchors[1];
+                    var cMidX = Math.round((ma.x + cAnc.x) / 2 + Math.cos(ma.angle) * (innerMR + 1.0));
+                    var cMidY = Math.round((ma.y + cAnc.y) / 2 + Math.sin(ma.angle) * (innerMR + 1.0));
+                    var cMP = Math.sin(tMuc * 2 * Math.PI * 1.3 + mai * 3.5);
+                    if (inB(cMidX, cMidY)) set(cMidX, cMidY, cMP > 0 ? '#ddeecc' : '#bbddbb');
+                }
+            }
             return px;
         }
 
@@ -2291,45 +2315,21 @@
 
             var nutrientPx = {};
             for (var ni = 0; ni < nutrients.length; ni++) {
-                var n = nutrients[ni];
-                var ndx = Math.sin(tNutrient + ni * 1.7) * 1;
-                var ndy = Math.cos(tNutrient + ni * 2.3) * 1;
-                var dToA = Math.sqrt((n.x - cellA.cx) * (n.x - cellA.cx) + (n.y - cellA.cy) * (n.y - cellA.cy));
-                var dToB = Math.sqrt((n.x - cellB.cx) * (n.x - cellB.cx) + (n.y - cellB.cy) * (n.y - cellB.cy));
-                var nearCell = dToA < dToB ? cellA : cellB;
-                var dNear = Math.min(dToA, dToB);
-                if (dNear < 12 && dNear > 2) {
-                    var pullStr = 0.5 * (1 - dNear / 12);
-                    ndx += (nearCell.cx - n.x) / dNear * pullStr;
-                    ndy += (nearCell.cy - n.y) / dNear * pullStr;
-                }
-                var nx = Math.round(n.x + ndx);
-                var ny = Math.round(n.y + ndy);
-                if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
-                    nutrientPx[nx + ',' + ny] = n.color;
-                }
-            }
+                var n=nutrients[ni],ndx=Math.sin(tNutrient+ni*1.7),ndy=Math.cos(tNutrient+ni*2.3);
+                var dToA=Math.sqrt((n.x-cellA.cx)*(n.x-cellA.cx)+(n.y-cellA.cy)*(n.y-cellA.cy)),dToB=Math.sqrt((n.x-cellB.cx)*(n.x-cellB.cx)+(n.y-cellB.cy)*(n.y-cellB.cy));
+                var nearC=dToA<dToB?cellA:cellB,dN=Math.min(dToA,dToB);
+                if(dN<12&&dN>2){var ps=0.5*(1-dN/12);ndx+=(nearC.cx-n.x)/dN*ps;ndy+=(nearC.cy-n.y)/dN*ps;}
+                var nx=Math.round(n.x+ndx),ny=Math.round(n.y+ndy);if(inB(nx,ny))nutrientPx[nx+','+ny]=n.color;}
 
             var kumSongPx = {};
-            var tKS = (Date.now() % 25000) / 25000;
-            var ksAngle = tKS * 2 * Math.PI * kumSong.speed * 25; // slow orbit
-            var ksCoreX = Math.round(kumSong.cx + Math.cos(ksAngle) * kumSong.orbitR);
-            var ksCoreY = Math.round(kumSong.cy + Math.sin(ksAngle) * kumSong.orbitR);
-            if (ksCoreX >= 0 && ksCoreX < size && ksCoreY >= 0 && ksCoreY < size) {
-                kumSongPx[ksCoreX + ',' + ksCoreY] = kumSong.coreColor;
-                var ksHaloPulse = Math.sin(tKS * 2 * Math.PI * 8);
-                var ksHaloColor = ksHaloPulse > 0 ? kumSong.haloColor : kumSong.dimColor;
-                var ksCardinals = [[1,0],[-1,0],[0,1],[0,-1]];
+            var tKS = (Date.now() % 25000) / 25000, ksAngle = tKS * 2 * Math.PI * kumSong.speed * 25;
+            var ksCoreX = Math.round(kumSong.cx+Math.cos(ksAngle)*kumSong.orbitR), ksCoreY = Math.round(kumSong.cy+Math.sin(ksAngle)*kumSong.orbitR);
+            if (inB(ksCoreX,ksCoreY)) {
+                kumSongPx[ksCoreX+','+ksCoreY] = kumSong.coreColor;
+                var ksHC = Math.sin(tKS*2*Math.PI*8)>0?kumSong.haloColor:kumSong.dimColor;
                 for (var kci = 0; kci < 4; kci++) {
-                    var khx = ksCoreX + ksCardinals[kci][0];
-                    var khy = ksCoreY + ksCardinals[kci][1];
-                    if (khx >= 0 && khx < size && khy >= 0 && khy < size) {
-                        var khDistA = Math.sqrt((khx - cellA.cx) * (khx - cellA.cx) + (khy - cellA.cy) * (khy - cellA.cy));
-                        var khDistB = Math.sqrt((khx - cellB.cx) * (khx - cellB.cx) + (khy - cellB.cy) * (khy - cellB.cy));
-                        if (khDistA > dA.maxR + 1 && khDistB > dB.maxR + 1) {
-                            kumSongPx[khx + ',' + khy] = ksHaloColor;
-                        }
-                    }
+                    var khx=ksCoreX+[1,-1,0,0][kci],khy=ksCoreY+[0,0,1,-1][kci];
+                    if(inB(khx,khy)&&Math.sqrt((khx-cellA.cx)*(khx-cellA.cx)+(khy-cellA.cy)*(khy-cellA.cy))>dA.maxR+1&&Math.sqrt((khx-cellB.cx)*(khx-cellB.cx)+(khy-cellB.cy)*(khy-cellB.cy))>dB.maxR+1)kumSongPx[khx+','+khy]=ksHC;
                 }
             }
 
@@ -2338,35 +2338,15 @@
             var scarColor = abscissionScar.color;
 
             var ecmPx = {};
-            var tECM = (Date.now() % 15000) / 15000; // slow assembly pulse
+            var tECM = (Date.now() % 15000) / 15000;
             for (var fi = 0; fi < ecmFibers.length; fi++) {
-                var fiber = ecmFibers[fi];
-                var ax = cellA.cx + (cellB.cx - cellA.cx) * fiber.startFrac;
-                var ay = cellA.cy + (cellB.cy - cellA.cy) * fiber.startFrac;
-                var bx = cellA.cx + (cellB.cx - cellA.cx) * fiber.endFrac;
-                var by = cellA.cy + (cellB.cy - cellA.cy) * fiber.endFrac;
-                var mx = (ax + bx) / 2 + fiber.offsetX;
-                var my = (ay + by) / 2 + fiber.offsetY;
-                var segments = [
-                    { x1: ax, y1: ay, x2: mx, y2: my },
-                    { x1: mx, y1: my, x2: bx, y2: by },
-                ];
-                var pulse = Math.sin(tECM * 2 * Math.PI + fiber.pulsePhase);
-                var visible = pulse > -0.3; // visible most of the time
-                if (visible) {
-                    for (var si2 = 0; si2 < segments.length; si2++) {
-                        var seg = segments[si2];
-                        var steps = Math.max(Math.abs(Math.round(seg.x2) - Math.round(seg.x1)), Math.abs(Math.round(seg.y2) - Math.round(seg.y1)));
-                        if (steps === 0) steps = 1;
-                        for (var step = 0; step <= steps; step++) {
-                            var px = Math.round(seg.x1 + (seg.x2 - seg.x1) * step / steps);
-                            var py = Math.round(seg.y1 + (seg.y2 - seg.y1) * step / steps);
-                            if (px >= 0 && px < size && py >= 0 && py < size) {
-                                ecmPx[px + ',' + py] = fiber.color;
-                            }
-                        }
-                    }
-                }
+                var fb = ecmFibers[fi]; if (Math.sin(tECM * 2 * Math.PI + fb.pulsePhase) <= -0.3) continue;
+                var eax = cellA.cx + (cellB.cx - cellA.cx) * fb.startFrac, eay = cellA.cy + (cellB.cy - cellA.cy) * fb.startFrac;
+                var ebx = cellA.cx + (cellB.cx - cellA.cx) * fb.endFrac, eby = cellA.cy + (cellB.cy - cellA.cy) * fb.endFrac;
+                var emx = (eax + ebx) / 2 + fb.offsetX, emy = (eay + eby) / 2 + fb.offsetY;
+                var segs = [[eax,eay,emx,emy],[emx,emy,ebx,eby]];
+                for (var esi = 0; esi < 2; esi++) { var es = segs[esi], est = Math.max(Math.abs(Math.round(es[2])-Math.round(es[0])),Math.abs(Math.round(es[3])-Math.round(es[1])))||1;
+                    for (var esj = 0; esj <= est; esj++) { var epx = Math.round(es[0]+(es[2]-es[0])*esj/est), epy = Math.round(es[1]+(es[3]-es[1])*esj/est); if (inB(epx,epy)) ecmPx[epx+','+epy] = fb.color; } }
             }
 
             var junctionPx = {};
@@ -2412,21 +2392,9 @@
             var signalPx = {};
             var tSig = Date.now();
             for (var si = 0; si < signals.length; si++) {
-                var sig = signals[si];
-                var fromC = sig.fromCell === 'A' ? cellA : cellB;
-                var toC = sig.toCell === 'A' ? cellA : cellB;
-                var progress = ((tSig * sig.speed) + sig.phase) % 1.0;
-                var sx = fromC.cx + (toC.cx - fromC.cx) * progress;
-                var sy = fromC.cy + (toC.cy - fromC.cy) * progress;
-                var spx = Math.round(sx);
-                var spy = Math.round(sy);
-                var dFromA = Math.sqrt((spx - cellA.cx) * (spx - cellA.cx) + (spy - cellA.cy) * (spy - cellA.cy));
-                var dFromB = Math.sqrt((spx - cellB.cx) * (spx - cellB.cx) + (spy - cellB.cy) * (spy - cellB.cy));
-                if (dFromA > dA.maxR + 0.5 && dFromB > dB.maxR + 0.5) {
-                    if (spx >= 0 && spx < size && spy >= 0 && spy < size) {
-                        signalPx[spx + ',' + spy] = sig.color;
-                    }
-                }
+                var sig = signals[si], fC = sig.fromCell === 'A' ? cellA : cellB, tC = sig.toCell === 'A' ? cellA : cellB;
+                var pr = ((tSig * sig.speed) + sig.phase) % 1.0, spx = Math.round(fC.cx + (tC.cx - fC.cx) * pr), spy = Math.round(fC.cy + (tC.cy - fC.cy) * pr);
+                if (Math.sqrt((spx-cellA.cx)*(spx-cellA.cx)+(spy-cellA.cy)*(spy-cellA.cy)) > dA.maxR + 0.5 && Math.sqrt((spx-cellB.cx)*(spx-cellB.cx)+(spy-cellB.cy)*(spy-cellB.cy)) > dB.maxR + 0.5 && inB(spx,spy)) signalPx[spx+','+spy] = sig.color;
             }
 
             for (var y = 0; y < size; y++) {
