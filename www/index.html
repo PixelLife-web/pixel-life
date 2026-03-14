@@ -53,15 +53,17 @@
             chromatin: [
                 { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
             ],
-            // Anaphase: sister chromatids separating toward poles
+            // Telophase: chromatids arrived at poles, decondensing
             sisterChromatin: [
                 { x: 21, y: 9 }, { x: 21, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 9 },
             ],
-            // Anaphase: centrosomes at poles pulling chromatids apart
+            // Telophase: centrosomes at poles, spindle disassembling
             centrosomes: [
-                { x: 25, y: 6 },
-                { x: 15, y: 14 },
+                { x: 24, y: 7 },
+                { x: 16, y: 13 },
             ],
+            // Telophase: cleavage furrow forming perpendicular to spindle axis
+            furrowProgress: 0.35,
             cilia: [],
             receptors: [
                 { angle: 0.3, color: '#33cc99' },
@@ -95,15 +97,17 @@
             chromatin: [
                 { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
             ],
-            // Anaphase: sister chromatids separating toward poles
+            // Telophase: chromatids arrived at poles, decondensing
             sisterChromatin: [
                 { x: 13, y: 21 }, { x: 13, y: 23 }, { x: 11, y: 23 }, { x: 11, y: 21 },
             ],
-            // Anaphase: centrosomes at poles pulling chromatids apart
+            // Telophase: centrosomes at poles, spindle disassembling
             centrosomes: [
-                { x: 17, y: 18 },
-                { x: 7, y: 26 },
+                { x: 16, y: 19 },
+                { x: 8, y: 25 },
             ],
+            // Telophase: cleavage furrow forming perpendicular to spindle axis
+            furrowProgress: 0.35,
             cilia: [],
             receptors: [
                 { angle: 3.5, color: '#3399cc' },
@@ -178,16 +182,16 @@
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
-            // Anaphase: cells elongate along spindle axis
+            // Telophase: cells still elongated, cleavage furrow pinching
             var growthPulse = (1 + Math.sin(tGrowth * 2 * Math.PI)) * 0.5; // 0 to 1
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
-            // Anaphase elongation: stretch radius along spindle axis
-            var elongation = 0.8;
+            // Telophase: still elongated but furrow constricting
+            var elongation = 0.9;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            // Anaphase: nucleus still dissolved
-            var nucSwell = 0.0;
-            var nucR = cell.nucleusRadius + nucleusPulse * 0.05;
+            // Telophase: nuclear envelopes reforming around chromatid clusters
+            var nucSwell = 0.3;
+            var nucR = cell.nucleusRadius * 0.7 + nucleusPulse * 0.05;
 
             // Compute mitochondria
             var mitoPixels = {};
@@ -209,103 +213,115 @@
                 mitoPixels[pts[2].x + ',' + pts[2].y] = m.bodyColor;
             }
 
-            // Nucleus envelope pixels
+            // Telophase: two small nuclear envelopes reforming around each chromatid cluster
             var envPixels = {};
             var nucPixels = {};
             var envPulse = Math.sin(t * 2 * Math.PI * 1.3) * 0.1;
-            var envR = nucR + envPulse;
-            // Anaphase: nuclear envelope still dissolved, will reform in telophase
-
-            // Anaphase: sister chromatids separate toward opposite poles
-            var chrPixels = {};
-            var plateCx = cell.cx;
-            var plateCy = cell.cy;
-            // Spindle axis direction
-            var axisNx = 0, axisNy = 0;
-            var perpX = 0, perpY = 0;
+            var envR = nucR * 0.8 + envPulse;
+            // Reform envelope around pole 0 chromatids
             if (cell.centrosomes && cell.centrosomes.length >= 2) {
-                plateCx = (cell.centrosomes[0].x + cell.centrosomes[1].x) / 2;
-                plateCy = (cell.centrosomes[0].y + cell.centrosomes[1].y) / 2;
-                var axisX = cell.centrosomes[1].x - cell.centrosomes[0].x;
-                var axisY = cell.centrosomes[1].y - cell.centrosomes[0].y;
-                var axisLen = Math.sqrt(axisX * axisX + axisY * axisY);
-                axisNx = axisX / axisLen;
-                axisNy = axisY / axisLen;
-                perpX = -axisY / axisLen;
-                perpY = axisX / axisLen;
+                var pole0 = cell.centrosomes[0];
+                var pole1 = cell.centrosomes[1];
+                // Envelope forms at each pole where chromatids gathered
+                var reformR = envR + nucSwell;
+                for (var ea = 0; ea < 16; ea++) {
+                    var eAngle = ea * 2 * Math.PI / 16;
+                    var ex0 = Math.round(pole0.x + Math.cos(eAngle) * reformR * 0.6);
+                    var ey0 = Math.round(pole0.y + Math.sin(eAngle) * reformR * 0.6);
+                    var ex1 = Math.round(pole1.x + Math.cos(eAngle) * reformR * 0.6);
+                    var ey1 = Math.round(pole1.y + Math.sin(eAngle) * reformR * 0.6);
+                    if (ex0 >= 0 && ex0 < size && ey0 >= 0 && ey0 < size) {
+                        envPixels[ex0 + ',' + ey0] = cell.nucleusEdge;
+                    }
+                    if (ex1 >= 0 && ex1 < size && ey1 >= 0 && ey1 < size) {
+                        envPixels[ex1 + ',' + ey1] = cell.nucleusEdge;
+                    }
+                }
+                // Interior glow of reforming nuclei
+                nucPixels[pole0.x + ',' + pole0.y] = cell.nucleolusColor;
+                nucPixels[pole1.x + ',' + pole1.y] = cell.nucleolusColor;
             }
-            // Anaphase separation: chromatids pulled toward pole 0
-            var separationDist = 1.8 + Math.sin(tChromatin * 0.5) * 0.3;
-            for (var chi = 0; chi < cell.chromatin.length; chi++) {
-                var spread = (chi - (cell.chromatin.length - 1) / 2) * 0.7;
-                // Move toward centrosome 0 (pole A)
-                var driftX = Math.round(plateCx - axisNx * separationDist + perpX * spread);
-                var driftY = Math.round(plateCy - axisNy * separationDist + perpY * spread);
-                var cPulse = Math.sin(tChromatin + chi * 0.8);
-                chrPixels[driftX + ',' + driftY] = cPulse > 0 ? '#ee7744' : '#dd6633';
-            }
-            // Sister chromatids pulled toward pole 1 (opposite direction)
-            if (cell.sisterChromatin) {
-                for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
-                    var spread2 = (rci - (cell.sisterChromatin.length - 1) / 2) * 0.7;
-                    // Move toward centrosome 1 (pole B)
-                    var sDriftX = Math.round(plateCx + axisNx * separationDist + perpX * spread2);
-                    var sDriftY = Math.round(plateCy + axisNy * separationDist + perpY * spread2);
-                    var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
-                    chrPixels[sDriftX + ',' + sDriftY] = rcPulse > -0.2 ? '#ffdd55' : '#eebb44';
+
+            // Telophase: chromatids at poles, decondensing into diffuse chromatin
+            var chrPixels = {};
+            if (cell.centrosomes && cell.centrosomes.length >= 2) {
+                var pole0 = cell.centrosomes[0];
+                var pole1 = cell.centrosomes[1];
+                // Chromatids cluster tightly around pole 0, gently pulsing as they decondense
+                for (var chi = 0; chi < cell.chromatin.length; chi++) {
+                    var decondenseR = 0.6 + Math.sin(tChromatin + chi * 1.2) * 0.3;
+                    var decAngle = chi * 2 * Math.PI / cell.chromatin.length + tChromatin * 0.2;
+                    var driftX = Math.round(pole0.x + Math.cos(decAngle) * decondenseR);
+                    var driftY = Math.round(pole0.y + Math.sin(decAngle) * decondenseR);
+                    var cPulse = Math.sin(tChromatin + chi * 0.8);
+                    chrPixels[driftX + ',' + driftY] = cPulse > 0 ? '#dd8855' : '#cc7744';
+                }
+                // Sister chromatids decondensing around pole 1
+                if (cell.sisterChromatin) {
+                    for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
+                        var decR2 = 0.6 + Math.sin(tChromatin + rci * 1.2 + 1.0) * 0.3;
+                        var decAngle2 = rci * 2 * Math.PI / cell.sisterChromatin.length + tChromatin * 0.2 + 0.5;
+                        var sDriftX = Math.round(pole1.x + Math.cos(decAngle2) * decR2);
+                        var sDriftY = Math.round(pole1.y + Math.sin(decAngle2) * decR2);
+                        var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
+                        chrPixels[sDriftX + ',' + sDriftY] = rcPulse > -0.2 ? '#eebb66' : '#ddaa55';
+                    }
                 }
             }
 
-            // Centrosomes: anaphase — at poles, spindle shortening, chromatids being pulled
+            // Telophase: centrosomes still at poles, spindle disassembling (fading)
             var centPixels = {};
+            // Cleavage furrow pixels
+            var furrowPixels = {};
             if (cell.centrosomes) {
                 var tCent = (t * 8000 / 3000) % 1.0;
                 for (var csi = 0; csi < cell.centrosomes.length; csi++) {
                     var cs = cell.centrosomes[csi];
                     var centPulse = Math.sin(tCent * 2 * Math.PI + csi * Math.PI);
-                    centPixels[cs.x + ',' + cs.y] = centPulse > 0 ? '#ffee66' : '#eedd44';
-                    // Prominent aster microtubules (4 rays, longer reach)
-                    for (var ai = 0; ai < 4; ai++) {
-                        var asterAngle = tCent * 2 * Math.PI + csi * 1.5 + ai * 1.57;
-                        for (var al = 1; al <= 2; al++) {
-                            var astX = Math.round(cs.x + Math.cos(asterAngle) * al);
-                            var astY = Math.round(cs.y + Math.sin(asterAngle) * al);
-                            if (astX >= 0 && astX < size && astY >= 0 && astY < size) {
-                                centPixels[astX + ',' + astY] = al === 1 ? '#ddcc44' : '#ccbb33';
-                            }
+                    centPixels[cs.x + ',' + cs.y] = centPulse > 0 ? '#eedd55' : '#ddcc44';
+                    // Reduced asters — spindle dismantling
+                    for (var ai = 0; ai < 3; ai++) {
+                        var asterAngle = tCent * 2 * Math.PI + csi * 1.5 + ai * 2.09;
+                        var astX = Math.round(cs.x + Math.cos(asterAngle));
+                        var astY = Math.round(cs.y + Math.sin(asterAngle));
+                        if (astX >= 0 && astX < size && astY >= 0 && astY < size) {
+                            centPixels[astX + ',' + astY] = '#ccbb33';
                         }
                     }
                 }
-                // Full spindle apparatus: solid fibers between centrosomes
+                // Fading spindle remnant — only partial fibers remain
                 if (cell.centrosomes.length >= 2) {
                     var c0 = cell.centrosomes[0];
                     var c1 = cell.centrosomes[1];
                     var spindleSteps = Math.max(Math.abs(c1.x - c0.x), Math.abs(c1.y - c0.y));
-                    // Main spindle fiber — always visible now
-                    for (var spi = 1; spi < spindleSteps; spi++) {
+                    // Only middle portion of spindle visible (midbody forming)
+                    var midStart = Math.floor(spindleSteps * 0.35);
+                    var midEnd = Math.ceil(spindleSteps * 0.65);
+                    for (var spi = midStart; spi <= midEnd; spi++) {
                         var spFrac = spi / spindleSteps;
                         var spX = Math.round(c0.x + (c1.x - c0.x) * spFrac);
                         var spY = Math.round(c0.y + (c1.y - c0.y) * spFrac);
                         if (spX >= 0 && spX < size && spY >= 0 && spY < size) {
-                            centPixels[spX + ',' + spY] = '#bbaa33';
+                            centPixels[spX + ',' + spY] = '#aa9933';
                         }
                     }
-                    // Kinetochore fibers: from each centrosome toward the metaphase plate center
-                    var kPulse = Math.sin(tCent * 2 * Math.PI * 1.5);
-                    if (kPulse > -0.5) {
-                        // Offset spindle fibers for the bundle look
-                        for (var offset = -1; offset <= 1; offset += 2) {
-                            for (var spi2 = 1; spi2 < spindleSteps - 1; spi2++) {
-                                var spFrac2 = spi2 / spindleSteps;
-                                // Curve outward in the middle for barrel shape
-                                var curveAmt = Math.sin(spFrac2 * Math.PI) * offset * 0.8;
-                                var perpX = -(c1.y - c0.y) / spindleSteps;
-                                var perpY = (c1.x - c0.x) / spindleSteps;
-                                var kfX = Math.round(c0.x + (c1.x - c0.x) * spFrac2 + perpX * curveAmt * spindleSteps);
-                                var kfY = Math.round(c0.y + (c1.y - c0.y) * spFrac2 + perpY * curveAmt * spindleSteps);
-                                if (kfX >= 0 && kfX < size && kfY >= 0 && kfY < size) {
-                                    centPixels[kfX + ',' + kfY] = '#aa9922';
-                                }
+                    // Cleavage furrow: actin ring constricting perpendicular to spindle axis
+                    var midX = (c0.x + c1.x) / 2;
+                    var midY = (c0.y + c1.y) / 2;
+                    var fAxisX = c1.x - c0.x;
+                    var fAxisY = c1.y - c0.y;
+                    var fAxisLen = Math.sqrt(fAxisX * fAxisX + fAxisY * fAxisY);
+                    if (fAxisLen > 0) {
+                        // Perpendicular to spindle
+                        var fPerpX = -fAxisY / fAxisLen;
+                        var fPerpY = fAxisX / fAxisLen;
+                        var furrowLen = cell.furrowProgress ? cell.furrowProgress * maxR : 0;
+                        // Contractile ring — two dots on each side of the cell equator
+                        for (var fi = -2; fi <= 2; fi++) {
+                            var fx = Math.round(midX + fPerpX * fi * furrowLen);
+                            var fy = Math.round(midY + fPerpY * fi * furrowLen);
+                            if (fx >= 0 && fx < size && fy >= 0 && fy < size) {
+                                furrowPixels[fx + ',' + fy] = '#995533';
                             }
                         }
                     }
@@ -390,7 +406,7 @@
                 nucPixels: nucPixels, chrPixels: chrPixels,
                 cilPixels: cilPixels, recPixels: recPixels,
                 vesPixels: vesPixels, atpPixels: atpPixels,
-                centPixels: centPixels
+                centPixels: centPixels, furrowPixels: furrowPixels
             };
         }
 
@@ -497,8 +513,10 @@
 
                         if (effDist <= dd.maxR) {
                             inAnyCell = true;
-                            // Layer priority: centrosomes > vesicles > atp > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
-                            if (dd.centPixels[key]) {
+                            // Layer priority: furrow > centrosomes > vesicles > atp > envPixels > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
+                            if (dd.furrowPixels && dd.furrowPixels[key]) {
+                                color = dd.furrowPixels[key];
+                            } else if (dd.centPixels[key]) {
                                 color = dd.centPixels[key];
                             } else if (dd.vesPixels[key]) {
                                 color = dd.vesPixels[key];
@@ -529,8 +547,8 @@
                                 var ndy2 = y - cc.nucleusCy;
                                 var ndist = Math.sqrt(ndx2 * ndx2 + ndy2 * ndy2);
                                 if (ndist <= dd.nucR) {
-                                    // Anaphase: nuclear region still merged with cytoplasm
-                                    color = '#6e2d00';
+                                    // Telophase: nuclear region beginning to reform
+                                    color = '#7a3500';
                                 } else {
                                     color = cc.cytoColor;
                                 }
