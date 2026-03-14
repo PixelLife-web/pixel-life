@@ -427,6 +427,21 @@
             });
         }
 
+        // Cyclin-CDK complexes: molecular switches accumulating during S phase
+        // Cyclin A builds up to drive cell into G2; visible as glowing particles in cytoplasm
+        cellA.cyclins = [
+            { orbitR: 2.8, baseAngle: 0.7, speed: 0.9, color: '#44ddaa' },
+            { orbitR: 3.6, baseAngle: 2.2, speed: -0.7, color: '#33ccbb' },
+            { orbitR: 1.8, baseAngle: 4.1, speed: 1.1, color: '#44ddaa' },
+            { orbitR: 4.0, baseAngle: 5.5, speed: -0.8, color: '#33ccbb' },
+        ];
+        cellB.cyclins = [
+            { orbitR: 2.8, baseAngle: 1.3, speed: -0.85, color: '#44ddaa' },
+            { orbitR: 3.6, baseAngle: 3.8, speed: 0.75, color: '#33ccbb' },
+            { orbitR: 1.8, baseAngle: 5.6, speed: -1.0, color: '#44ddaa' },
+            { orbitR: 4.0, baseAngle: 0.9, speed: 0.65, color: '#33ccbb' },
+        ];
+
         // S phase growth: cells slowly grow as they absorb nutrients and replicate DNA
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -993,6 +1008,29 @@
                 }
             }
 
+            // Cyclin-CDK particles: accumulating in cytoplasm during S phase
+            var cyclinPixels = {};
+            if (cell.cyclins && cell.separated) {
+                var tCyclin = (t * 8000 / 5500) % 1.0;
+                for (var cli = 0; cli < cell.cyclins.length; cli++) {
+                    var cyc = cell.cyclins[cli];
+                    var cycAngle = cyc.baseAngle + cyc.speed * tOrbit;
+                    var cx2 = Math.round(cell.cx + Math.cos(cycAngle) * cyc.orbitR);
+                    var cy2 = Math.round(cell.cy + Math.sin(cycAngle) * cyc.orbitR);
+                    // Cyclins accumulate: they pulse brighter as concentration rises
+                    var cycPulse = Math.sin(tCyclin * 2 * Math.PI + cli * 1.4);
+                    // Stay within cell and outside nucleus
+                    var cdx2 = cx2 - cell.cx;
+                    var cdy2 = cy2 - cell.cy;
+                    var cDist = Math.sqrt(cdx2 * cdx2 + cdy2 * cdy2);
+                    if (cDist < maxR - 1.0 && cDist > nucR + 1.0) {
+                        if (cx2 >= 0 && cx2 < size && cy2 >= 0 && cy2 < size) {
+                            cyclinPixels[cx2 + ',' + cy2] = cycPulse > 0.2 ? '#55eebb' : cyc.color;
+                        }
+                    }
+                }
+            }
+
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
             if (cell.filopodia) {
@@ -1026,7 +1064,7 @@
                 mtPixels: mtPixels, ifPixels: ifPixels,
                 porePixels: porePixels, secVesPixels: secVesPixels,
                 endoPixels: endoPixels, replPixels: replPixels,
-                genomePixels: genomePixels
+                genomePixels: genomePixels, cyclinPixels: cyclinPixels
             };
         }
 
@@ -1303,6 +1341,8 @@
                                 color = dd.endoPixels[key];
                             } else if (dd.peroxPixels && dd.peroxPixels[key]) {
                                 color = dd.peroxPixels[key];
+                            } else if (dd.cyclinPixels && dd.cyclinPixels[key]) {
+                                color = dd.cyclinPixels[key];
                             } else if (dd.mitoPixels[key]) {
                                 color = dd.mitoPixels[key];
                             } else if (dd.nucPixels[key]) {
