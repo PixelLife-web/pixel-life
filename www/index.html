@@ -162,14 +162,25 @@
             { x: 15, y: 15, color: '#55aa88' },
         ];
 
-        // Abscission scar: remnant of the midbody left in the medium after separation
-        var abscissionScar = { x: 16, y: 16, color: '#aa9933' };
+        // Abscission scar: fading remnant — phagocytes clearing debris
+        var abscissionScar = { x: 16, y: 16, color: '#887733' };
 
-        // Midbody remnants (Flemming bodies): degrading via autophagy after release
-        // Dimmer and drifting further from division sites as they break down
+        // Midbody remnants (Flemming bodies): nearly degraded by autophagy
+        // Dimmer, breaking down into recyclable components
         var midbodyRemnants = [
-            { x: 23, y: 5, color: '#668899', glowColor: '#7799aa' },
-            { x: 8, y: 27, color: '#668899', glowColor: '#7799aa' },
+            { x: 23, y: 5, color: '#556677', glowColor: '#667788' },
+            { x: 8, y: 27, color: '#556677', glowColor: '#667788' },
+        ];
+
+        // Growth factors: autocrine/paracrine EGFR-like signaling in G1
+        // Each cell secretes GFs that activate MAPK/ERK cascade toward restriction point
+        cellA.growthFactors = [
+            { secretAngle: 0.8, targetAngle: 2.5, speed: 0.3, phase: 0, color: '#55ff99' },
+            { secretAngle: 4.2, targetAngle: 0.3, speed: 0.25, phase: 0.5, color: '#55ff99' },
+        ];
+        cellB.growthFactors = [
+            { secretAngle: 3.8, targetAngle: 5.0, speed: 0.28, phase: 0.2, color: '#55ff99' },
+            { secretAngle: 1.2, targetAngle: 3.5, speed: 0.32, phase: 0.7, color: '#55ff99' },
         ];
 
         // Intercellular signaling: daughter cells communicate via chemical signals
@@ -487,70 +498,18 @@
             { orbitR: 2.0, baseAngle: 0.7, speed: 0.49, color: '#dd88aa' },
         ];
 
-        // ABSCISSION: ESCRT-III spirals sever the intercellular bridge
-        // Envelopes sealed, NPCs functional, chromosomes nearly decondensed
-        // Furrow at ~85% ingression — ESCRT-III cut the membrane bridge
-        // Midbody released as Flemming body into extracellular space
-        cellA.prophase = {
-            condensation: 0.2, // chromosomes nearly fully decondensed
-            pole1Target: { x: 18, y: 6 },
-            pole2Target: { x: 24, y: 12 },
-            prometaphase: true,
-            metaphase: true,
-            anaphase: true,
-            lateAnaphase: true,
-            telophase: true,
-            abscission: true, // ESCRT-III has severed the intercellular bridge
-            spindleForming: true,
-            asterCount: 3,
-            laminPhospho: 0.02, // lamins fully dephosphorylated
-            npcDisassembly: 0.02, // NPCs fully functional
-            envelopeVesicles: false,
-            congressProgress: 1.0,
-            sacSatisfaction: 1.0,
-            auroraBActive: false,
-            furrowInitiation: 0.85, // furrow fully closed, bridge severed
-            midbodyForming: true,
-        };
-        cellB.prophase = {
-            condensation: 0.2,
-            pole1Target: { x: 8, y: 20 },
-            pole2Target: { x: 14, y: 26 },
-            prometaphase: true,
-            metaphase: true,
-            anaphase: true,
-            lateAnaphase: true,
-            telophase: true,
-            abscission: true,
-            spindleForming: true,
-            asterCount: 3,
-            laminPhospho: 0.02,
-            npcDisassembly: 0.02,
-            envelopeVesicles: false,
-            congressProgress: 1.0,
-            sacSatisfaction: 1.0,
-            auroraBActive: false,
-            furrowInitiation: 0.85,
-            midbodyForming: true,
-        };
+        // G1 INTERPHASE: mitosis complete, daughters are independent cells
+        // Nuclear envelopes fully reformed, chromatin decondensed, spindle disassembled
+        // Cells enter G1 growth phase — accumulating mass before next S phase
+        cellA.prophase = null;
+        cellB.prophase = null;
 
-        // Condensin complexes: ring-shaped SMC proteins loading onto chromosomes
-        // They actively compact chromatin by extruding loops
-        cellA.condensins = [
-            { baseAngle: 0.8, speed: 0.15, color: '#ee8855' },
-            { baseAngle: 2.4, speed: -0.12, color: '#dd7744' },
-            { baseAngle: 4.0, speed: 0.18, color: '#ee8855' },
-            { baseAngle: 5.5, speed: -0.14, color: '#dd7744' },
-        ];
-        cellB.condensins = [
-            { baseAngle: 1.2, speed: -0.16, color: '#ee8855' },
-            { baseAngle: 3.0, speed: 0.13, color: '#dd7744' },
-            { baseAngle: 4.6, speed: -0.17, color: '#ee8855' },
-            { baseAngle: 6.0, speed: 0.11, color: '#dd7744' },
-        ];
+        // Condensins: unloaded from chromatin in G1 — no longer needed
+        cellA.condensins = [];
+        cellB.condensins = [];
 
-        // Abscission: envelopes sealed, chromosomes decondensing, midbody forming
-        var growthRate = 0.8;
+        // G1 interphase: daughters growing, accumulating biomass for next cycle
+        var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -1575,6 +1534,25 @@
                 }
             }
 
+            // Growth factors: secreted from membrane, arc outward then curve back to receptors
+            var gfPixels = {};
+            if (cell.growthFactors && cell.separated) {
+                var tGF = (t * 8000 / 9000) % 1.0;
+                for (var gfi = 0; gfi < cell.growthFactors.length; gfi++) {
+                    var gf = cell.growthFactors[gfi];
+                    var gfProgress = (tGF * gf.speed + gf.phase) % 1.0;
+                    // Arc outward from secretion site then curve back to receptor
+                    var gfOutR = maxR + gfProgress * 2.5 * (1 - gfProgress); // parabolic arc
+                    var gfAngle = gf.secretAngle + gfProgress * (gf.targetAngle - gf.secretAngle);
+                    var gfX = Math.round(cell.cx + Math.cos(gfAngle) * (maxR + gfOutR * 0.8));
+                    var gfY = Math.round(cell.cy + Math.sin(gfAngle) * (maxR + gfOutR * 0.8));
+                    if (gfX >= 0 && gfX < size && gfY >= 0 && gfY < size) {
+                        var gfPulse = Math.sin(tGF * 2 * Math.PI + gfi * 2.0);
+                        gfPixels[gfX + ',' + gfY] = gfPulse > 0 ? '#88ffbb' : gf.color;
+                    }
+                }
+            }
+
             // (Wee1 degraded — consolidated at abscission)
 
             // PP1/PP2A phosphatases: dephosphorylation wave sweeping through the cell
@@ -1781,7 +1759,8 @@
                 e2fPixels: e2fPixels,
                 cycAPixels: cycAPixels,
                 cdc25Pixels: cdc25Pixels,
-                phosphPixels: phosphPixels
+                phosphPixels: phosphPixels,
+                gfPixels: gfPixels
             };
         }
 
@@ -2145,6 +2124,13 @@
                         for (var ci2 = 0; ci2 < cells.length && !drawn; ci2++) {
                             if (cells[ci2].d.filoPixels && cells[ci2].d.filoPixels[key]) {
                                 color = cells[ci2].d.filoPixels[key];
+                                drawn = true;
+                            }
+                        }
+                        // Growth factor particles arcing outside cells
+                        for (var ci3 = 0; ci3 < cells.length && !drawn; ci3++) {
+                            if (cells[ci3].d.gfPixels && cells[ci3].d.gfPixels[key]) {
+                                color = cells[ci3].d.gfPixels[key];
                                 drawn = true;
                             }
                         }
