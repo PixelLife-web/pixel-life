@@ -493,13 +493,14 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // LATE TELOPHASE: envelopes nearly sealed, ESCRT-III spirals at midbody, furrow nearing closure
+        // ABSCISSION: ESCRT-III spirals sever the intercellular bridge, cytokinesis completes
+        // Each daughter cell divides into two granddaughter cells
         cellA.prophase = {
             condensation: 0.3, laminPhospho: 0.2, npcDisassembly: 0.25,
             envelopeVesicles: true, asterCount: 12, spindleForming: true,
             prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
-            telophase: true, furrowInitiation: 0.65, midbodyForming: true,
-            escrtRecruiting: true,
+            telophase: true, furrowInitiation: 0.85, midbodyForming: true,
+            escrtRecruiting: true, abscission: true,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
             pole1Target: { x: 18, y: 6 }, pole2Target: { x: 24, y: 12 },
         };
@@ -507,8 +508,8 @@
             condensation: 0.3, laminPhospho: 0.2, npcDisassembly: 0.25,
             envelopeVesicles: true, asterCount: 12, spindleForming: true,
             prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
-            telophase: true, furrowInitiation: 0.65, midbodyForming: true,
-            escrtRecruiting: true,
+            telophase: true, furrowInitiation: 0.85, midbodyForming: true,
+            escrtRecruiting: true, abscission: true,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
             pole1Target: { x: 8, y: 20 }, pole2Target: { x: 14, y: 26 },
         };
@@ -557,7 +558,8 @@
 
         // Wee1: fully degraded (consolidated)
 
-        // LATE TELOPHASE: ESCRT-III spirals at midbody, envelopes nearly sealed, CDK1 gone
+        // ABSCISSION: ESCRT-III spirals constrict and sever the intercellular bridge
+        // Vps4 ATPase powers membrane scission — four granddaughter cells emerge
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -570,7 +572,7 @@
             // Cytokinesis constriction: cell pinches at equator perpendicular to spindle
             var cytoConstriction = 0;
             if (cell.separated && cell.prophase && cell.prophase.telophase) {
-                cytoConstriction = cell.prophase.abscission ? 0.85 : (cell.prophase.escrtRecruiting ? 0.78 : (cell.prophase.midbodyForming ? 0.70 : 0.55)); // ESCRT-III: bridge thinning toward abscission
+                cytoConstriction = cell.prophase.abscission ? 0.92 : (cell.prophase.escrtRecruiting ? 0.78 : (cell.prophase.midbodyForming ? 0.70 : 0.55)); // Abscission: bridge nearly severed
             }
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
@@ -980,6 +982,29 @@
                             if (flankX >= 0 && flankX < size && flankY >= 0 && flankY < size) {
                                 var flankPulse = Math.sin(tMidbody * 2 + mbi * 1.3);
                                 centPixels[flankX + ',' + flankY] = flankPulse > 0 ? '#99aa66' : '#889955';
+                            }
+                        }
+                        // ESCRT-III ABSCISSION SPIRAL: constricting filament ring severs the bridge
+                        if (cell.prophase.abscission) {
+                            var escrtSpiral = 6; // number of ESCRT-III subunits in the spiral
+                            var escrtBaseR = 0.4 + Math.sin(tMidbody * 0.8) * 0.15; // constricting radius
+                            var spindleDir = Math.atan2(p2y - p1y, p2x - p1x);
+                            for (var ei = 0; ei < escrtSpiral; ei++) {
+                                var escAngle = ei * 2 * Math.PI / escrtSpiral + tMidbody * 1.2;
+                                // Spiral offset along spindle axis — ESCRT-III forms a helix
+                                var helixOff = (ei - escrtSpiral / 2) * 0.25;
+                                var esx = Math.round(midX2 + Math.cos(spindleDir) * helixOff + Math.cos(escAngle) * escrtBaseR);
+                                var esy = Math.round(midY2 + Math.sin(spindleDir) * helixOff + Math.sin(escAngle) * escrtBaseR);
+                                if (esx >= 0 && esx < size && esy >= 0 && esy < size) {
+                                    var escPulse = Math.sin(tMidbody * 2.5 + ei * 1.1);
+                                    // Bright cyan-white: ESCRT-III Vps4 ATPase active, severing membrane
+                                    centPixels[esx + ',' + esy] = escPulse > 0.3 ? '#ccffff' : '#88ddee';
+                                }
+                            }
+                            // Severing flash at bridge center — membrane scission event
+                            var severPulse = Math.sin(tMidbody * 3);
+                            if (severPulse > 0.6) {
+                                centPixels[mbCoreX + ',' + mbCoreY] = '#ffffff'; // white flash: cut!
                             }
                         }
                     }
