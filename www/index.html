@@ -2042,72 +2042,39 @@
 
             var tMeiss = (now % 29000) / 29000;
             var meissnerNeurons = [
-                {x:22,y:19,type:'ACh',pair:1},{x:25,y:20,type:'VIP',pair:1},
-                {x:16,y:22,type:'ACh',pair:2},{x:14,y:24,type:'VIP',pair:2},
-                {x:20,y:27,type:'ACh',pair:3},{x:23,y:26,type:'VIP',pair:3},
+                {x:22,y:19,t:'A',p:1},{x:25,y:20,t:'V',p:1},{x:16,y:22,t:'A',p:2},
+                {x:14,y:24,t:'V',p:2},{x:20,y:27,t:'A',p:3},{x:23,y:26,t:'V',p:3},
             ];
             for (var mni = 0; mni < meissnerNeurons.length; mni++) {
-                var mn = meissnerNeurons[mni];
-                var mnPh = tMeiss * 2 * Math.PI + mni * 1.05;
-                var mnP = Math.sin(mnPh);
-                var isACh = mn.type === 'ACh';
+                var mn = meissnerNeurons[mni], mnPh = tMeiss * 2 * Math.PI + mni * 1.05;
+                var mnP = Math.sin(mnPh), isACh = mn.t === 'A';
                 if (inB(mn.x, mn.y)) set(mn.x, mn.y, mnP > 0 ? (isACh ? '#cc8833' : '#8833cc') : (isACh ? '#aa6622' : '#662299'));
-                var nisslA = mnPh * 0.2 + mni * 1.3;
-                var nisslX = Math.round(mn.x + Math.cos(nisslA) * 0.7);
-                var nisslY = Math.round(mn.y + Math.sin(nisslA) * 0.7);
-                if (inB(nisslX, nisslY) && Math.sin(mnPh * 1.8 + mni * 2.0) > -0.3)
-                    set(nisslX, nisslY, isACh ? '#ddaa55' : '#aa55dd');
+                var nisslX = Math.round(mn.x + Math.cos(mnPh * 0.2 + mni * 1.3) * 0.7);
+                var nisslY = Math.round(mn.y + Math.sin(mnPh * 0.2 + mni * 1.3) * 0.7);
+                if (inB(nisslX, nisslY) && Math.sin(mnPh * 1.8 + mni * 2.0) > -0.3) set(nisslX, nisslY, isACh ? '#ddaa55' : '#aa55dd');
                 for (var mnj = 0; mnj < meissnerNeurons.length; mnj++) {
-                    if (mnj !== mni && meissnerNeurons[mnj].pair === mn.pair) {
-                        var mn2 = meissnerNeurons[mnj];
-                        var midX = Math.round((mn.x + mn2.x) / 2), midY = Math.round((mn.y + mn2.y) / 2);
-                        if (inB(midX, midY) && mnP > -0.2) {
-                            var axPulse = Math.sin(mnPh * 2.5 + mni * 0.8);
-                            set(midX, midY, axPulse > 0 ? '#eecc88' : '#bbaa66');
-                        }
+                    if (mnj !== mni && meissnerNeurons[mnj].p === mn.p) {
+                        var mn2 = meissnerNeurons[mnj], midX = Math.round((mn.x + mn2.x) / 2), midY = Math.round((mn.y + mn2.y) / 2);
+                        if (inB(midX, midY) && mnP > -0.2) set(midX, midY, Math.sin(mnPh * 2.5 + mni * 0.8) > 0 ? '#eecc88' : '#bbaa66');
                         break;
                     }
                 }
-                if (isACh && mnP > 0.1) {
-                    var achA = Math.atan2(16 - mn.y, 16 - mn.x);
-                    var achPh = (tMeiss * 2.4 + mni * 0.35) % 1.0;
-                    if (achPh < 0.5) {
-                        var achR = 1.2 + achPh * 3.0;
-                        var achX = Math.round(mn.x + Math.cos(achA) * achR);
-                        var achY = Math.round(mn.y + Math.sin(achA) * achR);
-                        if (inB(achX, achY)) set(achX, achY, achPh < 0.2 ? '#ffdd44' : '#eebb33');
-                    }
-                    if (mnP > 0.5) {
-                        var m3R = 2.5 + mnP * 0.5;
-                        var m3X = Math.round(mn.x + Math.cos(achA) * m3R);
-                        var m3Y = Math.round(mn.y + Math.sin(achA) * m3R);
-                        if (inB(m3X, m3Y)) set(m3X, m3Y, '#ffee77');
-                    }
+                var ntA = isACh ? Math.atan2(16 - mn.y, 16 - mn.x) : Math.atan2(mn.y - 16, mn.x - 16);
+                var ntPh = (tMeiss * (isACh ? 2.4 : 1.8) + mni * (isACh ? 0.35 : 0.4)) % 1.0;
+                if (mnP > (isACh ? 0.1 : 0.0) && ntPh < (isACh ? 0.5 : 0.55)) {
+                    var ntR3 = (isACh ? 1.2 : 1.0) + ntPh * (isACh ? 3.0 : 2.8);
+                    set(Math.round(mn.x + Math.cos(ntA) * ntR3), Math.round(mn.y + Math.sin(ntA) * ntR3),
+                        isACh ? (ntPh < 0.2 ? '#ffdd44' : '#eebb33') : (ntPh < 0.25 ? '#bb66ff' : '#9944dd'));
                 }
-                if (!isACh && mnP > 0.0) {
-                    var vipA = Math.atan2(mn.y - 16, mn.x - 16);
-                    var vipPh = (tMeiss * 1.8 + mni * 0.4) % 1.0;
-                    if (vipPh < 0.55) {
-                        var vipR = 1.0 + vipPh * 2.8;
-                        var vipX = Math.round(mn.x + Math.cos(vipA) * vipR);
-                        var vipY = Math.round(mn.y + Math.sin(vipA) * vipR);
-                        if (inB(vipX, vipY)) set(vipX, vipY, vipPh < 0.25 ? '#bb66ff' : '#9944dd');
-                    }
-                    if (mnP > 0.4) {
-                        var campR = 2.2 + mnP * 0.4;
-                        var campX = Math.round(mn.x + Math.cos(vipA) * campR);
-                        var campY = Math.round(mn.y + Math.sin(vipA) * campR);
-                        if (inB(campX, campY)) set(campX, campY, '#dd99ff');
-                    }
+                if (mnP > (isACh ? 0.5 : 0.4)) {
+                    var secR = (isACh ? 2.5 : 2.2) + mnP * (isACh ? 0.5 : 0.4);
+                    set(Math.round(mn.x + Math.cos(ntA) * secR), Math.round(mn.y + Math.sin(ntA) * secR), isACh ? '#ffee77' : '#dd99ff');
                 }
                 if (mnP > -0.5) {
                     for (var di = 0; di < 3; di++) {
-                        var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9;
-                        var dSway = Math.sin(mnPh * 0.7 + di * 1.6) * 0.1;
-                        var dX = Math.round(mn.x + Math.cos(dA + dSway) * 1.3);
-                        var dY = Math.round(mn.y + Math.sin(dA + dSway) * 1.3);
-                        if (inB(dX, dY) && Math.sin(mnPh * 1.5 + di * 2.3) > -0.4)
-                            set(dX, dY, isACh ? '#bb9944' : '#7744aa');
+                        var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9, dSway = Math.sin(mnPh * 0.7 + di * 1.6) * 0.1;
+                        var dX = Math.round(mn.x + Math.cos(dA + dSway) * 1.3), dY = Math.round(mn.y + Math.sin(dA + dSway) * 1.3);
+                        if (inB(dX, dY) && Math.sin(mnPh * 1.5 + di * 2.3) > -0.4) set(dX, dY, isACh ? '#bb9944' : '#7744aa');
                     }
                 }
             }
@@ -2214,44 +2181,48 @@
             }
             var tMyo = (now % 23000) / 23000;
             var myenteric = [
-                {x:6,y:18,type:'E',ang:0.8},{x:8,y:15,type:'I',ang:1.6},
-                {x:5,y:22,type:'E',ang:2.4},{x:4,y:26,type:'I',ang:3.2},
-                {x:26,y:14,type:'E',ang:4.0},{x:28,y:18,type:'I',ang:4.8},
-                {x:27,y:22,type:'E',ang:5.6},{x:25,y:26,type:'I',ang:0.4},
+                {x:6,y:18,t:'E',a:0.8},{x:8,y:15,t:'I',a:1.6},{x:5,y:22,t:'E',a:2.4},{x:4,y:26,t:'I',a:3.2},
+                {x:26,y:14,t:'E',a:4.0},{x:28,y:18,t:'I',a:4.8},{x:27,y:22,t:'E',a:5.6},{x:25,y:26,t:'I',a:0.4},
             ];
             for (var myi = 0; myi < myenteric.length; myi++) {
-                var my = myenteric[myi];
-                var myPh = tMyo * 2 * Math.PI + my.ang;
-                var myP = Math.sin(myPh);
-                var isExc = my.type === 'E';
-                if (inB(my.x, my.y)) set(my.x, my.y, myP > 0 ? (isExc ? '#dd9944' : '#4499dd') : (isExc ? '#aa7733' : '#336699'));
-                var dendN = 3;
-                for (var ddi = 0; ddi < dendN; ddi++) {
+                var my = myenteric[myi], myPh = tMyo * 2 * Math.PI + my.a, myP = Math.sin(myPh), isE = my.t === 'E';
+                if (inB(my.x, my.y)) set(my.x, my.y, myP > 0 ? (isE ? '#dd9944' : '#4499dd') : (isE ? '#aa7733' : '#336699'));
+                for (var ddi = 0; ddi < 3; ddi++) {
                     var ddA = ddi * 2.09 + myPh * 0.15 + myi * 0.7;
-                    var ddX = Math.round(my.x + Math.cos(ddA) * 1.2);
-                    var ddY = Math.round(my.y + Math.sin(ddA) * 1.2);
-                    if (inB(ddX, ddY) && Math.sin(myPh * 1.3 + ddi * 2.0) > -0.3)
-                        set(ddX, ddY, isExc ? '#cc8833' : '#3388cc');
+                    var ddX = Math.round(my.x + Math.cos(ddA) * 1.2), ddY = Math.round(my.y + Math.sin(ddA) * 1.2);
+                    if (inB(ddX, ddY) && Math.sin(myPh * 1.3 + ddi * 2.0) > -0.3) set(ddX, ddY, isE ? '#cc8833' : '#3388cc');
                 }
-                var axonA = Math.atan2(16 - my.y, 16 - my.x) + (isExc ? -0.4 : 0.4);
+                var axonA2 = Math.atan2(16 - my.y, 16 - my.x) + (isE ? -0.4 : 0.4);
                 if (myP > 0.1) {
-                    var spPh = (tMyo * 3.0 + myi * 0.3) % 1.0;
-                    var spR = 1.5 + spPh * 2.5;
-                    var spX = Math.round(my.x + Math.cos(axonA) * spR);
-                    var spY = Math.round(my.y + Math.sin(axonA) * spR);
-                    if (inB(spX, spY)) set(spX, spY, isExc ? '#ffcc55' : '#55ccff');
-                    if (spPh < 0.4 && myP > 0.4) {
-                        var ntR = spR + 1.0;
-                        var ntX = Math.round(my.x + Math.cos(axonA) * ntR);
-                        var ntY = Math.round(my.y + Math.sin(axonA) * ntR);
-                        if (inB(ntX, ntY)) set(ntX, ntY, isExc ? '#ffdd88' : '#88ddff');
-                    }
+                    var spPh = (tMyo * 3.0 + myi * 0.3) % 1.0, spR = 1.5 + spPh * 2.5;
+                    set(Math.round(my.x + Math.cos(axonA2) * spR), Math.round(my.y + Math.sin(axonA2) * spR), isE ? '#ffcc55' : '#55ccff');
+                    if (spPh < 0.4 && myP > 0.4) { var ntR4 = spR + 1.0; set(Math.round(my.x + Math.cos(axonA2) * ntR4), Math.round(my.y + Math.sin(axonA2) * ntR4), isE ? '#ffdd88' : '#88ddff'); }
                 }
                 if (myi % 2 === 0 && myi + 1 < myenteric.length) {
-                    var my2 = myenteric[myi + 1];
-                    var intX = Math.round((my.x + my2.x) / 2), intY = Math.round((my.y + my2.y) / 2);
-                    var intP = Math.sin(myPh * 1.8 + myi * 0.5);
-                    if (inB(intX, intY) && intP > -0.1) set(intX, intY, intP > 0.4 ? '#eebb66' : '#aa8844');
+                    var my2 = myenteric[myi + 1], intX2 = Math.round((my.x + my2.x) / 2), intY2 = Math.round((my.y + my2.y) / 2);
+                    var intP2 = Math.sin(myPh * 1.8 + myi * 0.5);
+                    if (inB(intX2, intY2) && intP2 > -0.1) set(intX2, intY2, intP2 > 0.4 ? '#eebb66' : '#aa8844');
+                }
+            }
+            var tBMP = (now % 26000) / 26000;
+            var bmpSources = [{x:27,y:20},{x:23,y:25},{x:18,y:28},{x:12,y:28},{x:7,y:25}];
+            for (var bi2 = 0; bi2 < bmpSources.length; bi2++) {
+                var bs = bmpSources[bi2], bmpPh = tBMP * 2 * Math.PI + bi2 * 1.26;
+                var bmpP = Math.sin(bmpPh);
+                if (inB(bs.x, bs.y)) set(bs.x, bs.y, bmpP > 0 ? '#dd6688' : '#bb4466');
+                var bmpA = Math.atan2(16 - bs.y, 16 - bs.x);
+                var bmpDiffPh = (tBMP * 2.0 + bi2 * 0.22) % 1.0;
+                if (bmpDiffPh < 0.55) {
+                    var bmpDiffR = 1.0 + bmpDiffPh * 4.5;
+                    var bmpDX = Math.round(bs.x + Math.cos(bmpA) * bmpDiffR);
+                    var bmpDY = Math.round(bs.y + Math.sin(bmpA) * bmpDiffR);
+                    if (inB(bmpDX, bmpDY)) set(bmpDX, bmpDY, bmpDiffPh < 0.2 ? '#ee7799' : '#cc5577');
+                }
+                if (bmpP > 0.4) {
+                    var bmpLat = bmpA + Math.PI * 0.5;
+                    var bmpLX = Math.round(bs.x + Math.cos(bmpLat) * 1.0);
+                    var bmpLY = Math.round(bs.y + Math.sin(bmpLat) * 1.0);
+                    if (inB(bmpLX, bmpLY)) set(bmpLX, bmpLY, bmpP > 0.7 ? '#ffaacc' : '#ee8899');
                 }
             }
             return px;
