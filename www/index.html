@@ -338,6 +338,17 @@
             { targetRibo: 6, phase: 0.75, color: '#cc5533' },
         ];
 
+        // Protein synthesis: newly translated proteins travel from ribosomes to the Golgi
+        // Each protein emerges from a ribosome and drifts toward Golgi stack
+        var proteins = [
+            { sourceRibo: 1, phase: 0.0, color: '#aa44dd' },
+            { sourceRibo: 3, phase: 0.3, color: '#9944cc' },
+            { sourceRibo: 5, phase: 0.6, color: '#aa44dd' },
+            { sourceRibo: 7, phase: 0.85, color: '#9944cc' },
+        ];
+        // Golgi center for protein targeting
+        var golgiCenter = { x: 9, y: 14 };
+
         // Compute receptor positions and signal cascade (11-second cycle)
             var tSignal = (Date.now() % 11000) / 11000;
             var receptorPixels = {};
@@ -411,6 +422,32 @@
                 }
             }
 
+            // Compute protein transport positions (17-second synthesis cycle)
+            var tProtein = (Date.now() % 17000) / 17000;
+            var proteinPixels = {};
+            for (var pi = 0; pi < proteins.length; pi++) {
+                var prot = proteins[pi];
+                var protPhase = (tProtein + prot.phase) % 1.0;
+                // Protein visible for 50% of cycle (synthesis + transport), rests 50%
+                if (protPhase < 0.5) {
+                    var protProgress = protPhase / 0.5; // 0 to 1
+                    var srcIdx = prot.sourceRibo;
+                    if (srcIdx < ribosomePositions.length) {
+                        var src = ribosomePositions[srcIdx];
+                        // Travel from ribosome toward Golgi center
+                        var protX = Math.round(src.x + (golgiCenter.x - src.x) * protProgress);
+                        var protY = Math.round(src.y + (golgiCenter.y - src.y) * protProgress);
+                        if (protX >= 0 && protX < size && protY >= 0 && protY < size) {
+                            proteinPixels[protX + ',' + protY] = prot.color;
+                            // When protein arrives at Golgi, flash the receiving stack
+                            if (protProgress > 0.85) {
+                                proteinPixels[golgiCenter.x + ',' + golgiCenter.y] = '#ddbb77';
+                            }
+                        }
+                    }
+                }
+            }
+
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
                     var dx = x - center;
@@ -445,6 +482,12 @@
                         // Check mRNA transcripts traveling to ribosomes
                         if (!isSpecial && mRNAPixels[x + ',' + y]) {
                             color = mRNAPixels[x + ',' + y];
+                            isSpecial = true;
+                        }
+
+                        // Check newly synthesized proteins traveling to Golgi
+                        if (!isSpecial && proteinPixels[x + ',' + y]) {
+                            color = proteinPixels[x + ',' + y];
                             isSpecial = true;
                         }
 
