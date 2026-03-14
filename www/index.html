@@ -372,6 +372,19 @@
             { angle: 5.5, mRNAphase: 0.64 },
         ];
 
+        // Secretory vesicles: bud from Golgi, travel to membrane, fuse (exocytosis)
+        // Completes the central dogma: DNA → mRNA → ribosome → protein → Golgi → secretion
+        cellA.secretoryVesicles = [
+            { budAngle: 2.6, memAngle: 0.8, speed: 0.4, phase: 0, color: '#ddaa33' },
+            { budAngle: 2.9, memAngle: 4.5, speed: 0.35, phase: 0.33, color: '#ccbb44' },
+            { budAngle: 2.3, memAngle: 5.8, speed: 0.45, phase: 0.66, color: '#ddaa33' },
+        ];
+        cellB.secretoryVesicles = [
+            { budAngle: 2.8, memAngle: 1.2, speed: 0.38, phase: 0.15, color: '#ddaa33' },
+            { budAngle: 2.5, memAngle: 3.8, speed: 0.42, phase: 0.5, color: '#ccbb44' },
+            { budAngle: 3.1, memAngle: 5.2, speed: 0.36, phase: 0.82, color: '#ddaa33' },
+        ];
+
         // G1 growth: cells slowly grow as they absorb nutrients
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -761,6 +774,37 @@
                 }
             }
 
+            // Secretory vesicles: bud from Golgi, travel to membrane, fuse (exocytosis)
+            var secVesPixels = {};
+            if (cell.secretoryVesicles && cell.separated) {
+                var tSecVes = (t * 8000 / 7000) % 1.0;
+                for (var svi = 0; svi < cell.secretoryVesicles.length; svi++) {
+                    var sv = cell.secretoryVesicles[svi];
+                    // Progress: 0=at Golgi, 1=at membrane (then fuses and resets)
+                    var svProgress = (tSecVes * sv.speed + sv.phase) % 1.0;
+                    // Interpolate from Golgi region outward to membrane
+                    var golgiR = 2.0; // near Golgi (inner cytoplasm)
+                    var memR = maxR - 0.8; // near plasma membrane
+                    var svR = golgiR + svProgress * (memR - golgiR);
+                    // Angle interpolates from bud angle to target membrane angle
+                    var svAngle = sv.budAngle + svProgress * (sv.memAngle - sv.budAngle);
+                    var svX = Math.round(cell.cx + Math.cos(svAngle) * svR);
+                    var svY = Math.round(cell.cy + Math.sin(svAngle) * svR);
+                    if (svX >= 0 && svX < size && svY >= 0 && svY < size) {
+                        // Vesicle brightens as it approaches membrane (about to fuse)
+                        secVesPixels[svX + ',' + svY] = svProgress > 0.8 ? '#ffcc55' : sv.color;
+                    }
+                    // Exocytosis flash: when vesicle reaches membrane, brief bright pixel on membrane
+                    if (svProgress > 0.9) {
+                        var exoX = Math.round(cell.cx + Math.cos(sv.memAngle) * maxR);
+                        var exoY = Math.round(cell.cy + Math.sin(sv.memAngle) * maxR);
+                        if (exoX >= 0 && exoX < size && exoY >= 0 && exoY < size) {
+                            secVesPixels[exoX + ',' + exoY] = '#ffee88';
+                        }
+                    }
+                }
+            }
+
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
             if (cell.microtubules && cell.centrosomes && cell.separated) {
@@ -829,7 +873,7 @@
                 riboPixels: riboPixels, peroxPixels: peroxPixels,
                 serPixels: serPixels, actinPixels: actinPixels,
                 mtPixels: mtPixels, ifPixels: ifPixels,
-                porePixels: porePixels
+                porePixels: porePixels, secVesPixels: secVesPixels
             };
         }
 
@@ -1094,6 +1138,8 @@
                                 color = dd.furrowPixels[key];
                             } else if (dd.centPixels[key]) {
                                 color = dd.centPixels[key];
+                            } else if (dd.secVesPixels && dd.secVesPixels[key]) {
+                                color = dd.secVesPixels[key];
                             } else if (dd.vesPixels[key]) {
                                 color = dd.vesPixels[key];
                             } else if (dd.atpPixels[key]) {
