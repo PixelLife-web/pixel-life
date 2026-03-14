@@ -2077,9 +2077,9 @@
                     set(Math.round(mn.x + Math.cos(ntA) * ntR3), Math.round(mn.y + Math.sin(ntA) * ntR3), isACh ? (ntPh < 0.2 ? '#ffdd44' : '#eebb33') : (ntPh < 0.25 ? '#bb66ff' : '#9944dd')); }
                 if (mnP > (isACh ? 0.5 : 0.4)) { var secR = (isACh ? 2.5 : 2.2) + mnP * (isACh ? 0.5 : 0.4);
                     set(Math.round(mn.x + Math.cos(ntA) * secR), Math.round(mn.y + Math.sin(ntA) * secR), isACh ? '#ffee77' : '#dd99ff'); }
-                if (mnP > -0.5) { for (var di = 0; di < 3; di++) { var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9, dSway = Math.sin(mnPh * 0.7 + di * 1.6) * 0.1;
-                    var dX = Math.round(mn.x + Math.cos(dA + dSway) * 1.3), dY = Math.round(mn.y + Math.sin(dA + dSway) * 1.3);
-                    if (inB(dX, dY) && Math.sin(mnPh * 1.5 + di * 2.3) > -0.4) set(dX, dY, isACh ? '#bb9944' : '#7744aa'); } }
+                for (var di = 0; di < 3 && mnP > -0.5; di++) { var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9;
+                    var dX = Math.round(mn.x + Math.cos(dA + Math.sin(mnPh * 0.7 + di * 1.6) * 0.1) * 1.3), dY = Math.round(mn.y + Math.sin(dA + Math.sin(mnPh * 0.7 + di * 1.6) * 0.1) * 1.3);
+                    if (inB(dX, dY) && Math.sin(mnPh * 1.5 + di * 2.3) > -0.4) set(dX, dY, isACh ? '#bb9944' : '#7744aa'); }
             }
             var tFlum = (now % 31000) / 31000;
             var cox2Sites = [{x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9}];
@@ -2273,6 +2273,49 @@
                 if (mcP > 0.3) {
                     var foldA = lumA6 + (mci === 0 ? 0.25 : -0.25);
                     set(Math.round(mc.x + Math.cos(foldA) * 0.8), Math.round(mc.y + Math.sin(foldA) * 0.8), '#88ccbb');
+                }
+            }
+            var tAnoi = (now % 37000) / 37000;
+            var anoikisCells = [
+                {x:2,y:3,shedA:Math.PI*1.2,phase:0,casp:'#ee5544',bleb:'#aa7766',ps:'#55bb88',frag:'#886655'},
+                {x:8,y:1,shedA:Math.PI*1.5,phase:0.35,casp:'#dd4433',bleb:'#997766',ps:'#44aa77',frag:'#776644'},
+                {x:1,y:8,shedA:Math.PI*1.0,phase:0.70,casp:'#ee5544',bleb:'#aa7766',ps:'#55bb88',frag:'#886655'},
+            ];
+            for (var ani = 0; ani < anoikisCells.length; ani++) {
+                var ac = anoikisCells[ani];
+                var anPh = (tAnoi + ac.phase) % 1.0;
+                var anSin = Math.sin(tAnoi * 2 * Math.PI + ani * 2.09);
+                if (anPh < 0.15) {
+                    var intR = 0.5 + anPh * 3.0;
+                    var intA = ac.shedA + Math.PI;
+                    var intX = Math.round(ac.x + Math.cos(intA) * intR), intY = Math.round(ac.y + Math.sin(intA) * intR);
+                    if (inB(intX, intY)) set(intX, intY, anPh < 0.08 ? '#ddcc88' : '#bbaa66');
+                    if (inB(ac.x, ac.y)) set(ac.x, ac.y, '#997766');
+                } else if (anPh < 0.35) {
+                    var detFrac = (anPh - 0.15) / 0.20;
+                    var detR = detFrac * 1.5;
+                    var detX = Math.round(ac.x + Math.cos(ac.shedA) * detR);
+                    var detY = Math.round(ac.y + Math.sin(ac.shedA) * detR);
+                    if (inB(detX, detY)) set(detX, detY, anSin > 0 ? ac.casp : '#cc6655');
+                    for (var bl = 0; bl < 3; bl++) {
+                        var blA = ac.shedA + (bl - 1) * 0.6 + Math.sin(tAnoi * 2 * Math.PI * 2.5 + bl * 1.8) * 0.2;
+                        var blR = detR + 0.6 + Math.sin(tAnoi * 2 * Math.PI * 3.0 + bl * 2.3) * 0.3;
+                        var blX = Math.round(ac.x + Math.cos(blA) * blR), blY = Math.round(ac.y + Math.sin(blA) * blR);
+                        if (inB(blX, blY)) set(blX, blY, ac.bleb);
+                    }
+                    var psA = ac.shedA + Math.sin(tAnoi * 2 * Math.PI * 1.5 + ani * 1.7) * 0.3;
+                    var psR = detR + 0.3;
+                    set(Math.round(ac.x + Math.cos(psA) * psR), Math.round(ac.y + Math.sin(psA) * psR), ac.ps);
+                } else if (anPh < 0.65) {
+                    var fragFrac = (anPh - 0.35) / 0.30;
+                    for (var fg = 0; fg < 3; fg++) {
+                        var fgA = ac.shedA + (fg - 1) * 0.7;
+                        var fgR = 1.5 + fragFrac * 2.5 + fg * 0.3;
+                        var fgDrift = Math.sin(tAnoi * 2 * Math.PI * 1.8 + fg * 2.5 + ani * 1.3) * 0.4;
+                        var fgX = Math.round(ac.x + Math.cos(fgA + fgDrift) * fgR);
+                        var fgY = Math.round(ac.y + Math.sin(fgA + fgDrift) * fgR);
+                        if (inB(fgX, fgY)) set(fgX, fgY, Math.sin(tAnoi * 2 * Math.PI * 2.0 + fg * 1.9) > 0 ? ac.frag : ac.ps);
+                    }
                 }
             }
             return px;
