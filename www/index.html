@@ -482,27 +482,26 @@
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
 
-        // MID-S PHASE: Cyclin E being degraded by SCF ubiquitin ligase — origins already fired
-        // Only 2 particles remain (down from 4), dimmer as proteasome digests them
+        // LATE S PHASE: Cyclin E nearly fully degraded — only 1 faint particle remains per cell
         cellA.cyclinE = [
-            { orbitR: 2.8, baseAngle: 0.6, speed: 0.7, color: '#55bbaa' },
-            { orbitR: 3.0, baseAngle: 5.0, speed: -0.5, color: '#44aa99' },
+            { orbitR: 2.8, baseAngle: 0.6, speed: 0.7, color: '#448877' },
         ];
         cellB.cyclinE = [
-            { orbitR: 2.8, baseAngle: 2.2, speed: -0.65, color: '#55bbaa' },
-            { orbitR: 3.0, baseAngle: 3.8, speed: 0.6, color: '#44aa99' },
+            { orbitR: 2.8, baseAngle: 2.2, speed: -0.65, color: '#448877' },
         ];
 
-        // Cyclin A accumulating through mid-S phase — 3 particles now, driving S/G2 transition
+        // Cyclin A rising through late S phase — 4 particles now, dominant S/G2 cyclin
         cellA.cyclinA = [
             { orbitR: 2.3, baseAngle: 1.5, speed: 0.5, color: '#dd77aa' },
             { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
             { orbitR: 3.1, baseAngle: 0.2, speed: 0.55, color: '#dd77aa' },
+            { orbitR: 2.5, baseAngle: 2.8, speed: 0.48, color: '#ee88bb' },
         ];
         cellB.cyclinA = [
             { orbitR: 2.3, baseAngle: 4.2, speed: -0.45, color: '#dd77aa' },
             { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
             { orbitR: 3.1, baseAngle: 5.8, speed: -0.5, color: '#dd77aa' },
+            { orbitR: 2.5, baseAngle: 3.5, speed: -0.47, color: '#ee88bb' },
         ];
 
         // PCNA sliding clamps: ring-shaped processivity factors loaded at replication forks
@@ -520,13 +519,39 @@
             { chrIdx: 6, orbitPhase: 0.9, color: '#77ee99' },
         ];
 
+        // Topoisomerase II: relieves supercoiling ahead of replication forks
+        // Bright yellow-green flashes as topo II cuts and re-ligates DNA
+        cellA.topoII = [
+            { chrIdx: 0, phase: 0.1, color: '#aaee44' },
+            { chrIdx: 2, phase: 0.4, color: '#99dd33' },
+            { chrIdx: 5, phase: 0.7, color: '#aaee44' },
+        ];
+        cellB.topoII = [
+            { chrIdx: 1, phase: 0.2, color: '#aaee44' },
+            { chrIdx: 3, phase: 0.5, color: '#99dd33' },
+            { chrIdx: 6, phase: 0.8, color: '#aaee44' },
+        ];
+
+        // Histone chaperones (CAF-1): deposit new nucleosomes on daughter strands behind forks
+        // Small warm-brown dots trailing the replication machinery
+        cellA.histoneChaperones = [
+            { chrIdx: 1, phase: 0.2, color: '#bb8855' },
+            { chrIdx: 3, phase: 0.5, color: '#aa7744' },
+            { chrIdx: 5, phase: 0.75, color: '#bb8855' },
+        ];
+        cellB.histoneChaperones = [
+            { chrIdx: 0, phase: 0.15, color: '#bb8855' },
+            { chrIdx: 2, phase: 0.45, color: '#aa7744' },
+            { chrIdx: 4, phase: 0.65, color: '#bb8855' },
+        ];
+
         // S PHASE: cells have entered S phase, replication origins firing
         // prophase cleared — APC/C has degraded all mitotic cyclins
         cellA.prophase = null;
         cellB.prophase = null;
 
-        // Mid-S phase: nucleus swelling as DNA content passes 3n, approaching 4n
-        var growthRate = 0.5; // faster growth — massive DNA synthesis underway
+        // Late S phase: nucleus swelling, DNA content approaching 4n
+        var growthRate = 0.6; // increased growth — nearing full replication
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -1258,7 +1283,7 @@
                 }
             }
 
-            // S PHASE ACTIVE: replication forks firing at multiple origins, bright and busy
+            // LATE S PHASE: most origins replicated, remaining forks completing final segments
             var replPixels = {};
             if (cell.replicationForks && cell.separated) {
                 var tRepl = (t * 8000 / 4000) % 1.0;
@@ -1314,6 +1339,48 @@
                             var pcnaPulse = Math.sin(tPCNA * 2 * Math.PI * 2 + pci * 1.3 + pri);
                             pcnaPixels[prX + ',' + prY] = pcnaPulse > 0 ? pcna.color : '#66dd88';
                         }
+                    }
+                }
+            }
+
+            // Topoisomerase II: bright flashes ahead of replication forks, relieving torsion
+            var topoPixels = {};
+            if (cell.topoII && cell.separated) {
+                var tTopo = (t * 8000 / 3800) % 1.0;
+                var allChrTopo = cell.chromatin.concat(cell.sisterChromatin || []);
+                for (var tpi = 0; tpi < cell.topoII.length; tpi++) {
+                    var topo = cell.topoII[tpi];
+                    var tpIdx = topo.chrIdx % allChrTopo.length;
+                    var tpAngle = tpIdx * 2 * Math.PI / allChrTopo.length + tChromatin * 0.05;
+                    var tpR = 0.6 + Math.sin(tChromatin * 0.3 + tpIdx * 1.2) * 0.3;
+                    // Topo II sits slightly ahead of the fork (larger radius offset)
+                    var tpX = Math.round(cell.cx + Math.cos(tpAngle + 0.15) * (tpR + 0.5));
+                    var tpY = Math.round(cell.cy + Math.sin(tpAngle + 0.15) * (tpR + 0.5));
+                    if (tpX >= 0 && tpX < size && tpY >= 0 && tpY < size) {
+                        var topoPulse = Math.sin(tTopo * 2 * Math.PI * 3 + topo.phase * 6);
+                        // Bright flash when cutting/re-ligating, dimmer between
+                        topoPixels[tpX + ',' + tpY] = topoPulse > 0.3 ? '#ccff55' : topo.color;
+                    }
+                }
+            }
+
+            // Histone chaperones (CAF-1): deposit nucleosomes behind replication forks
+            var histPixels = {};
+            if (cell.histoneChaperones && cell.separated) {
+                var tHist = (t * 8000 / 4200) % 1.0;
+                var allChrHist = cell.chromatin.concat(cell.sisterChromatin || []);
+                for (var hci = 0; hci < cell.histoneChaperones.length; hci++) {
+                    var hc = cell.histoneChaperones[hci];
+                    var hIdx = hc.chrIdx % allChrHist.length;
+                    var hAngle = hIdx * 2 * Math.PI / allChrHist.length + tChromatin * 0.05;
+                    var hR = 0.6 + Math.sin(tChromatin * 0.3 + hIdx * 1.2) * 0.3;
+                    // Chaperone trails behind the fork (negative angle offset)
+                    var hX = Math.round(cell.cx + Math.cos(hAngle - 0.2) * (hR - 0.3));
+                    var hY = Math.round(cell.cy + Math.sin(hAngle - 0.2) * (hR - 0.3));
+                    if (hX >= 0 && hX < size && hY >= 0 && hY < size) {
+                        var histPulse = Math.sin(tHist * 2 * Math.PI * 2 + hc.phase * 5);
+                        // Pulse as each nucleosome is deposited
+                        histPixels[hX + ',' + hY] = histPulse > 0.2 ? '#cc9966' : hc.color;
                     }
                 }
             }
@@ -1643,7 +1710,9 @@
                 e2fPixels: e2fPixels,
                 cycEPixels: cycEPixels,
                 cycAPixels: cycAPixels,
-                pcnaPixels: pcnaPixels
+                pcnaPixels: pcnaPixels,
+                topoPixels: topoPixels,
+                histPixels: histPixels
             };
         }
 
@@ -1946,10 +2015,14 @@
                                 color = dd.porePixels[key];
                             } else if (dd.envPixels[key]) {
                                 color = dd.envPixels[key];
+                            } else if (dd.topoPixels && dd.topoPixels[key]) {
+                                color = dd.topoPixels[key];
                             } else if (dd.pcnaPixels && dd.pcnaPixels[key]) {
                                 color = dd.pcnaPixels[key];
                             } else if (dd.replPixels && dd.replPixels[key]) {
                                 color = dd.replPixels[key];
+                            } else if (dd.histPixels && dd.histPixels[key]) {
+                                color = dd.histPixels[key];
                             } else if (dd.sacPixels && dd.sacPixels[key]) {
                                 color = dd.sacPixels[key];
                             } else if (dd.e2fPixels && dd.e2fPixels[key]) {
