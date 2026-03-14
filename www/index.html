@@ -385,6 +385,17 @@
             { budAngle: 3.1, memAngle: 5.2, speed: 0.36, phase: 0.82, color: '#ddaa33' },
         ];
 
+        // Endocytic vesicles: receptor-mediated endocytosis, membrane pinches inward
+        // Vesicles travel from membrane toward lysosomes (completing endo/exo trafficking cycle)
+        cellA.endocyticVesicles = [
+            { memAngle: 0.3, targetAngle: 1.0, speed: 0.38, phase: 0, color: '#aa55cc' },
+            { memAngle: 2.5, targetAngle: 4.0, speed: 0.42, phase: 0.5, color: '#9944bb' },
+        ];
+        cellB.endocyticVesicles = [
+            { memAngle: 3.5, targetAngle: 2.5, speed: 0.4, phase: 0.25, color: '#aa55cc' },
+            { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
+        ];
+
         // G1 growth: cells slowly grow as they absorb nutrients
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -805,6 +816,37 @@
                 }
             }
 
+            // Endocytic vesicles: pinch from membrane, travel inward toward lysosomes
+            var endoPixels = {};
+            if (cell.endocyticVesicles && cell.separated) {
+                var tEndo = (t * 8000 / 8000) % 1.0;
+                for (var evi = 0; evi < cell.endocyticVesicles.length; evi++) {
+                    var ev = cell.endocyticVesicles[evi];
+                    // Progress: 0=at membrane (coated pit), 1=near lysosome (early endosome)
+                    var evProgress = (tEndo * ev.speed + ev.phase) % 1.0;
+                    // Interpolate from membrane inward toward cell interior
+                    var memR2 = maxR - 0.5; // starts at membrane
+                    var lysoR = 2.2; // ends near lysosome orbit radius
+                    var evR = memR2 - evProgress * (memR2 - lysoR);
+                    // Angle curves from membrane receptor toward interior
+                    var evAngle = ev.memAngle + evProgress * (ev.targetAngle - ev.memAngle) * 0.3;
+                    var evX = Math.round(cell.cx + Math.cos(evAngle) * evR);
+                    var evY = Math.round(cell.cy + Math.sin(evAngle) * evR);
+                    if (evX >= 0 && evX < size && evY >= 0 && evY < size) {
+                        // Coated pit at membrane is darker, brightens as it matures into endosome
+                        endoPixels[evX + ',' + evY] = evProgress < 0.2 ? '#7733aa' : ev.color;
+                    }
+                    // Clathrin coat flash at membrane when pit forms
+                    if (evProgress < 0.15) {
+                        var pitX = Math.round(cell.cx + Math.cos(ev.memAngle) * maxR);
+                        var pitY = Math.round(cell.cy + Math.sin(ev.memAngle) * maxR);
+                        if (pitX >= 0 && pitX < size && pitY >= 0 && pitY < size) {
+                            endoPixels[pitX + ',' + pitY] = '#bb77dd';
+                        }
+                    }
+                }
+            }
+
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
             if (cell.microtubules && cell.centrosomes && cell.separated) {
@@ -873,7 +915,8 @@
                 riboPixels: riboPixels, peroxPixels: peroxPixels,
                 serPixels: serPixels, actinPixels: actinPixels,
                 mtPixels: mtPixels, ifPixels: ifPixels,
-                porePixels: porePixels, secVesPixels: secVesPixels
+                porePixels: porePixels, secVesPixels: secVesPixels,
+                endoPixels: endoPixels
             };
         }
 
@@ -1146,6 +1189,8 @@
                                 color = dd.atpPixels[key];
                             } else if (dd.lysoPixels && dd.lysoPixels[key]) {
                                 color = dd.lysoPixels[key];
+                            } else if (dd.endoPixels && dd.endoPixels[key]) {
+                                color = dd.endoPixels[key];
                             } else if (dd.peroxPixels && dd.peroxPixels[key]) {
                                 color = dd.peroxPixels[key];
                             } else if (dd.mitoPixels[key]) {
