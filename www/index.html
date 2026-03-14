@@ -2157,6 +2157,53 @@
                 var apY = Math.round(gang.y + axDy * apFrac);
                 set(apX, apY, '#eeccff');
             }
+            // Muscularis mucosae: thin smooth muscle layer beneath submucosa
+            // Rhythmic contraction waves driven by ACh from Meissner's plexus neurons
+            // Smooth muscle cells oriented parallel to epithelium, myosin-driven shortening
+            var tMM = (now % 18000) / 18000;
+            var mmPath = [
+                {x:31,y:8},{x:30,y:12},{x:29,y:16},{x:27,y:20},
+                {x:24,y:24},{x:20,y:27},{x:15,y:29},{x:10,y:28},
+                {x:6,y:25},{x:3,y:21},
+            ];
+            // Peristaltic contraction wave: propagates along the muscle layer
+            var mmWavePos = (tMM * 2.5) % 1.0;
+            for (var mmi = 0; mmi < mmPath.length; mmi++) {
+                var mm = mmPath[mmi];
+                var mmFrac = mmi / (mmPath.length - 1);
+                // Contraction strength: peaks near wave position, decays with distance
+                var mmDist = Math.abs(mmFrac - mmWavePos);
+                if (mmDist > 0.5) mmDist = 1.0 - mmDist; // wrap around
+                var mmContract = Math.max(0, 1.0 - mmDist * 4.0);
+                // Contracted muscle is brighter (active myosin crossbridges)
+                var mmPulse = Math.sin(tMM * 2 * Math.PI * 1.5 + mmi * 0.8);
+                var mmActive = mmContract > 0.3;
+                set(mm.x, mm.y, mmActive ? '#cc7766' : (mmPulse > 0 ? '#aa6655' : '#885544'));
+                // Interpolate between muscle path points
+                if (mmi < mmPath.length - 1) {
+                    var mmN = mmPath[mmi + 1];
+                    var mmdx = mmN.x - mm.x, mmdy = mmN.y - mm.y;
+                    var mmSt = Math.max(Math.abs(mmdx), Math.abs(mmdy));
+                    for (var mms = 1; mms < mmSt; mms++) {
+                        var mmsFrac = mmi / (mmPath.length - 1) + (1.0 / (mmPath.length - 1)) * (mms / mmSt);
+                        var mmsDist = Math.abs(mmsFrac - mmWavePos);
+                        if (mmsDist > 0.5) mmsDist = 1.0 - mmsDist;
+                        var mmsContract = Math.max(0, 1.0 - mmsDist * 4.0);
+                        var mmsP = Math.sin(tMM * 2 * Math.PI * 1.8 + mmi * 0.9 + mms * 0.5);
+                        var mmsActive = mmsContract > 0.3;
+                        set(Math.round(mm.x+mmdx*mms/mmSt), Math.round(mm.y+mmdy*mms/mmSt),
+                            mmsActive ? '#dd8877' : (mmsP > 0 ? '#996655' : '#774433'));
+                    }
+                }
+                // Calcium sparks at contraction wavefront — SR calcium release triggers myosin
+                if (mmContract > 0.6) {
+                    var sparkP = Math.sin(tMM * 2 * Math.PI * 5.0 + mmi * 2.3);
+                    if (sparkP > 0.4) {
+                        var sparkOff = Math.round(Math.sin(tMM * 2 * Math.PI * 3 + mmi) * 0.8);
+                        set(mm.x + sparkOff, mm.y + sparkOff, '#ffdd88');
+                    }
+                }
+            }
             return px;
         }
 
