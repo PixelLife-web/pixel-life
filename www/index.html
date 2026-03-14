@@ -51,17 +51,31 @@
             { x1: 10, y1: 7, x2: 12, y2: 7 },
         ];
 
-        // Precompute ER pixel set
+        // Precompute ER pixel set and ordered paths for vesicle transport
         var erPixels = {};
+        var erPaths = []; // each path is an array of {x,y} points
         for (var si = 0; si < erSegments.length; si++) {
             var seg = erSegments[si];
             var steps = Math.max(Math.abs(seg.x2 - seg.x1), Math.abs(seg.y2 - seg.y1));
+            var path = [];
             for (var step = 0; step <= steps; step++) {
                 var px = Math.round(seg.x1 + (seg.x2 - seg.x1) * step / steps);
                 var py = Math.round(seg.y1 + (seg.y2 - seg.y1) * step / steps);
                 erPixels[px + ',' + py] = true;
+                path.push({ x: px, y: py });
             }
+            erPaths.push(path);
         }
+
+        // Vesicles: each rides along an ER path, staggered by phase
+        var vesicles = [
+            { pathIdx: 0, speed: 1, color: '#ffdd66', phase: 0.0 },
+            { pathIdx: 2, speed: 1, color: '#ffdd66', phase: 0.33 },
+            { pathIdx: 4, speed: 1, color: '#66ddff', phase: 0.5 },
+            { pathIdx: 6, speed: 1, color: '#66ddff', phase: 0.16 },
+            { pathIdx: 1, speed: 1, color: '#ffdd66', phase: 0.66 },
+            { pathIdx: 5, speed: 1, color: '#66ddff', phase: 0.83 },
+        ];
 
         function draw() {
             ctx.clearRect(0, 0, size, size);
@@ -87,6 +101,19 @@
                 organellePixels.push({ x: ox, y: oy, color: o.color });
             }
 
+            // Compute vesicle positions along ER paths (6-second transit cycle)
+            var tVesicle = (Date.now() % 6000) / 6000;
+            var vesiclePixels = [];
+            for (var vi = 0; vi < vesicles.length; vi++) {
+                var v = vesicles[vi];
+                var path = erPaths[v.pathIdx];
+                var progress = (tVesicle + v.phase) % 1.0;
+                // Bounce: go out and come back
+                var pos = progress < 0.5 ? progress * 2 : (1.0 - progress) * 2;
+                var idx = Math.round(pos * (path.length - 1));
+                vesiclePixels.push({ x: path[idx].x, y: path[idx].y, color: v.color });
+            }
+
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
                     var dx = x - center;
@@ -96,17 +123,28 @@
                     if (dist <= maxRadius) {
                         var color;
 
-                        // Check if this pixel is an organelle
-                        var isOrganelle = false;
-                        for (var oi = 0; oi < organellePixels.length; oi++) {
-                            if (organellePixels[oi].x === x && organellePixels[oi].y === y) {
-                                color = organellePixels[oi].color;
-                                isOrganelle = true;
+                        // Check if this pixel is a vesicle (drawn on top)
+                        var isSpecial = false;
+                        for (var vi = 0; vi < vesiclePixels.length; vi++) {
+                            if (vesiclePixels[vi].x === x && vesiclePixels[vi].y === y) {
+                                color = vesiclePixels[vi].color;
+                                isSpecial = true;
                                 break;
                             }
                         }
 
-                        if (!isOrganelle) {
+                        // Check if this pixel is an organelle
+                        if (!isSpecial) {
+                            for (var oi = 0; oi < organellePixels.length; oi++) {
+                                if (organellePixels[oi].x === x && organellePixels[oi].y === y) {
+                                    color = organellePixels[oi].color;
+                                    isSpecial = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!isSpecial) {
                             if (dist <= nucleusRadius) {
                                 // Nucleus: bright inner glow with nucleolus
                                 var ni = Math.floor(dist * nucleusColors.length / (nucleusRadius + 0.3));
