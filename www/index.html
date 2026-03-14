@@ -1637,14 +1637,11 @@
                 if(srRen>0.5&&sri%3===0&&_s(tSer*2*_P*5+sri*2.3)>0.3){var sfA2=_a(srP.y-16,srP.x-16);set(_r(srP.x+_c(sfA2)*0.8),_r(srP.y+_s(sfA2)*0.8),'#ddeeff');}
                 if(sri%4===1){var adA2=_a(16-srP.y,16-srP.x),adP2=_s(tSer*2*_P*0.5+sri*1.7);set(_r(srP.x+_c(adA2)),_r(srP.y+_s(adA2)),adP2>0?'#eedd99':'#ddcc88');}
             }
-            // Helper: emit one pixel radially toward center (16,16)
             function emitToCenter(ix,iy,r,color,s){var a=_a(16-iy,16-ix);s(_r(ix+_c(a)*r),_r(iy+_s(a)*r),color);}
-            // Helper: emit outward from center at varying radius; c1/c2 for pulse hi/lo
             function emitOutward(it,p,ph,idx,r1,r2,c1,c2,s){var a=_a(it.y-16,it.x-16)+_P;
                 s(_r(it.x+_c(a)*r1),_r(it.y+_s(a)*r1),_s(ph*1.3+idx*0.8)>0.2?c1:c2);
                 if(p>0.3){s(_r(it.x+_c(a)*(r1+0.6+p*0.5)),_r(it.y+_s(a)*(r1+0.6+p*0.5)),c1);
                 if(p>0.6){var lr=r2+p*0.4,ls=_s(ph*2.5+idx*1.2)*0.5;s(_r(it.x+_c(a+ls)*lr),_r(it.y+_s(a+ls)*lr),c2);}}}
-            // Helper: emit dendrite projection along luminal axis with sway
             function emitDendrite(it,ph,t,idx,len,sway,hiC,loC,tipC,s){var lumA=_a(it.y-16,it.x-16)+_P;
                 var dendSway=_s(ph*0.4+idx*1.7)*sway;
                 for(var dl=1;dl<=len;dl++){var dA2=lumA+dendSway*(dl*0.3);
@@ -1652,7 +1649,6 @@
                 var dPulse=_s(ph*1.3+idx*0.9+dl*1.5);
                 if(inB(dx3,dy3))s(dx3,dy3,dPulse>0?hiC:loC);}
                 if(tipC&&_s(ph*3.0+idx*2.1)>0.5){var tipX=_r(it.x+_c(lumA)*(len+0.5)),tipY=_r(it.y+_s(lumA)*(len+0.5));if(inB(tipX,tipY))s(tipX,tipY,tipC);}}
-            // Helper: emit rotating granule with angle sway
             function emitGranules(it,ph,idx,count,angStep,r,hiC,loC,s){for(var gi=0;gi<count;gi++){var gA=ph*0.3+gi*angStep+idx*0.8;
                 var gSway=_s(ph*0.5+gi*1.2)*0.08;
                 var gx=_r(it.x+_c(gA+gSway)*r),gy=_r(it.y+_s(gA+gSway)*r);
@@ -2029,7 +2025,6 @@
                     s(_r(it.x+_c(ph*0.15+idx*2.0)*s100R),_r(it.y+_s(ph*0.15+idx*2.0)*s100R),p>0.6?'#ddccee':'#ccbbdd');}
                 }},
             ]);
-            // CBC (crypt base columnar) Lgr5+ stem cells — Wnt-dependent cell cycle
             var cbcCells=[{x:17,y:12,ph:0},{x:19,y:11,ph:0.33},{x:15,y:13,ph:0.66}];
             var tCBC=(now%18000)/18000, tCBCph=tCBC*2*_P;
             for(var ci=0;ci<cbcCells.length;ci++){
@@ -2107,40 +2102,46 @@
                     set(clX, clY, _s(tLact * 2 * _P * 3 + cli2 * 2.5) > 0 ? '#eedd66' : '#ccbb44');
                 }
             }
-            var tMeiss = (now % 29000) / 29000;
-            var meissNeur = [{x:22,y:19,t:'A',p:1},{x:25,y:20,t:'V',p:1},{x:16,y:22,t:'A',p:2},{x:14,y:24,t:'V',p:2},{x:20,y:27,t:'A',p:3},{x:23,y:26,t:'V',p:3}];
-            for (var mni = 0; mni < meissNeur.length; mni++) {
-                var mn = meissNeur[mni], mnPh = tMeiss * 2 * _P + mni * 1.05, mnP = _s(mnPh), isACh = mn.t === 'A';
-                if (inB(mn.x, mn.y)) set(mn.x, mn.y, mnP > 0 ? (isACh ? '#cc8833' : '#8833cc') : (isACh ? '#aa6622' : '#662299'));
-                var nisslX = _r(mn.x + _c(mnPh * 0.2 + mni * 1.3) * 0.7), nisslY = _r(mn.y + _s(mnPh * 0.2 + mni * 1.3) * 0.7);
-                if (inB(nisslX, nisslY) && _s(mnPh * 1.8 + mni * 2.0) > -0.3) set(nisslX, nisslY, isACh ? '#ddaa55' : '#aa55dd');
-                for (var mnj = 0; mnj < meissNeur.length; mnj++) {
-                    if (mnj !== mni && meissNeur[mnj].p === mn.p) { var mn2 = meissNeur[mnj];
-                        var midX = _r((mn.x + mn2.x) / 2), midY = _r((mn.y + mn2.y) / 2);
-                        if (inB(midX, midY) && mnP > -0.2) set(midX, midY, _s(mnPh * 2.5 + mni * 0.8) > 0 ? '#eecc88' : '#bbaa66'); break; } }
-                var ntA = isACh ? _a(16 - mn.y, 16 - mn.x) : _a(mn.y - 16, mn.x - 16);
-                var ntPh = (tMeiss * (isACh ? 2.4 : 1.8) + mni * (isACh ? 0.35 : 0.4)) % 1.0;
-                if (mnP > (isACh ? 0.1 : 0.0) && ntPh < (isACh ? 0.5 : 0.55)) {
-                    var ntR3 = (isACh ? 1.2 : 1.0) + ntPh * (isACh ? 3.0 : 2.8);
-                    set(_r(mn.x + _c(ntA) * ntR3), _r(mn.y + _s(ntA) * ntR3), isACh ? (ntPh < 0.2 ? '#ffdd44' : '#eebb33') : (ntPh < 0.25 ? '#bb66ff' : '#9944dd')); }
-                if (mnP > (isACh ? 0.5 : 0.4)) { var secR = (isACh ? 2.5 : 2.2) + mnP * (isACh ? 0.5 : 0.4);
-                    set(_r(mn.x + _c(ntA) * secR), _r(mn.y + _s(ntA) * secR), isACh ? '#ffee77' : '#dd99ff'); }
-                for (var di = 0; di < 3 && mnP > -0.5; di++) { var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9;
-                    var dX = _r(mn.x + _c(dA + _s(mnPh * 0.7 + di * 1.6) * 0.1) * 1.3), dY = _r(mn.y + _s(dA + _s(mnPh * 0.7 + di * 1.6) * 0.1) * 1.3);
-                    if (inB(dX, dY) && _s(mnPh * 1.5 + di * 2.3) > -0.4) set(dX, dY, isACh ? '#bb9944' : '#7744aa'); }
-            }
-            var tVMR=(now%24000)/24000;
-            for(var vri=0;vri<meissNeur.length;vri++){var vmn=meissNeur[vri];if(vmn.t!=='V')continue;
-            var vmPh=tVMR*2*_P+vri*1.57,vmP=_s(vmPh);
-            if(vmP>0.1){var vipA=_a(vmn.y-16,vmn.x-16),vipProg=(tVMR*2.0+vri*0.3)%1.0;
-            for(var vrl=1;vrl<=3;vrl++){var vrR=1.2+vrl*0.9+vipProg*0.5,vrSway=_s(vmPh*0.6+vrl*1.8)*0.12;
-            var vrX=_r(vmn.x+_c(vipA+vrSway)*vrR),vrY=_r(vmn.y+_s(vipA+vrSway)*vrR);
-            if(inB(vrX,vrY))set(vrX,vrY,vrl===1?(vmP>0.5?'#88ddff':'#66bbdd'):'#55aacc');}
+            var tMeiss=(now%29000)/29000,tVMR=(now%24000)/24000;
+            var meissNeur=[{x:22,y:19,t:'A',p:1},{x:25,y:20,t:'V',p:1},{x:16,y:22,t:'A',p:2},{x:14,y:24,t:'V',p:2},{x:20,y:27,t:'A',p:3},{x:23,y:26,t:'V',p:3}];
+            for(var mni=0;mni<meissNeur.length;mni++){var mn=meissNeur[mni],mnPh=tMeiss*2*_P+mni*1.05,mnP=_s(mnPh),isACh=mn.t==='A';
+            if(inB(mn.x,mn.y))set(mn.x,mn.y,mnP>0?(isACh?'#cc8833':'#8833cc'):(isACh?'#aa6622':'#662299'));
+            set(_r(mn.x+_c(mnPh*0.2+mni*1.3)*0.7),_r(mn.y+_s(mnPh*0.2+mni*1.3)*0.7),isACh?'#ddaa55':'#aa55dd');
+            for(var mnj=0;mnj<meissNeur.length;mnj++){if(mnj!==mni&&meissNeur[mnj].p===mn.p){
+            set(_r((mn.x+meissNeur[mnj].x)/2),_r((mn.y+meissNeur[mnj].y)/2),_s(mnPh*2.5+mni*0.8)>0?'#eecc88':'#bbaa66');break;}}
+            var ntA=isACh?_a(16-mn.y,16-mn.x):_a(mn.y-16,mn.x-16),ntSp=isACh?2.4:1.8,ntPh=(tMeiss*ntSp+mni*0.37)%1.0;
+            if(mnP>(isACh?0.1:0.0)&&ntPh<0.5){var ntR3=(isACh?1.2:1.0)+ntPh*3.0;
+            set(_r(mn.x+_c(ntA)*ntR3),_r(mn.y+_s(ntA)*ntR3),ntPh<0.2?(isACh?'#ffdd44':'#bb66ff'):(isACh?'#eebb33':'#9944dd'));}
+            if(mnP>0.4){var secR=2.3+mnP*0.5;set(_r(mn.x+_c(ntA)*secR),_r(mn.y+_s(ntA)*secR),isACh?'#ffee77':'#dd99ff');}
+            for(var di=0;di<3&&mnP>-0.5;di++){var dA=di*2.09+mnPh*0.12+mni*0.9;
+            set(_r(mn.x+_c(dA)*1.3),_r(mn.y+_s(dA)*1.3),isACh?'#bb9944':'#7744aa');}
+            if(!isACh){var vmPh=tVMR*2*_P+mni*1.57,vmP=_s(vmPh);
+            if(vmP>0.1){var vipA=_a(mn.y-16,mn.x-16),vipProg=(tVMR*2.0+mni*0.3)%1.0;
+            for(var vrl=1;vrl<=3;vrl++){var vrR=1.2+vrl*0.9+vipProg*0.5,vrSw=_s(vmPh*0.6+vrl*1.8)*0.12;
+            if(inB(_r(mn.x+_c(vipA+vrSw)*vrR),_r(mn.y+_s(vipA+vrSw)*vrR)))set(_r(mn.x+_c(vipA+vrSw)*vrR),_r(mn.y+_s(vipA+vrSw)*vrR),vrl===1?(vmP>0.5?'#88ddff':'#66bbdd'):'#55aacc');}
             if(vmP>0.3){var dilR=3.5+vmP*1.5,dilA2=vipA+_s(vmPh*0.3)*0.2;
-            var dilX2=_r(vmn.x+_c(dilA2)*dilR),dilY2=_r(vmn.y+_s(dilA2)*dilR);
-            if(inB(dilX2,dilY2))set(dilX2,dilY2,vmP>0.6?'#ff9988':'#dd7766');
-            if(vmP>0.5){var dilX3=_r(vmn.x+_c(dilA2)*(dilR+0.8)),dilY3=_r(vmn.y+_s(dilA2)*(dilR+0.8));
-            if(inB(dilX3,dilY3))set(dilX3,dilY3,'#ffbbaa');}}}}
+            set(_r(mn.x+_c(dilA2)*dilR),_r(mn.y+_s(dilA2)*dilR),vmP>0.6?'#ff9988':'#dd7766');
+            if(vmP>0.5)set(_r(mn.x+_c(dilA2)*(dilR+0.8)),_r(mn.y+_s(dilA2)*(dilR+0.8)),'#ffbbaa');}}}
+            }
+            var tVag=(now%33000)/33000;
+            var vagalIGLEs=[{x:30,y:9,gangX:31,gangY:7,a:0.0},{x:28,y:17,gangX:31,gangY:14,a:1.3},{x:26,y:24,gangX:28,gangY:25,a:2.6},{x:21,y:28,gangX:22,gangY:30,a:3.9}];
+            for(var vgi=0;vgi<vagalIGLEs.length;vgi++){var vg=vagalIGLEs[vgi],vgPh=tVag*2*_P+vg.a,vgP=_s(vgPh);
+            set(vg.gangX,vg.gangY,vgP>0?'#44bb99':'#228866');
+            var vgA=_a(vg.x-vg.gangX,vg.y-vg.gangY),vgD=_q((vg.x-vg.gangX)*(vg.x-vg.gangX)+(vg.y-vg.gangY)*(vg.y-vg.gangY));
+            for(var vgl=1;vgl<=_r(vgD);vgl++){var vgF=vgl/vgD;set(_r(vg.gangX+(vg.x-vg.gangX)*vgF),_r(vg.gangY+(vg.y-vg.gangY)*vgF),_s(vgPh*1.3+vgl*0.8)>0?'#55cc99':'#44aa77');}
+            var apProg=(tVag*2.8+vgi*0.25)%1.0;if(apProg<0.6){var apR2=vgD*apProg/0.6;
+            set(_r(vg.gangX+(vg.x-vg.gangX)*apProg/0.6),_r(vg.gangY+(vg.y-vg.gangY)*apProg/0.6),'#aaffdd');}
+            for(var lam=0;lam<4;lam++){var lamA=lam*1.57+vgPh*0.08+vgi*0.6,lamR=1.0+_s(vgPh*0.5+lam*1.9)*0.3;
+            var lamX=_r(vg.x+_c(lamA)*lamR),lamY=_r(vg.y+_s(lamA)*lamR);
+            if(inB(lamX,lamY))set(lamX,lamY,_s(vgPh*1.8+lam*2.3)>0?'#77ddaa':'#55bb88');}
+            var stretchP=_s(vgPh*0.6+vgi*1.2);
+            if(stretchP>0){var pzA=vgPh*0.15+vgi*1.57,pzR=1.5+stretchP*0.5;
+            set(_r(vg.x+_c(pzA)*pzR),_r(vg.y+_s(pzA)*pzR),stretchP>0.5?'#eeffcc':'#ccddaa');
+            if(stretchP>0.3){var caSpk=(tVag*3.5+vgi*0.4)%1.0;if(caSpk<0.3){var spkR=1.8+caSpk*4.0,spkA=_a(vg.gangY-vg.y,vg.gangX-vg.x);
+            set(_r(vg.x+_c(spkA)*spkR),_r(vg.y+_s(spkA)*spkR),caSpk<0.1?'#ffeeaa':'#ddcc88');}}}
+            if(vgP>0.4){var cgA=_a(vg.y-16,vg.x-16),cgR=1.8+vgP*0.4;
+            set(_r(vg.x+_c(cgA)*cgR),_r(vg.y+_s(cgA)*cgR),vgP>0.7?'#ff9977':'#dd7755');}
+            }
             var tFlum=(now%31000)/31000;var cox2Sites=[{x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9}];
             for(var ci3=0;ci3<cox2Sites.length;ci3++){var cox=cox2Sites[ci3],coxPh=tFlum*2*_P+cox.aa,coxP=_s(coxPh),flumAngle=tFlum*2*_P*1.3+ci3*1.57,flumR=1.5+_s(coxPh*0.7)*0.5,flumBound=_s(coxPh*1.5+ci3*0.8)>0.3;
             set(_r(cox.x+_c(flumAngle)*flumR),_r(cox.y+_s(flumAngle)*flumR),_s(coxPh*2.1+ci3)>0?'#33cccc':'#229999');
@@ -2300,6 +2301,18 @@
             var omR=outerMR+_s(tMuc*2*_P*0.6+mla*1.3+mai*3.0)*0.5;set(_r(ma.x+_c(mlAngle+mucSway*1.5)*omR),_r(ma.y+_s(mlAngle+mucSway*1.5)*omR),_s(tMuc*2*_P*0.9+mai*2.5+mla*1.8)>0?'#aaccbb':'#88bbaa');
             if(mla%2===0){var mmR=(imR+omR)*0.5;set(_r(ma.x+_c(mlAngle+mucSway*0.7)*mmR),_r(ma.y+_s(mlAngle+mucSway*0.7)*mmR),_s(tMuc*2*_P*2.0+mai*1.3+mla*2.5)>0?'#cceecc':'#aaddbb');}}
             if(mai===0&&mucusAnchors.length>1){var cAnc=mucusAnchors[1],cMidX=_r((ma.x+cAnc.x)/2+_c(ma.angle)*(innerMR+1.0)),cMidY=_r((ma.y+cAnc.y)/2+_s(ma.angle)*(innerMR+1.0));if(inB(cMidX,cMidY))set(cMidX,cMidY,_s(tMuc*2*_P*1.3+mai*3.5)>0?'#ddeecc':'#bbddbb');}}
+            var tUWL=(now%18000)/18000;
+            for(var uwi=0;uwi<granddaughterNuclei.length;uwi++){var uwG=granddaughterNuclei[uwi];
+            if(uwG.cellType!=='enterocyte')continue;
+            var uwApA=_a(uwG.y-blCenter.y,uwG.x-blCenter.x),uwBR=uwG.bodyRadius,uwBaseR=uwBR+2.8+uwG.nucleolusSize*0.5;
+            for(var uwj=-2;uwj<=2;uwj++){var uwA=uwApA+uwj*0.25,uwSw=_s(tUWL*2*_P*0.6+uwi*2.3+uwj*1.4)*0.10;
+            var uwR=uwBaseR+_s(tUWL*2*_P*1.0+uwj*0.8)*0.3,uwX=_r(uwG.x+_c(uwA+uwSw)*uwR),uwY=_r(uwG.y+_s(uwA+uwSw)*uwR);
+            var uwP=_s(tUWL*2*_P*1.5+uwi*1.7+uwj*2.1);if(inB(uwX,uwY))set(uwX,uwY,uwP>0.2?'#aaeeff':'#88ccee');
+            var hcoR=uwR+0.8+_s(tUWL*2*_P*2.0+uwj*1.6)*0.4,hcoA=uwA+uwSw*1.3;
+            var hcoX=_r(uwG.x+_c(hcoA)*hcoR),hcoY=_r(uwG.y+_s(hcoA)*hcoR);
+            if(inB(hcoX,hcoY)&&uwP>-0.2)set(hcoX,hcoY,uwP>0?'#ccffff':'#aaddee');}
+            var pHR=uwBaseR+2.0+_s(tUWL*2*_P*0.5+uwi*3.0)*0.5;
+            set(_r(uwG.x+_c(uwApA)*pHR),_r(uwG.y+_s(uwApA)*pHR),_s(tUWL*2*_P*1.8+uwi*2.5)>0?'#ddeeff':'#bbddee');}
             var tIgA=(now%16000)/16000;
             for(var igai=0;igai<granddaughterNuclei.length;igai++){var igaG=granddaughterNuclei[igai];if(!igaG.pigr)continue;var igaBR=igaG.bodyRadius,igaApA=_a(igaG.y-blCenter.y,igaG.x-blCenter.x);
             for(var igaj=0;igaj<igaG.pigr.length;igaj++){var pgr=igaG.pigr[igaj],pgrCyc=(tIgA*1.8+pgr.phase*0.25)%1.0,pgrP=_s(tIgA*2*_P*2.5+pgr.phase);
