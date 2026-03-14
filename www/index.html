@@ -2213,6 +2213,48 @@
                     if (inB(cytX, cytY)) set(cytX, cytY, '#aaeeff');
                 }
             }
+            var tMyo = (now % 23000) / 23000;
+            var myenteric = [
+                {x:6,y:18,type:'E',ang:0.8},{x:8,y:15,type:'I',ang:1.6},
+                {x:5,y:22,type:'E',ang:2.4},{x:4,y:26,type:'I',ang:3.2},
+                {x:26,y:14,type:'E',ang:4.0},{x:28,y:18,type:'I',ang:4.8},
+                {x:27,y:22,type:'E',ang:5.6},{x:25,y:26,type:'I',ang:0.4},
+            ];
+            for (var myi = 0; myi < myenteric.length; myi++) {
+                var my = myenteric[myi];
+                var myPh = tMyo * 2 * Math.PI + my.ang;
+                var myP = Math.sin(myPh);
+                var isExc = my.type === 'E';
+                if (inB(my.x, my.y)) set(my.x, my.y, myP > 0 ? (isExc ? '#dd9944' : '#4499dd') : (isExc ? '#aa7733' : '#336699'));
+                var dendN = 3;
+                for (var ddi = 0; ddi < dendN; ddi++) {
+                    var ddA = ddi * 2.09 + myPh * 0.15 + myi * 0.7;
+                    var ddX = Math.round(my.x + Math.cos(ddA) * 1.2);
+                    var ddY = Math.round(my.y + Math.sin(ddA) * 1.2);
+                    if (inB(ddX, ddY) && Math.sin(myPh * 1.3 + ddi * 2.0) > -0.3)
+                        set(ddX, ddY, isExc ? '#cc8833' : '#3388cc');
+                }
+                var axonA = Math.atan2(16 - my.y, 16 - my.x) + (isExc ? -0.4 : 0.4);
+                if (myP > 0.1) {
+                    var spPh = (tMyo * 3.0 + myi * 0.3) % 1.0;
+                    var spR = 1.5 + spPh * 2.5;
+                    var spX = Math.round(my.x + Math.cos(axonA) * spR);
+                    var spY = Math.round(my.y + Math.sin(axonA) * spR);
+                    if (inB(spX, spY)) set(spX, spY, isExc ? '#ffcc55' : '#55ccff');
+                    if (spPh < 0.4 && myP > 0.4) {
+                        var ntR = spR + 1.0;
+                        var ntX = Math.round(my.x + Math.cos(axonA) * ntR);
+                        var ntY = Math.round(my.y + Math.sin(axonA) * ntR);
+                        if (inB(ntX, ntY)) set(ntX, ntY, isExc ? '#ffdd88' : '#88ddff');
+                    }
+                }
+                if (myi % 2 === 0 && myi + 1 < myenteric.length) {
+                    var my2 = myenteric[myi + 1];
+                    var intX = Math.round((my.x + my2.x) / 2), intY = Math.round((my.y + my2.y) / 2);
+                    var intP = Math.sin(myPh * 1.8 + myi * 0.5);
+                    if (inB(intX, intY) && intP > -0.1) set(intX, intY, intP > 0.4 ? '#eebb66' : '#aa8844');
+                }
+            }
             return px;
         }
 
