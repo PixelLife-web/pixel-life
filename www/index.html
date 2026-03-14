@@ -2108,6 +2108,43 @@
                     if (inB(grX, grY)) set(grX, grY, iel.granzColor);
                 }
             }
+            // Paneth cells: antimicrobial sentinels at the crypt base
+            // Contain large eosinophilic secretory granules packed with α-defensins (HD5/HD6),
+            // lysozyme, and phospholipase A2 — released into crypt lumen to sterilize the niche
+            var tPan = (now % 26000) / 26000;
+            var panethCells = [
+                {x:18, y:22, color:'#cc7733', dimColor:'#aa5522', granColor:'#ffcc66', lyzColor:'#eebb44', defColor:'#ffdd88'},
+                {x:14, y:17, color:'#bb6622', dimColor:'#994411', granColor:'#eebc55', lyzColor:'#ddaa33', defColor:'#eeccaa'},
+                {x:23, y:22, color:'#cc7733', dimColor:'#aa5522', granColor:'#ffcc66', lyzColor:'#eebb44', defColor:'#ffdd88'},
+            ];
+            for (var pani = 0; pani < panethCells.length; pani++) {
+                var pan = panethCells[pani];
+                var panPhase = tPan * 2 * Math.PI + pani * 2.09;
+                var panPulse = Math.sin(panPhase);
+                // Cell body: pyramidal shape with broad base toward crypt floor
+                if (inB(pan.x, pan.y)) set(pan.x, pan.y, panPulse > 0 ? pan.color : pan.dimColor);
+                // Apical secretory granules: dense eosinophilic granules cluster toward lumen
+                var granAngle = Math.atan2(pan.y - 16, pan.x - 16) + Math.PI; // toward lumen
+                var granX = Math.round(pan.x + Math.cos(granAngle) * 0.9);
+                var granY = Math.round(pan.y + Math.sin(granAngle) * 0.9);
+                var granPulse = Math.sin(panPhase * 1.3 + pani * 0.8);
+                if (inB(granX, granY)) set(granX, granY, granPulse > 0.2 ? pan.granColor : pan.lyzColor);
+                // Degranulation: α-defensin release into crypt lumen when triggered
+                if (panPulse > 0.3) {
+                    var defR = 1.5 + panPulse * 0.5;
+                    var defX = Math.round(pan.x + Math.cos(granAngle) * defR);
+                    var defY = Math.round(pan.y + Math.sin(granAngle) * defR);
+                    if (inB(defX, defY)) set(defX, defY, pan.defColor);
+                    // Lysozyme spray: second wave of antimicrobial peptides
+                    if (panPulse > 0.6) {
+                        var lyzR = 2.0 + panPulse * 0.4;
+                        var lyzSpread = Math.sin(panPhase * 2.5 + pani * 1.2) * 0.5;
+                        var lyzX = Math.round(pan.x + Math.cos(granAngle + lyzSpread) * lyzR);
+                        var lyzY = Math.round(pan.y + Math.sin(granAngle + lyzSpread) * lyzR);
+                        if (inB(lyzX, lyzY)) set(lyzX, lyzY, pan.lyzColor);
+                    }
+                }
+            }
             return px;
         }
 
