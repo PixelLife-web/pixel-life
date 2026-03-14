@@ -2110,6 +2110,43 @@
                         if(p>0.7)s(Math.round(it.x+Math.cos(basA)*2.0),Math.round(it.y+Math.sin(basA)*2.0),'#dd88cc');
                     }
                 }},
+                // M cells (microfold cells): antigen-sampling epithelial cells overlying Peyer's patches
+                // Flat apical surface with short microfolds instead of tall microvilli
+                // Transcytose luminal antigens to basolateral pocket where dendritic cells wait
+                // GP2 receptor on apical surface captures FimH+ bacteria for sampling
+                {period:24000, phaseStep:2.09, items:[
+                    {x:12,y:10,color:'#88aacc',dimColor:'#667799'},{x:20,y:11,color:'#7799bb',dimColor:'#556688'},
+                ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // Flat apical microfolds: 2-3 short stubby projections toward lumen (shorter than enterocyte microvilli)
+                    var lumA2=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    for(var mfi=0;mfi<3;mfi++){
+                        var mfA=lumA2+(mfi-1)*0.40;
+                        var mfX=Math.round(it.x+Math.cos(mfA)*1.2),mfY=Math.round(it.y+Math.sin(mfA)*1.2);
+                        if(inB(mfX,mfY))s(mfX,mfY,Math.sin(ph*1.2+mfi*1.8)>0?'#aaccdd':'#88aabb');
+                    }
+                    // GP2 receptor flash: captures luminal antigen
+                    var gp2Pulse=Math.sin(ph*2.8+idx*1.3);
+                    if(gp2Pulse>0.3){
+                        var gp2X=Math.round(it.x+Math.cos(lumA2)*1.8),gp2Y=Math.round(it.y+Math.sin(lumA2)*1.8);
+                        if(inB(gp2X,gp2Y))s(gp2X,gp2Y,'#ddffee');
+                    }
+                    // Transcytosis vesicle: antigen cargo moving from apical to basolateral
+                    var tcyProg=(t+idx*0.35)%1.0;
+                    var basA2=Math.atan2(it.y-16,it.x-16);
+                    var tcyR=(-0.8+tcyProg*2.2); // moves from apical (-) through cell to basal (+)
+                    var tcyX=Math.round(it.x+Math.cos(basA2)*tcyR),tcyY=Math.round(it.y+Math.sin(basA2)*tcyR);
+                    if(inB(tcyX,tcyY))s(tcyX,tcyY,tcyProg<0.5?'#bbddee':'#ccbbdd');
+                    // Basolateral pocket: subepithelial dendritic cell process reaching up
+                    if(p>0.2){
+                        var dcX=Math.round(it.x+Math.cos(basA2)*1.5),dcY=Math.round(it.y+Math.sin(basA2)*1.5);
+                        if(inB(dcX,dcY))s(dcX,dcY,p>0.5?'#eebb77':'#ccaa66');
+                        // DC dendrite extension deeper into lamina propria
+                        if(p>0.6){
+                            var dcX2=Math.round(it.x+Math.cos(basA2)*2.3),dcY2=Math.round(it.y+Math.sin(basA2)*2.3);
+                            if(inB(dcX2,dcY2))s(dcX2,dcY2,'#ddaa55');
+                        }
+                    }
+                }},
             ]);
             // Notch lateral inhibition: Delta-Notch progenitor pairs with signal exchange
             var tNotch = (now % 22000) / 22000;
