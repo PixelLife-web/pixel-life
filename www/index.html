@@ -283,6 +283,13 @@
             gn.ciliumAngle = gn.centrosomeAngle + 0.15; // nearly aligned with centrosome
             gn.ciliumLength = 2.5 + gn.nucleolusSize * 0.5; // grows with cell maturity
             gn.ciliumPhase = gbi * 1.3; // slight sway phase offset per cell
+            // Early endosomes: clathrin-coated pits internalize ECM nutrients
+            // Small vesicles pinch from membrane and traffic inward toward lysosomes
+            // Each granddaughter has 2 endocytic vesicles at different cycle phases
+            gn.endosomes = [
+                { memAngle: gn.cajalAngle + 1.5, speed: 0.32, phase: gbi * 0.6, color: '#aa55cc' },
+                { memAngle: gn.cajalAngle + 4.0, speed: 0.28, phase: gbi * 0.6 + 0.5, color: '#9944bb' },
+            ];
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -2152,6 +2159,38 @@
                                         var lyPulse = Math.sin(tLysoGD * 1.3 + gni * 1.8);
                                         color = lyPulse > 0 ? '#9966bb' : '#8855aa';
                                         drawn = true;
+                                    }
+                                }
+                                // Early endosomes: vesicles pinch from membrane, traffic inward toward lysosomes
+                                if (!drawn && gn.endosomes) {
+                                    var tEndoGD = (Date.now() % 9000) / 9000;
+                                    for (var edi = 0; edi < gn.endosomes.length && !drawn; edi++) {
+                                        var endo = gn.endosomes[edi];
+                                        // Progress: 0=at membrane (coated pit), 1=near lysosome (matured)
+                                        var edProgress = (tEndoGD * endo.speed + endo.phase) % 1.0;
+                                        // Vesicle travels from membrane inward toward cell center
+                                        var edOutR = effBodyR - 0.3; // starts at membrane
+                                        var edInR = gn.lysoDist * 0.8; // ends near lysosome orbit
+                                        var edR = edOutR - edProgress * (edOutR - edInR);
+                                        // Angle curves slightly as vesicle is sorted along microtubules
+                                        var edAngle = endo.memAngle + edProgress * 0.3;
+                                        var edX = Math.round(gn.x + Math.cos(edAngle) * edR);
+                                        var edY = Math.round(gn.y + Math.sin(edAngle) * edR);
+                                        if (x === edX && y === edY) {
+                                            // Coated pit at membrane is darker, brightens as early endosome matures
+                                            var edPulse = Math.sin(tEndoGD * 2 * Math.PI + edi * 2.0 + gni * 1.5);
+                                            color = edProgress < 0.2 ? '#7733aa' : (edPulse > 0 ? '#bb66dd' : endo.color);
+                                            drawn = true;
+                                        }
+                                        // Clathrin coat flash at membrane when pit forms
+                                        if (!drawn && edProgress < 0.12) {
+                                            var pitGDX = Math.round(gn.x + Math.cos(endo.memAngle) * effBodyR);
+                                            var pitGDY = Math.round(gn.y + Math.sin(endo.memAngle) * effBodyR);
+                                            if (x === pitGDX && y === pitGDY) {
+                                                color = '#cc88ee';
+                                                drawn = true;
+                                            }
+                                        }
                                     }
                                 }
                                 // Centrosome: single centriole pair near nucleus, bright yellow dot
