@@ -1,0 +1,17 @@
+[Unit]
+Description=Pixel Life
+After=network.target
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/pixel-life
+ExecStart=/bin/bash /home/ubuntu/pixel-life/launcher.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ubuntu/pixel-life/logs/launcher.log
+StandardError=append:/home/ubuntu/pixel-life/logs/launcher-error.log
+Environment=HOME=/home/ubuntu
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+[Install]
+WantedBy=multi-user.target
