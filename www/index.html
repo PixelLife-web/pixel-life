@@ -606,28 +606,34 @@
         ];
 
         function mirrorOrg(field, dataA, dataB) { cellA[field] = dataA; cellB[field] = dataB; }
-        mirrorOrg('peroxisomes',
-            [{orbitR:3.8,baseAngle:0.3,speed:0.6,color:'#66aa88'},{orbitR:2.0,baseAngle:3.5,speed:-0.5,color:'#55bb77'}],
-            [{orbitR:3.8,baseAngle:1.8,speed:-0.6,color:'#66aa88'},{orbitR:2.0,baseAngle:5.0,speed:0.5,color:'#55bb77'}]);
         var desmosomes = [{angleA:2.0,angleB:5.2,color:'#bb8844',anchorColor:'#998866'},{angleA:2.8,angleB:5.9,color:'#bb8844',anchorColor:'#998866'}];
-        var baseAB = _a(cellB.cy-cellA.cy,cellB.cx-cellA.cx);
-        var baseBA = _a(cellA.cy-cellB.cy,cellA.cx-cellB.cx);
+        var baseAB = _a(cellB.cy-cellA.cy,cellB.cx-cellA.cx), baseBA = _a(cellA.cy-cellB.cy,cellA.cx-cellB.cx);
         var tightJunctions = [], adherensJunctions = [];
         for (var ji = 0; ji < 6; ji++) tightJunctions.push({angleA:baseAB+(ji-2.5)*0.18,angleB:baseBA+(ji-2.5)*0.18,phase:ji*0.9});
         for (var ji2 = 0; ji2 < 4; ji2++) adherensJunctions.push({angleA:baseAB+(ji2-1.5)*0.25,angleB:baseBA+(ji2-1.5)*0.25,phase:ji2*1.2});
         cellA.actinFibers=[]; cellB.actinFibers=[];
         for (var afi=0;afi<4;afi++){var ajA2=adherensJunctions[afi];cellA.actinFibers.push({junctionAngle:ajA2.angleA,length:3.5,phase:afi*0.7});cellB.actinFibers.push({junctionAngle:ajA2.angleB,length:3.5,phase:afi*0.7+1.0});}
-        mirrorOrg('smoothER',
-            [{cx:24,cy:11,rx:1.5,ry:0.8,angle:0.4},{cx:18,cy:7,rx:1.2,ry:0.6,angle:2.1}],
-            [{cx:14,cy:25,rx:1.5,ry:0.8,angle:0.7},{cx:8,cy:21,rx:1.2,ry:0.6,angle:2.5}]);
-        mirrorOrg('lysosomes',
-            [{orbitR:2.5,baseAngle:1.0,speed:1.2,color:'#8855aa'},{orbitR:3.2,baseAngle:4.0,speed:-0.9,color:'#9966bb'}],
-            [{orbitR:2.5,baseAngle:2.5,speed:-1.1,color:'#8855aa'},{orbitR:3.2,baseAngle:5.5,speed:0.8,color:'#9966bb'}]);
         cellA.microtubules=[]; cellB.microtubules=[];
         for (var mti=0;mti<6;mti++){var mtA2=mti*2*_P/6;cellA.microtubules.push({angle:mtA2,length:4.0,cargoPhase:mti*0.5});cellB.microtubules.push({angle:mtA2+0.3,length:4.0,cargoPhase:mti*0.5+0.25});}
         cellA.intermediateFilaments=[]; cellB.intermediateFilaments=[];
         for (var ifi=0;ifi<desmosomes.length;ifi++){cellA.intermediateFilaments.push({targetAngle:desmosomes[ifi].angleA,length:3.8,phase:ifi*1.1});cellB.intermediateFilaments.push({targetAngle:desmosomes[ifi].angleB,length:3.8,phase:ifi*1.1+0.5});}
         for (var ifi2=0;ifi2<4;ifi2++){var ca2=ifi2*_P/2+0.4;cellA.intermediateFilaments.push({targetAngle:ca2,length:2.5,phase:ifi2*0.8+2.0});cellB.intermediateFilaments.push({targetAngle:ca2+0.2,length:2.5,phase:ifi2*0.8+2.5});}
+        [['peroxisomes',[[3.8,0.3,0.6,'#66aa88'],[2.0,3.5,-0.5,'#55bb77']],[[3.8,1.8,-0.6,'#66aa88'],[2.0,5.0,0.5,'#55bb77']],'orbitR,baseAngle,speed,color'],
+         ['lysosomes',[[2.5,1.0,1.2,'#8855aa'],[3.2,4.0,-0.9,'#9966bb']],[[2.5,2.5,-1.1,'#8855aa'],[3.2,5.5,0.8,'#9966bb']],'orbitR,baseAngle,speed,color'],
+         ['cyclins',[[3.0,1.2,0.6,'#44bbaa']],[[3.0,4.0,-0.55,'#44bbaa']],'orbitR,baseAngle,speed,color'],
+         ['phosphatases',[[1.6,0.9,0.7,'#44ddbb'],[2.4,3.1,-0.6,'#33ccaa'],[1.9,5.4,0.55,'#44ddbb']],[[1.6,2.3,-0.65,'#44ddbb'],[2.4,4.8,0.58,'#33ccaa'],[1.9,0.6,-0.52,'#44ddbb']],'orbitR,baseAngle,speed,color'],
+         ['cdc25',[[2.4,0.6,0.5,'#338877'],[3.2,3.8,-0.38,'#44aa88']],[[2.4,2.2,-0.5,'#338877'],[3.2,5.5,0.4,'#44aa88']],'orbitR,baseAngle,speed,color'],
+         ['cyclinA',[[2.8,4.0,-0.4,'#996677'],[1.2,0.3,0.65,'#aa7788']],[[2.8,1.0,0.42,'#996677'],[1.2,3.2,-0.6,'#aa7788']],'orbitR,baseAngle,speed,color'],
+         ['topoII',[[1.5,1.0,0.3,'#dd6644'],[4.0,0.7,-0.2,'#cc5533']],[[4.2,1.0,-0.28,'#dd6644'],[1.0,0.7,0.22,'#cc5533']],'baseAngle,orbitR,speed,color'],
+         ['cyclinB',[[3.5,0.4,0.5,'#228866']],[[3.5,2.8,-0.48,'#228866']],'orbitR,baseAngle,speed,color,+nuclear:false'],
+         ['plk1',[[2.2,1.5,0.55,'#ee6644'],[3.0,4.8,-0.48,'#dd5533']],[[2.2,4.2,-0.52,'#ee6644'],[3.0,1.5,0.46,'#dd5533']],'orbitR,baseAngle,speed,color'],
+        ].forEach(function(d){var keys=d[3].split(','),extra={};
+            keys=keys.filter(function(k){if(k.charAt(0)==='+'){var p=k.slice(1).split(':');extra[p[0]]=p[1]==='false'?false:p[1]==='true'?true:p[1];return false;}return true;});
+            function mkArr(src){return src.map(function(v){var o={};for(var i=0;i<keys.length;i++)o[keys[i]]=v[i];for(var ek in extra)o[ek]=extra[ek];return o;});}
+            mirrorOrg(d[0],mkArr(d[1]),mkArr(d[2]));});
+        mirrorOrg('smoothER',
+            [{cx:24,cy:11,rx:1.5,ry:0.8,angle:0.4},{cx:18,cy:7,rx:1.2,ry:0.6,angle:2.1}],
+            [{cx:14,cy:25,rx:1.5,ry:0.8,angle:0.7},{cx:8,cy:21,rx:1.2,ry:0.6,angle:2.5}]);
         mirrorOrg('nuclearPores',
             [{angle:0.5,mRNAphase:0},{angle:1.8,mRNAphase:0.33},{angle:3.3,mRNAphase:0.66},{angle:4.7,mRNAphase:0.5},{angle:5.8,mRNAphase:0.17}],
             [{angle:0.8,mRNAphase:0.15},{angle:2.1,mRNAphase:0.48},{angle:3.6,mRNAphase:0.82},{angle:5.0,mRNAphase:0.31},{angle:5.5,mRNAphase:0.64}]);
@@ -637,20 +643,13 @@
         mirrorOrg('endocyticVesicles',
             [{memAngle:0.3,targetAngle:1.0,speed:0.38,phase:0,color:'#aa55cc'},{memAngle:2.5,targetAngle:4.0,speed:0.42,phase:0.5,color:'#9944bb'}],
             [{memAngle:3.5,targetAngle:2.5,speed:0.4,phase:0.25,color:'#aa55cc'},{memAngle:5.0,targetAngle:5.5,speed:0.36,phase:0.75,color:'#9944bb'}]);
-        mirrorOrg('cyclins',[{orbitR:3.0,baseAngle:1.2,speed:0.6,color:'#44bbaa'}],[{orbitR:3.0,baseAngle:4.0,speed:-0.55,color:'#44bbaa'}]);
-        mirrorOrg('phosphatases',
-            [{orbitR:1.6,baseAngle:0.9,speed:0.7,color:'#44ddbb'},{orbitR:2.4,baseAngle:3.1,speed:-0.6,color:'#33ccaa'},{orbitR:1.9,baseAngle:5.4,speed:0.55,color:'#44ddbb'}],
-            [{orbitR:1.6,baseAngle:2.3,speed:-0.65,color:'#44ddbb'},{orbitR:2.4,baseAngle:4.8,speed:0.58,color:'#33ccaa'},{orbitR:1.9,baseAngle:0.6,speed:-0.52,color:'#44ddbb'}]);
         mirrorOrg('checkpointKinases',[{scanSpeed:0.015,phase:0,color:'#223322'}],[{scanSpeed:-0.015,phase:0.15,color:'#223322'}]);
-        mirrorOrg('cdc25',
-            [{orbitR:2.4,baseAngle:0.6,speed:0.5,color:'#338877'},{orbitR:3.2,baseAngle:3.8,speed:-0.38,color:'#44aa88'}],
-            [{orbitR:2.4,baseAngle:2.2,speed:-0.5,color:'#338877'},{orbitR:3.2,baseAngle:5.5,speed:0.4,color:'#44aa88'}]);
-        mirrorOrg('cyclinA',
-            [{orbitR:2.8,baseAngle:4.0,speed:-0.4,color:'#996677'},{orbitR:1.2,baseAngle:0.3,speed:0.65,color:'#aa7788'}],
-            [{orbitR:2.8,baseAngle:1.0,speed:0.42,color:'#996677'},{orbitR:1.2,baseAngle:3.2,speed:-0.6,color:'#aa7788'}]);
         mirrorOrg('cyclinD',
             [{orbitR:2.6,baseAngle:0.9,speed:0.45,color:'#ddaa33',nuclear:false},{orbitR:3.2,baseAngle:3.4,speed:-0.38,color:'#ccaa44',nuclear:false},{orbitR:1.0,baseAngle:1.8,speed:0.7,color:'#eebb44',nuclear:true}],
             [{orbitR:2.6,baseAngle:3.8,speed:-0.42,color:'#ddaa33',nuclear:false},{orbitR:3.2,baseAngle:0.5,speed:0.4,color:'#ccaa44',nuclear:false},{orbitR:1.0,baseAngle:4.5,speed:-0.65,color:'#eebb44',nuclear:true}]);
+        mirrorOrg('auroraA',
+            [{targetPole:1,speed:0.8,phase:0,color:'#88ddff'},{targetPole:2,speed:0.75,phase:0.5,color:'#99eeff'}],
+            [{targetPole:1,speed:-0.78,phase:0.3,color:'#88ddff'},{targetPole:2,speed:-0.72,phase:0.8,color:'#99eeff'}]);
 
         function mkProphase(p1, p2) {
             return { condensation:0.3, laminPhospho:0.2, npcDisassembly:0.25,
@@ -1921,6 +1920,28 @@
                     s(_r(it.x+_c(wA)*wR),_r(it.y+_s(wA)*wR),'#88ee66');}
                     if(_s(ph*2.2+idx*1.5)>0.3){var bmpA=_a(it.y-16,it.x-16),bmpR=1.8+_s(ph*0.9)*0.4;
                     s(_r(it.x+_c(bmpA)*bmpR),_r(it.y+_s(bmpA)*bmpR),'#ee88aa');}
+                }},
+                {period:26000, phaseStep:2.09, items:[
+                    {x:18,y:20,color:'#55ccbb',dimColor:'#339988',lumA:_a(20-22,18-16)},
+                    {x:22,y:23,color:'#44bbaa',dimColor:'#228877',lumA:_a(23-22,22-16)},
+                    {x:14,y:22,color:'#55ccbb',dimColor:'#339988',lumA:_a(22-22,14-16)},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    for(var gi=0;gi<4;gi++){var gA=it.lumA+_P+(gi-1.5)*0.35,gR=0.5+gi*0.12+_s(ph*0.5+gi*1.3)*0.08;
+                    var gX=_r(it.x+_c(gA)*gR),gY=_r(it.y+_s(gA)*gR);
+                    if(inB(gX,gY))s(gX,gY,_s(ph*1.6+gi*2.1)>0?'#77eedd':'#55ccbb');}
+                    var basA=_a(it.y-16,it.x-16);
+                    var glpPh=(t*1.8+idx*0.30)%1.0;
+                    if(glpPh<0.55){var glpR=0.8+glpPh*4.5,glpA=basA+_s(ph*0.4+idx*1.3)*0.15;
+                    var glpX=_r(it.x+_c(glpA)*glpR),glpY=_r(it.y+_s(glpA)*glpR);
+                    if(inB(glpX,glpY))s(glpX,glpY,glpPh<0.18?'#88ffee':(glpPh<0.35?'#66ddcc':'#55ccbb'));
+                    if(glpPh>0.25){var glpR2=glpR+0.8+_s(ph*0.7)*0.3;
+                    s(_r(it.x+_c(glpA+0.15)*glpR2),_r(it.y+_s(glpA+0.15)*glpR2),glpPh<0.4?'#77eedd':'#55bbaa');}}
+                    var pyyPh=(t*1.5+idx*0.40)%1.0;
+                    if(pyyPh<0.50){var pyyR=1.0+pyyPh*4.0,pyyA=basA-0.20+_s(ph*0.6+idx*0.9)*0.12;
+                    var pyyX=_r(it.x+_c(pyyA)*pyyR),pyyY=_r(it.y+_s(pyyA)*pyyR);
+                    if(inB(pyyX,pyyY))s(pyyX,pyyY,pyyPh<0.15?'#eedd66':(pyyPh<0.30?'#ddcc55':'#ccbb44'));}
+                    if(p>0.3){var senA=it.lumA,senR=1.0+p*0.4;
+                    s(_r(it.x+_c(senA)*senR),_r(it.y+_s(senA)*senR),_s(ph*2.3+idx*1.5)>0?'#aaffee':'#88ddcc');}
                 }},
                 {period:28000, phaseStep:1.57, items:[
                     {x:9,y:16,color:'#aa99cc',dimColor:'#887799'},{x:14,y:21,color:'#9988bb',dimColor:'#776688'},
