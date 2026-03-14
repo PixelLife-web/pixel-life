@@ -123,6 +123,54 @@
             cellB.cilia.push({ angle: angle, length: 2, phase: ci * 0.4 + 0.2 });
         }
 
+        // --- HELPERS ---
+        function inB(x, y) { return x >= 0 && x < size && y >= 0 && y < size; }
+        // Generic orbiter renderer: particles orbiting cell center
+        function renderOrbiters(cell, items, tOrbit, t, period, opts) {
+            var px = {};
+            if (!items || !cell.separated) return px;
+            var tp = (t * 8000 / period) % 1.0;
+            var pr = opts.pulseRate || 1, ps = opts.phaseSpread || 1.4, th = opts.threshold || 0.2;
+            var minR = opts.minR || 0, mxR = opts.maxR || 999;
+            for (var i = 0; i < items.length; i++) {
+                var it = items[i];
+                var a = it.baseAngle + it.speed * tOrbit;
+                var r = it.orbitR;
+                if (opts.nuclear !== undefined && it.nuclear !== undefined) {
+                    // nuclear vs cytoplasmic routing
+                    r = it.orbitR;
+                }
+                var x = Math.round(cell.cx + Math.cos(a) * r);
+                var y = Math.round(cell.cy + Math.sin(a) * r);
+                var dx = x - cell.cx, dy = y - cell.cy, d = Math.sqrt(dx*dx+dy*dy);
+                var p = Math.sin(tp * 2 * Math.PI * pr + i * ps);
+                var inRange = (it.nuclear !== undefined) ?
+                    (it.nuclear ? d <= (opts.nucR || 2) + 0.5 : d < mxR && d > (opts.nucR || 2) + 0.8) :
+                    (d >= minR && d <= mxR);
+                if (inRange && inB(x, y)) {
+                    var hi = (it.nuclear && opts.nucHi) ? (p > (opts.nucTh||0.1) ? opts.nucHi : (opts.nucLo||it.color)) : null;
+                    px[x+','+y] = hi || (p > th ? (opts.hiColor || it.color) : it.color);
+                }
+                if (opts.spark && p > 0.6 && inB(x,y)) {
+                    var sa = a + 0.8, sr = r + 0.6;
+                    var sx = Math.round(cell.cx + Math.cos(sa) * sr);
+                    var sy = Math.round(cell.cy + Math.sin(sa) * sr);
+                    var sd = Math.sqrt((sx-cell.cx)*(sx-cell.cx)+(sy-cell.cy)*(sy-cell.cy));
+                    if (sd < mxR && inB(sx, sy)) px[sx+','+sy] = opts.sparkColor || opts.hiColor;
+                }
+                // Ripple trail for phosphatases
+                if (opts.ripple && p > 0.5) {
+                    var ra = a + 0.4, rr = r - 0.5;
+                    var rx = Math.round(cell.cx + Math.cos(ra) * rr);
+                    var ry = Math.round(cell.cy + Math.sin(ra) * rr);
+                    if (Math.sqrt((rx-cell.cx)*(rx-cell.cx)+(ry-cell.cy)*(ry-cell.cy)) < mxR && inB(rx,ry)) {
+                        px[rx+','+ry] = opts.rippleColor || opts.hiColor;
+                    }
+                }
+            }
+            return px;
+        }
+
         // Precompute ER data for a cell
         function buildERData(cell) {
             cell.erPixels = {};
@@ -185,6 +233,19 @@
             { x: 8, y: 20, parent: 'B', reactivation: 0.35, nucleolusSize: 0.45, cajalAngle: 4.2 },
             { x: 14, y: 26, parent: 'B', reactivation: 0.2, nucleolusSize: 0.3, cajalAngle: 5.8 },
         ];
+
+        // Calcium waves: tissue-level signaling between granddaughter nuclei
+        // IP3-mediated Ca2+ release propagates sequentially through the four-cell cluster
+        var calciumWaves = [];
+        for (var cwi = 0; cwi < granddaughterNuclei.length; cwi++) {
+            var nextIdx = (cwi + 1) % granddaughterNuclei.length;
+            calciumWaves.push({
+                from: granddaughterNuclei[cwi],
+                to: granddaughterNuclei[nextIdx],
+                phase: cwi * 0.25, // staggered propagation
+                color: '#ffee77', dimColor: '#ddcc55',
+            });
+        }
 
         // Kum-song (금성 — golden star): a luminous beacon in the extracellular medium
         // A radiant golden particle that traces a slow orbit between the two daughter cells
@@ -1210,31 +1271,9 @@
                 vesPixels[path[idx].x + ',' + path[idx].y] = vc;
             }
 
-            // Lysosomes orbiting in cytoplasm
-            var lysoPixels = {};
-            if (cell.lysosomes) {
-                for (var li = 0; li < cell.lysosomes.length; li++) {
-                    var lyso = cell.lysosomes[li];
-                    var lysoAngle = lyso.baseAngle + lyso.speed * tOrbit;
-                    var lx = Math.round(cell.cx + Math.cos(lysoAngle) * lyso.orbitR);
-                    var ly = Math.round(cell.cy + Math.sin(lysoAngle) * lyso.orbitR);
-                    lysoPixels[lx + ',' + ly] = lyso.color;
-                }
-            }
-
-            // Peroxisomes orbiting in cytoplasm (slower, distinct from lysosomes)
-            var peroxPixels = {};
-            if (cell.peroxisomes) {
-                for (var pi = 0; pi < cell.peroxisomes.length; pi++) {
-                    var prox = cell.peroxisomes[pi];
-                    var proxAngle = prox.baseAngle + prox.speed * tOrbit;
-                    var px2 = Math.round(cell.cx + Math.cos(proxAngle) * prox.orbitR);
-                    var py2 = Math.round(cell.cy + Math.sin(proxAngle) * prox.orbitR);
-                    if (px2 >= 0 && px2 < size && py2 >= 0 && py2 < size) {
-                        peroxPixels[px2 + ',' + py2] = prox.color;
-                    }
-                }
-            }
+            // Lysosomes + Peroxisomes: orbiting organelles (consolidated)
+            var lysoPixels = renderOrbiters(cell, cell.lysosomes, tOrbit, t, 5500, {threshold:-9});
+            var peroxPixels = renderOrbiters(cell, cell.peroxisomes, tOrbit, t, 5500, {threshold:-9});
 
             // Ribosomes on rough ER: small dots that pulse with protein synthesis
             var riboPixels = {};
@@ -1499,28 +1538,8 @@
                 }
             }
 
-            // Cyclin-CDK particles: accumulating in cytoplasm during S phase
-            var cyclinPixels = {};
-            if (cell.cyclins && cell.separated) {
-                var tCyclin = (t * 8000 / 5500) % 1.0;
-                for (var cli = 0; cli < cell.cyclins.length; cli++) {
-                    var cyc = cell.cyclins[cli];
-                    var cycAngle = cyc.baseAngle + cyc.speed * tOrbit;
-                    var cx2 = Math.round(cell.cx + Math.cos(cycAngle) * cyc.orbitR);
-                    var cy2 = Math.round(cell.cy + Math.sin(cycAngle) * cyc.orbitR);
-                    // Cyclins accumulate: they pulse brighter as concentration rises
-                    var cycPulse = Math.sin(tCyclin * 2 * Math.PI + cli * 1.4);
-                    // Stay within cell and outside nucleus
-                    var cdx2 = cx2 - cell.cx;
-                    var cdy2 = cy2 - cell.cy;
-                    var cDist = Math.sqrt(cdx2 * cdx2 + cdy2 * cdy2);
-                    if (cDist < maxR - 1.0 && cDist > nucR + 1.0) {
-                        if (cx2 >= 0 && cx2 < size && cy2 >= 0 && cy2 < size) {
-                            cyclinPixels[cx2 + ',' + cy2] = cycPulse > 0.2 ? '#55eebb' : cyc.color;
-                        }
-                    }
-                }
-            }
+            // Cyclin-CDK particles (consolidated)
+            var cyclinPixels = renderOrbiters(cell, cell.cyclins, tOrbit, t, 5500, {minR:nucR+1,maxR:maxR-1,hiColor:'#55eebb'});
 
             // Phospho-Rb: inactivated, drifts slowly inside nucleus (dim green)
             var checkPixels = {};
@@ -1559,142 +1578,20 @@
 
             // Replication forks + histones: S phase complete (consolidated)
 
-            // Cohesin rings: blue-lavender dots inside nucleus, holding sister chromatids together
-            var cohesinPixels = {};
-            if (cell.cohesins && cell.separated) {
-                var tCoh = (t * 8000 / 7500) % 1.0;
-                for (var cohi = 0; cohi < cell.cohesins.length; cohi++) {
-                    var coh = cell.cohesins[cohi];
-                    var cohAngle = coh.baseAngle + coh.speed * tOrbit;
-                    var cohX = Math.round(cell.cx + Math.cos(cohAngle) * coh.orbitR);
-                    var cohY = Math.round(cell.cy + Math.sin(cohAngle) * coh.orbitR);
-                    var cohDx = cohX - cell.cx, cohDy = cohY - cell.cy;
-                    if (Math.sqrt(cohDx * cohDx + cohDy * cohDy) < nucR + 0.3) {
-                        if (cohX >= 0 && cohX < size && cohY >= 0 && cohY < size) {
-                            var cohPulse = Math.sin(tCoh * 2 * Math.PI + cohi * 2.1);
-                            // Eco1 acetylation flash: cohesin locks brighter when acetylated
-                            cohesinPixels[cohX + ',' + cohY] = cohPulse > 0.3 ? '#aaccee' : coh.color;
-                        }
-                    }
-                }
-            }
+            // Cohesin rings (consolidated — empty, fully cleaved)
+            var cohesinPixels = renderOrbiters(cell, cell.cohesins, tOrbit, t, 7500, {maxR:nucR+0.3,threshold:0.3,hiColor:'#aaccee',phaseSpread:2.1});
 
-            // Topoisomerase II: resolves catenanes, orange-red pulses inside nucleus
-            var topoPixels = {};
-            if (cell.topoII && cell.separated) {
-                var tTopo = (t * 8000 / 5500) % 1.0;
-                for (var tpi = 0; tpi < cell.topoII.length; tpi++) {
-                    var tp = cell.topoII[tpi];
-                    var tpAngle = tp.baseAngle + tp.speed * tOrbit;
-                    var tpX = Math.round(cell.cx + Math.cos(tpAngle) * tp.orbitR);
-                    var tpY = Math.round(cell.cy + Math.sin(tpAngle) * tp.orbitR);
-                    var tpDx = tpX - cell.cx, tpDy = tpY - cell.cy;
-                    if (Math.sqrt(tpDx * tpDx + tpDy * tpDy) < nucR + 0.3) {
-                        if (tpX >= 0 && tpX < size && tpY >= 0 && tpY < size) {
-                            var topoPulse = Math.sin(tTopo * 2 * Math.PI * 2 + tpi * 1.8);
-                            // Bright flash when cutting/passing DNA strand
-                            topoPixels[tpX + ',' + tpY] = topoPulse > 0.4 ? '#ff8866' : tp.color;
-                        }
-                    }
-                    // Decatenation spark: brief flicker near topoII when resolving
-                    var topoPulse2 = Math.sin(tTopo * 2 * Math.PI * 2 + tpi * 1.8);
-                    if (topoPulse2 > 0.6) {
-                        var sparkA = tpAngle + 0.7;
-                        var sparkR = tp.orbitR * 0.6;
-                        var spkX = Math.round(cell.cx + Math.cos(sparkA) * sparkR);
-                        var spkY = Math.round(cell.cy + Math.sin(sparkA) * sparkR);
-                        if (spkX >= 0 && spkX < size && spkY >= 0 && spkY < size) {
-                            topoPixels[spkX + ',' + spkY] = '#ffaa88';
-                        }
-                    }
-                }
-            }
+            // Topoisomerase II (consolidated)
+            var topoPixels = renderOrbiters(cell, cell.topoII, tOrbit, t, 5500, {maxR:nucR+0.3,threshold:0.4,hiColor:'#ff8866',pulseRate:2,phaseSpread:1.8,spark:true,sparkColor:'#ffaa88'});
 
-            // Cyclin A-CDK2: rising in S phase, pink-magenta particles
-            var cycAPixels = {};
-            if (cell.cyclinA && cell.separated) {
-                var tCycA = (t * 8000 / 5200) % 1.0;
-                for (var cai = 0; cai < cell.cyclinA.length; cai++) {
-                    var cya = cell.cyclinA[cai];
-                    var cyaAngle = cya.baseAngle + cya.speed * tOrbit;
-                    var cax = Math.round(cell.cx + Math.cos(cyaAngle) * cya.orbitR);
-                    var cay = Math.round(cell.cy + Math.sin(cyaAngle) * cya.orbitR);
-                    var caPulse = Math.sin(tCycA * 2 * Math.PI + cai * 1.4);
-                    var cadx = cax - cell.cx;
-                    var cady = cay - cell.cy;
-                    var caDist = Math.sqrt(cadx * cadx + cady * cady);
-                    if (caDist < maxR - 1.0 && caDist > nucR + 1.0) {
-                        if (cax >= 0 && cax < size && cay >= 0 && cay < size) {
-                            cycAPixels[cax + ',' + cay] = caPulse > 0.3 ? '#ee88bb' : cya.color;
-                        }
-                    }
-                }
-            }
+            // Cyclin A-CDK2 (consolidated)
+            var cycAPixels = renderOrbiters(cell, cell.cyclinA, tOrbit, t, 5200, {minR:nucR+1,maxR:maxR-1,threshold:0.3,hiColor:'#ee88bb'});
 
-            // Cyclin B-CDK1: G2 accumulation — green-teal particles in cytoplasm only
-            // CRM1 exportin shuttles cyclin B out of nucleus; Wee1 keeps CDK1 inactive
-            var cycBPixels = {};
-            if (cell.cyclinB && cell.separated) {
-                var tCycB = (t * 8000 / 5800) % 1.0;
-                for (var cbi = 0; cbi < cell.cyclinB.length; cbi++) {
-                    var cyb = cell.cyclinB[cbi];
-                    var cybAngle = cyb.baseAngle + cyb.speed * tOrbit;
-                    var cbx = Math.round(cell.cx + Math.cos(cybAngle) * cyb.orbitR);
-                    var cby = Math.round(cell.cy + Math.sin(cybAngle) * cyb.orbitR);
-                    var cbPulse = Math.sin(tCycB * 2 * Math.PI + cbi * 1.9);
-                    var cbdx = cbx - cell.cx, cbdy = cby - cell.cy;
-                    var cbDist = Math.sqrt(cbdx * cbdx + cbdy * cbdy);
-                    if (cyb.nuclear) {
-                        // Nuclear cyclin B-CDK1: CRM1 export shut down, flooding nucleus
-                        if (cbDist <= nucR + 0.8) {
-                            if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
-                                cycBPixels[cbx + ',' + cby] = cbPulse > 0.1 ? '#77ffdd' : cyb.color;
-                            }
-                        }
-                    } else {
-                        // Cytoplasmic cyclin B
-                        if (cbDist < maxR - 0.8 && cbDist > nucR + 1.2) {
-                            if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
-                                cycBPixels[cbx + ',' + cby] = cbPulse > 0.2 ? '#55eebb' : cyb.color;
-                            }
-                        }
-                    }
-                }
-            }
+            // Cyclin B-CDK1 (consolidated)
+            var cycBPixels = renderOrbiters(cell, cell.cyclinB, tOrbit, t, 5800, {nuclear:true,nucR:nucR,maxR:maxR-0.8,minR:nucR+1.2,hiColor:'#55eebb',nucHi:'#77ffdd',nucTh:0.1,phaseSpread:1.9});
 
-            // PLK1: magenta-orange kinase — master switch for G2/M transition
-            var plk1Pixels = {};
-            if (cell.plk1 && cell.separated) {
-                var tPLK = (t * 8000 / 5300) % 1.0;
-                for (var pli = 0; pli < cell.plk1.length; pli++) {
-                    var plk = cell.plk1[pli];
-                    var plkAngle = plk.baseAngle + plk.speed * tOrbit;
-                    var plkX = Math.round(cell.cx + Math.cos(plkAngle) * plk.orbitR);
-                    var plkY = Math.round(cell.cy + Math.sin(plkAngle) * plk.orbitR);
-                    var plkPulse = Math.sin(tPLK * 2 * Math.PI * 2 + pli * 1.7);
-                    var plkDx = plkX - cell.cx, plkDy = plkY - cell.cy;
-                    var plkDist = Math.sqrt(plkDx * plkDx + plkDy * plkDy);
-                    if (plkDist < maxR - 1.0 && plkDist > nucR + 0.5) {
-                        if (plkX >= 0 && plkX < size && plkY >= 0 && plkY < size) {
-                            // PLK1 flashes bright when phosphorylating Cdc25 or Wee1
-                            plk1Pixels[plkX + ',' + plkY] = plkPulse > 0.3 ? '#ff8866' : plk.color;
-                        }
-                    }
-                    // Phosphorylation spark toward nearby targets
-                    if (plkPulse > 0.6) {
-                        var sparkA2 = plkAngle + 0.8;
-                        var sparkR2 = plk.orbitR + 0.6;
-                        var spkX2 = Math.round(cell.cx + Math.cos(sparkA2) * sparkR2);
-                        var spkY2 = Math.round(cell.cy + Math.sin(sparkA2) * sparkR2);
-                        var spkDx = spkX2 - cell.cx, spkDy = spkY2 - cell.cy;
-                        if (Math.sqrt(spkDx * spkDx + spkDy * spkDy) < maxR - 1.0) {
-                            if (spkX2 >= 0 && spkX2 < size && spkY2 >= 0 && spkY2 < size) {
-                                plk1Pixels[spkX2 + ',' + spkY2] = '#ffaa77';
-                            }
-                        }
-                    }
-                }
-            }
+            // PLK1 (consolidated)
+            var plk1Pixels = renderOrbiters(cell, cell.plk1, tOrbit, t, 5300, {minR:nucR+0.5,maxR:maxR-1,threshold:0.3,hiColor:'#ff8866',pulseRate:2,phaseSpread:1.7,spark:true,sparkColor:'#ffaa77'});
 
             // Aurora A kinase: flashes at centrosome positions, driving PCM maturation
             var auroraAPixels = {};
@@ -1722,65 +1619,13 @@
                 }
             }
 
-            // Cyclin D-CDK4/6: amber particles, some cytoplasmic, some nuclear
-            var cycDPixels = {};
-            if (cell.cyclinD && cell.separated) {
-                var tCycD = (t * 8000 / 6200) % 1.0;
-                for (var cdi2 = 0; cdi2 < cell.cyclinD.length; cdi2++) {
-                    var cyd = cell.cyclinD[cdi2];
-                    var cydAngle = cyd.baseAngle + cyd.speed * tOrbit;
-                    var cydR = cyd.nuclear ? cyd.orbitR : cyd.orbitR;
-                    var cydx = Math.round(cell.cx + Math.cos(cydAngle) * cydR);
-                    var cydy = Math.round(cell.cy + Math.sin(cydAngle) * cydR);
-                    var cydPulse = Math.sin(tCycD * 2 * Math.PI + cdi2 * 1.6);
-                    var cydDx = cydx - cell.cx;
-                    var cydDy = cydy - cell.cy;
-                    var cydDist = Math.sqrt(cydDx * cydDx + cydDy * cydDy);
-                    // Nuclear cyclin D stays inside nucleus, cytoplasmic stays outside
-                    var inRange = cyd.nuclear
-                        ? (cydDist < nucR + 0.5)
-                        : (cydDist < maxR - 1.0 && cydDist > nucR + 0.8);
-                    if (inRange && cydx >= 0 && cydx < size && cydy >= 0 && cydy < size) {
-                        // Nuclear cyclin D glows brighter when phosphorylating Rb
-                        cycDPixels[cydx + ',' + cydy] = cyd.nuclear
-                            ? (cydPulse > 0.1 ? '#ffcc55' : '#eebb44')
-                            : (cydPulse > 0.3 ? '#eebb55' : cyd.color);
-                    }
-                    // Phosphorylation spark: nuclear cyclin D emits a brief spark at Rb
-                    if (cyd.nuclear && cydPulse > 0.6) {
-                        var sparkAngle = cydAngle + 0.5;
-                        var sparkX = Math.round(cell.cx + Math.cos(sparkAngle) * (cydR + 0.5));
-                        var sparkY = Math.round(cell.cy + Math.sin(sparkAngle) * (cydR + 0.5));
-                        if (sparkX >= 0 && sparkX < size && sparkY >= 0 && sparkY < size) {
-                            cycDPixels[sparkX + ',' + sparkY] = '#ffdd88';
-                        }
-                    }
-                }
-            }
+            // Cyclin D-CDK4/6 (consolidated)
+            var cycDPixels = renderOrbiters(cell, cell.cyclinD, tOrbit, t, 6200, {nuclear:true,nucR:nucR,maxR:maxR-1,minR:nucR+0.8,threshold:0.3,hiColor:'#eebb55',nucHi:'#ffcc55',nucLo:'#eebb44',nucTh:0.1,phaseSpread:1.6,spark:true,sparkColor:'#ffdd88'});
 
             // Cyclin E: degraded (consolidated)
 
-            // Cdc25 phosphatase: bright particles that flash when activating CDK1
-            var cdc25Pixels = {};
-            if (cell.cdc25 && cell.separated) {
-                var tCdc25 = (t * 8000 / 4800) % 1.0;
-                for (var cdi = 0; cdi < cell.cdc25.length; cdi++) {
-                    var cd = cell.cdc25[cdi];
-                    var cdAngle = cd.baseAngle + cd.speed * tOrbit;
-                    var cdx5 = Math.round(cell.cx + Math.cos(cdAngle) * cd.orbitR);
-                    var cdy5 = Math.round(cell.cy + Math.sin(cdAngle) * cd.orbitR);
-                    var cdPulse = Math.sin(tCdc25 * 2 * Math.PI * 2 + cdi * 1.6);
-                    var cdDx = cdx5 - cell.cx;
-                    var cdDy = cdy5 - cell.cy;
-                    var cdDist = Math.sqrt(cdDx * cdDx + cdDy * cdDy);
-                    if (cdDist < maxR - 1.0 && cdDist > nucR + 0.5) {
-                        if (cdx5 >= 0 && cdx5 < size && cdy5 >= 0 && cdy5 < size) {
-                            // Bright flash when dephosphorylating CDK1
-                            cdc25Pixels[cdx5 + ',' + cdy5] = cdPulse > 0.3 ? '#77ffcc' : cd.color;
-                        }
-                    }
-                }
-            }
+            // Cdc25 phosphatase (consolidated)
+            var cdc25Pixels = renderOrbiters(cell, cell.cdc25, tOrbit, t, 4800, {minR:nucR+0.5,maxR:maxR-1,threshold:0.3,hiColor:'#77ffcc',pulseRate:2,phaseSpread:1.6});
 
             // Growth factors: secreted from membrane, arc outward then curve back to receptors
             var gfPixels = {};
@@ -1801,36 +1646,8 @@
                 }
             }
 
-            // PP1/PP2A phosphatases: dephosphorylation wave sweeping through the cell
-            var phosphPixels = {};
-            if (cell.phosphatases && cell.separated) {
-                var tPhos = (t * 8000 / 4500) % 1.0;
-                for (var phi = 0; phi < cell.phosphatases.length; phi++) {
-                    var ph = cell.phosphatases[phi];
-                    var phAngle = ph.baseAngle + ph.speed * tOrbit;
-                    var phX = Math.round(cell.cx + Math.cos(phAngle) * ph.orbitR);
-                    var phY = Math.round(cell.cy + Math.sin(phAngle) * ph.orbitR);
-                    var phPulse = Math.sin(tPhos * 2 * Math.PI * 2.5 + phi * 1.9);
-                    var phDx = phX - cell.cx;
-                    var phDy = phY - cell.cy;
-                    var phDist = Math.sqrt(phDx * phDx + phDy * phDy);
-                    if (phDist < maxR - 1.0) {
-                        if (phX >= 0 && phX < size && phY >= 0 && phY < size) {
-                            // Bright flash when dephosphorylating a substrate
-                            phosphPixels[phX + ',' + phY] = phPulse > 0.2 ? '#66ffdd' : ph.color;
-                        }
-                        // Dephosphorylation ripple: 1-pixel trail showing substrate being restored
-                        if (phPulse > 0.5) {
-                            var ripAngle = phAngle + 0.4;
-                            var ripX = Math.round(cell.cx + Math.cos(ripAngle) * (ph.orbitR - 0.5));
-                            var ripY = Math.round(cell.cy + Math.sin(ripAngle) * (ph.orbitR - 0.5));
-                            if (ripX >= 0 && ripX < size && ripY >= 0 && ripY < size) {
-                                phosphPixels[ripX + ',' + ripY] = '#55eebb';
-                            }
-                        }
-                    }
-                }
-            }
+            // PP1/PP2A phosphatases (consolidated)
+            var phosphPixels = renderOrbiters(cell, cell.phosphatases, tOrbit, t, 4500, {maxR:maxR-1,hiColor:'#66ffdd',pulseRate:2.5,phaseSpread:1.9,ripple:true,rippleColor:'#55eebb'});
 
             // Telophase: central spindle / midbody forms at equator, cleavage furrow ingresses
             // Anaphase remnant: separase flashes fade
@@ -2473,6 +2290,24 @@
                                         color = auraPulse > 0.5 ? '#ffdd88' : '#eebb66';
                                         drawn = true;
                                     }
+                                }
+                            }
+                        }
+                        // Calcium waves: IP3-mediated Ca2+ pulses ripple between granddaughter nuclei
+                        if (!drawn) {
+                            var tCa = (Date.now() % 14000) / 14000;
+                            for (var cwi = 0; cwi < calciumWaves.length && !drawn; cwi++) {
+                                var cw = calciumWaves[cwi];
+                                var caProgress = (tCa + cw.phase) % 1.0;
+                                // Ca2+ wavefront position along the path
+                                var caX = cw.from.x + (cw.to.x - cw.from.x) * caProgress;
+                                var caY = cw.from.y + (cw.to.y - cw.from.y) * caProgress;
+                                var caDx = x - caX, caDy = y - caY;
+                                var caDist = Math.sqrt(caDx * caDx + caDy * caDy);
+                                if (caDist < 0.8) {
+                                    var caPulse = Math.sin(tCa * 2 * Math.PI * 3 + cwi * 1.5);
+                                    color = caPulse > 0 ? cw.color : cw.dimColor;
+                                    drawn = true;
                                 }
                             }
                         }
