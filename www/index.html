@@ -167,6 +167,15 @@
         // Abscission scar: remnant of the midbody left in the medium after separation
         var abscissionScar = { x: 16, y: 16, color: '#aa9933' };
 
+        // Midbody remnants (Flemming bodies): released after ESCRT-III severs the bridge
+        // Each dividing cell releases one — small vesicles drifting in the medium
+        var midbodyRemnants = [
+            // From cellA's division (midpoint between its two poles)
+            { x: 21, y: 9, color: '#88ccdd', glowColor: '#aaddee' },
+            // From cellB's division
+            { x: 11, y: 23, color: '#88ccdd', glowColor: '#aaddee' },
+        ];
+
         // Intercellular signaling: daughter cells communicate via chemical signals
         var signals = [
             // Signal from A to B (paracrine signaling)
@@ -471,26 +480,28 @@
         // TELOPHASE: chromatids at poles, nuclear envelopes reform, chromosomes decondense
         // Cleavage furrow begins ingressing at the cell equator
         cellA.prophase = {
-            condensation: 0.4, // chromosomes decondensing further into diffuse chromatin
+            condensation: 0.15, // chromosomes nearly fully decondensed — returning to interphase
             pole1Target: { x: 24, y: 5 },
             pole2Target: { x: 18, y: 13 },
-            asterCount: 4, // asters fading as spindle disassembles
-            spindleForming: true,
-            prometaphase: true,
-            metaphase: true,
-            anaphase: true,
-            telophase: true, // late telophase — envelopes nearly complete, ESCRT-III at midbody
-        };
-        cellB.prophase = {
-            condensation: 0.4,
-            pole1Target: { x: 14, y: 19 },
-            pole2Target: { x: 8, y: 27 },
-            asterCount: 4,
+            asterCount: 2, // asters nearly gone, spindle fully disassembled
             spindleForming: true,
             prometaphase: true,
             metaphase: true,
             anaphase: true,
             telophase: true,
+            abscission: true, // ESCRT-III has severed the bridge — cells fully separated
+        };
+        cellB.prophase = {
+            condensation: 0.15,
+            pole1Target: { x: 14, y: 19 },
+            pole2Target: { x: 8, y: 27 },
+            asterCount: 2,
+            spindleForming: true,
+            prometaphase: true,
+            metaphase: true,
+            anaphase: true,
+            telophase: true,
+            abscission: true,
         };
 
         // G2 growth: cells grow larger than S phase as they prepare for division
@@ -506,7 +517,7 @@
             // Cytokinesis constriction: cell pinches at equator perpendicular to spindle
             var cytoConstriction = 0;
             if (cell.separated && cell.prophase && cell.prophase.telophase) {
-                cytoConstriction = 0.55; // furrow nearly complete — deep pinch, midbody thinning
+                cytoConstriction = cell.prophase.abscission ? 0.85 : 0.55; // abscission: bridge severed, maximum constriction
             }
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
@@ -547,9 +558,10 @@
                     var pole = poles[pi2];
                     for (var ea = 0; ea < 16; ea++) {
                         var eAngle = ea * 2 * Math.PI / 16;
-                        // Envelope reassembles gradually — some gaps still closing
+                        // Envelope reassembly
                         var reformPulse = Math.sin(t * 2 * Math.PI * 2 + ea * 0.7 + pi2 * 3);
-                        if (ea % 8 === 0 && reformPulse > 0.6) continue; // fewer gaps — envelope nearly complete
+                        // Abscission: envelope fully sealed, no gaps remain
+                        if (!cell.prophase.abscission && ea % 8 === 0 && reformPulse > 0.6) continue;
                         var ex = Math.round(pole.x + Math.cos(eAngle) * teleNucR);
                         var ey = Math.round(pole.y + Math.sin(eAngle) * teleNucR);
                         if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
@@ -811,7 +823,7 @@
                     }
                     // SPINDLE MICROTUBULES: fully formed between the two poles
                     if (cell.prophase.spindleForming) {
-                        var spindleCount = cell.prophase.telophase ? 4 : (cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4)));
+                        var spindleCount = cell.prophase.abscission ? 1 : (cell.prophase.telophase ? 4 : (cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4))));
                         for (var spi = 0; spi < spindleCount; spi++) {
                             var spFrac = (spi + 1) / (spindleCount + 1);
                             var spx = p1x + (p2x - p1x) * spFrac;
@@ -1408,41 +1420,56 @@
                 var sacMidX = (p1.x + p2.x) / 2;
                 var sacMidY = (p1.y + p2.y) / 2;
                 if (cell.prophase.telophase) {
-                    // TELOPHASE: central spindle condenses into midbody at equator
+                    // TELOPHASE / ABSCISSION
                     var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
                     var perpAngle = spindleAngle + Math.PI / 2;
-                    // Midbody: thinning to a narrow intercellular bridge — abscission approaches
                     var mbPulse = Math.sin(tSAC * 2 * Math.PI * 0.8);
-                    // Central flemming body: bright dense core of the midbody
-                    var mbCX = Math.round(sacMidX);
-                    var mbCY = Math.round(sacMidY);
-                    if (mbCX >= 0 && mbCX < size && mbCY >= 0 && mbCY < size) {
-                        // Flemming body glows brighter as ESCRT-III machinery assembles
-                        sacPixels[mbCX + ',' + mbCY] = mbPulse > 0 ? '#bbeeff' : '#aaddee';
-                    }
-                    // Midbody arms thin — only a thread connects the two halves
-                    for (var mbI = -1; mbI <= 1; mbI += 2) {
-                        var mbArmX = Math.round(sacMidX + Math.cos(spindleAngle) * mbI * 0.7);
-                        var mbArmY = Math.round(sacMidY + Math.sin(spindleAngle) * mbI * 0.7);
-                        if (mbArmX >= 0 && mbArmX < size && mbArmY >= 0 && mbArmY < size) {
-                            // ESCRT-III spiral pulses along the bridge
-                            var escrtPulse = Math.sin(tSAC * 2 * Math.PI * 2.5 + mbI * 1.5);
-                            sacPixels[mbArmX + ',' + mbArmY] = escrtPulse > 0.3 ? '#99ddee' : '#77aabb';
+                    if (cell.prophase.abscission) {
+                        // ABSCISSION COMPLETE: bridge severed, only retraction bulbs remain at cut sites
+                        // Each daughter's membrane seals — small bright dots where the cut happened
+                        for (var rbI = -1; rbI <= 1; rbI += 2) {
+                            var rbDist = 1.2; // retraction bulbs pulled back toward their respective daughters
+                            var rbX = Math.round(sacMidX + Math.cos(spindleAngle) * rbI * rbDist);
+                            var rbY = Math.round(sacMidY + Math.sin(spindleAngle) * rbI * rbDist);
+                            if (rbX >= 0 && rbX < size && rbY >= 0 && rbY < size) {
+                                // Membrane sealing glow at cut site
+                                var sealPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + rbI * 2);
+                                sacPixels[rbX + ',' + rbY] = sealPulse > 0 ? '#ddbb77' : '#ccaa66';
+                            }
+                        }
+                    } else {
+                        // Pre-abscission midbody
+                        var mbCX = Math.round(sacMidX);
+                        var mbCY = Math.round(sacMidY);
+                        if (mbCX >= 0 && mbCX < size && mbCY >= 0 && mbCY < size) {
+                            sacPixels[mbCX + ',' + mbCY] = mbPulse > 0 ? '#bbeeff' : '#aaddee';
+                        }
+                        for (var mbI = -1; mbI <= 1; mbI += 2) {
+                            var mbArmX = Math.round(sacMidX + Math.cos(spindleAngle) * mbI * 0.7);
+                            var mbArmY = Math.round(sacMidY + Math.sin(spindleAngle) * mbI * 0.7);
+                            if (mbArmX >= 0 && mbArmX < size && mbArmY >= 0 && mbArmY < size) {
+                                var escrtPulse = Math.sin(tSAC * 2 * Math.PI * 2.5 + mbI * 1.5);
+                                sacPixels[mbArmX + ',' + mbArmY] = escrtPulse > 0.3 ? '#99ddee' : '#77aabb';
+                            }
                         }
                     }
-                    // Cleavage furrow: contractile ring nearly closed — extreme pinch
-                    // Only the innermost pixels remain as the bridge narrows
+                    // Cleavage furrow: fully closed after abscission, constricting before
                     for (var fI = -2; fI <= 2; fI++) {
-                        // Furrow constricts inward from both sides along the perpendicular
                         var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.7);
                         var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.7);
                         if (fX >= 0 && fX < size && fY >= 0 && fY < size) {
                             var fPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + fI * 0.6);
-                            // Very tight constriction — dark actomyosin ring
-                            var fColor = Math.abs(fI) <= 1
-                                ? (fPulse > 0 ? '#552200' : '#441100')
-                                : (fPulse > 0 ? '#774422' : '#663311');
-                            sacPixels[fX + ',' + fY] = fColor;
+                            if (cell.prophase.abscission) {
+                                // Post-abscission: furrow resolved into sealed membranes
+                                if (Math.abs(fI) <= 1) {
+                                    sacPixels[fX + ',' + fY] = fPulse > 0 ? '#663311' : '#552200';
+                                }
+                            } else {
+                                var fColor = Math.abs(fI) <= 1
+                                    ? (fPulse > 0 ? '#552200' : '#441100')
+                                    : (fPulse > 0 ? '#774422' : '#663311');
+                                sacPixels[fX + ',' + fY] = fColor;
+                            }
                         }
                     }
                 } else {
@@ -1900,6 +1927,22 @@
                         if (!drawn && scarVisible && x === abscissionScar.x && y === abscissionScar.y) {
                             color = scarColor;
                             drawn = true;
+                        }
+                        // Midbody remnants (Flemming bodies) — released after abscission
+                        if (!drawn) {
+                            var tMBR = (Date.now() % 18000) / 18000;
+                            for (var mri = 0; mri < midbodyRemnants.length && !drawn; mri++) {
+                                var mbr = midbodyRemnants[mri];
+                                // Remnants drift slowly outward from division site
+                                var mbrDrift = Math.sin(tMBR * 2 * Math.PI + mri * 3.14) * 1.5;
+                                var mbrX = Math.round(mbr.x + mbrDrift * (mri === 0 ? 0.5 : -0.5));
+                                var mbrY = Math.round(mbr.y + mbrDrift * (mri === 0 ? -0.5 : 0.5));
+                                if (x === mbrX && y === mbrY) {
+                                    var mbrPulse = Math.sin(tMBR * 2 * Math.PI * 2 + mri);
+                                    color = mbrPulse > 0 ? mbr.glowColor : mbr.color;
+                                    drawn = true;
+                                }
+                            }
                         }
                         if (!drawn && nutrientPx[key]) {
                             color = nutrientPx[key];
