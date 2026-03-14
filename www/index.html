@@ -431,32 +431,55 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // G2 PHASE: Cyclin B-CDK1 accumulates rapidly, held inactive by Wee1 kinase
-        // Will trigger mitosis entry once Cdc25 activates CDK1 at threshold
+        // G2→M TRANSITION: Cdc25 activates cyclin B-CDK1, Wee1 degraded
+        // Active CDK1 begins nuclear import — some complexes move to inner orbits
+        // 5 particles now: 2 importing into nucleus (small orbit), 3 in cytoplasm
         cellA.cyclinB = [
-            { orbitR: 2.6, baseAngle: 0.8, speed: 0.55, color: '#dd9944' },
-            { orbitR: 3.4, baseAngle: 3.2, speed: -0.45, color: '#ccaa55' },
-            { orbitR: 2.2, baseAngle: 1.9, speed: 0.6, color: '#ee9933' },
-            { orbitR: 3.0, baseAngle: 5.0, speed: -0.52, color: '#ddaa44' },
+            { orbitR: 1.4, baseAngle: 0.8, speed: 0.7, color: '#ffaa33' },
+            { orbitR: 1.2, baseAngle: 3.5, speed: -0.65, color: '#ffbb44' },
+            { orbitR: 2.6, baseAngle: 1.9, speed: 0.55, color: '#dd9944' },
+            { orbitR: 3.0, baseAngle: 5.0, speed: -0.52, color: '#ccaa55' },
+            { orbitR: 2.2, baseAngle: 4.2, speed: 0.6, color: '#ee9933' },
         ];
         cellB.cyclinB = [
-            { orbitR: 2.6, baseAngle: 2.0, speed: -0.5, color: '#dd9944' },
-            { orbitR: 3.4, baseAngle: 5.1, speed: 0.48, color: '#ccaa55' },
-            { orbitR: 2.2, baseAngle: 0.5, speed: -0.58, color: '#ee9933' },
-            { orbitR: 3.0, baseAngle: 3.8, speed: 0.5, color: '#ddaa44' },
+            { orbitR: 1.4, baseAngle: 2.0, speed: -0.68, color: '#ffaa33' },
+            { orbitR: 1.2, baseAngle: 5.5, speed: 0.72, color: '#ffbb44' },
+            { orbitR: 2.6, baseAngle: 0.5, speed: -0.5, color: '#dd9944' },
+            { orbitR: 3.0, baseAngle: 3.8, speed: 0.48, color: '#ccaa55' },
+            { orbitR: 2.2, baseAngle: 1.5, speed: -0.58, color: '#ee9933' },
         ];
 
-        // G2 CHECKPOINT: ATM/ATR kinases scan fully replicated genome for damage
-        // Brighter green — actively verifying 4n DNA integrity before mitosis entry
+        // G2 CHECKPOINT PASSED: ATM/ATR verified genome integrity, all clear
+        // Kinases slow down — scan complete, no damage found
         cellA.checkpointKinases = [
-            { scanSpeed: 0.18, phase: 0, color: '#66bb66' },
-            { scanSpeed: -0.15, phase: 0.33, color: '#55aa55' },
-            { scanSpeed: 0.12, phase: 0.66, color: '#66bb66' },
+            { scanSpeed: 0.06, phase: 0, color: '#55aa55' },
+            { scanSpeed: -0.05, phase: 0.33, color: '#449944' },
         ];
         cellB.checkpointKinases = [
-            { scanSpeed: 0.17, phase: 0.15, color: '#66bb66' },
-            { scanSpeed: -0.14, phase: 0.5, color: '#55aa55' },
-            { scanSpeed: 0.13, phase: 0.82, color: '#66bb66' },
+            { scanSpeed: 0.05, phase: 0.15, color: '#55aa55' },
+            { scanSpeed: -0.06, phase: 0.5, color: '#449944' },
+        ];
+
+        // Cdc25 phosphatase: activates CDK1 by removing inhibitory phosphates
+        // Bright cyan-green flashes as it dephosphorylates cyclin B-CDK1 complexes
+        cellA.cdc25 = [
+            { orbitR: 2.4, baseAngle: 0.6, speed: 0.9, color: '#44ddaa' },
+            { orbitR: 2.8, baseAngle: 3.0, speed: -0.7, color: '#55eebb' },
+            { orbitR: 2.1, baseAngle: 5.2, speed: 0.8, color: '#44ddaa' },
+        ];
+        cellB.cdc25 = [
+            { orbitR: 2.4, baseAngle: 2.2, speed: -0.85, color: '#44ddaa' },
+            { orbitR: 2.8, baseAngle: 4.8, speed: 0.75, color: '#55eebb' },
+            { orbitR: 2.1, baseAngle: 1.0, speed: -0.8, color: '#44ddaa' },
+        ];
+
+        // Wee1 kinase: being degraded via SCF ubiquitin ligase
+        // Dim, fading particles — phosphorylated and targeted for proteasomal destruction
+        cellA.wee1 = [
+            { orbitR: 2.0, baseAngle: 1.8, speed: 0.3, color: '#885544' },
+        ];
+        cellB.wee1 = [
+            { orbitR: 2.0, baseAngle: 4.5, speed: -0.3, color: '#885544' },
         ];
 
         // E2F transcription factors: released from phospho-Rb, activate cyclin E and S-phase genes
@@ -503,12 +526,12 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // G2 PHASE: DNA replication complete, 4n genome achieved
-        // Cell prepares for mitosis — cyclin B accumulates, checkpoint verifies integrity
+        // G2→M TRANSITION: checkpoint passed, Cdc25 activates CDK1
+        // Wee1 degraded, cyclin B-CDK1 imports to nucleus — mitosis commitment
         cellA.prophase = null;
         cellB.prophase = null;
 
-        // G2: nucleus at full 4n swell, cell at maximum pre-mitotic size
+        // G2→M: nucleus at full 4n swell, CDK1 importing, cell commits to mitosis
         var growthRate = 0.8; // peak growth — genome fully duplicated
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1459,9 +1482,12 @@
                     var cdx3 = cbx - cell.cx;
                     var cdy3 = cby - cell.cy;
                     var cbDist = Math.sqrt(cdx3 * cdx3 + cdy3 * cdy3);
-                    if (cbDist < maxR - 1.0 && cbDist > nucR + 1.0) {
+                    // Nuclear import: small-orbit CDK1 can enter nucleus
+                    var cbInner = cyb.orbitR < 1.6 ? 0 : nucR + 1.0;
+                    if (cbDist < maxR - 1.0 && cbDist > cbInner) {
                         if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
-                            cycBPixels[cbx + ',' + cby] = cybPulse > 0.3 ? '#eeaa55' : cyb.color;
+                            // Importing CDK1 glows brighter — active, dephosphorylated
+                            cycBPixels[cbx + ',' + cby] = cyb.orbitR < 1.6 ? (cybPulse > 0.2 ? '#ffcc55' : '#ffaa33') : (cybPulse > 0.3 ? '#eeaa55' : cyb.color);
                         }
                     }
                 }
@@ -1553,6 +1579,51 @@
                     if (caDist < maxR - 1.0 && caDist > nucR + 1.0) {
                         if (cax >= 0 && cax < size && cay >= 0 && cay < size) {
                             cycAPixels[cax + ',' + cay] = caPulse > 0.3 ? '#ee88bb' : cya.color;
+                        }
+                    }
+                }
+            }
+
+            // Cdc25 phosphatase: bright particles that flash when activating CDK1
+            var cdc25Pixels = {};
+            if (cell.cdc25 && cell.separated) {
+                var tCdc25 = (t * 8000 / 4800) % 1.0;
+                for (var cdi = 0; cdi < cell.cdc25.length; cdi++) {
+                    var cd = cell.cdc25[cdi];
+                    var cdAngle = cd.baseAngle + cd.speed * tOrbit;
+                    var cdx5 = Math.round(cell.cx + Math.cos(cdAngle) * cd.orbitR);
+                    var cdy5 = Math.round(cell.cy + Math.sin(cdAngle) * cd.orbitR);
+                    var cdPulse = Math.sin(tCdc25 * 2 * Math.PI * 2 + cdi * 1.6);
+                    var cdDx = cdx5 - cell.cx;
+                    var cdDy = cdy5 - cell.cy;
+                    var cdDist = Math.sqrt(cdDx * cdDx + cdDy * cdDy);
+                    if (cdDist < maxR - 1.0 && cdDist > nucR + 0.5) {
+                        if (cdx5 >= 0 && cdx5 < size && cdy5 >= 0 && cdy5 < size) {
+                            // Bright flash when dephosphorylating CDK1
+                            cdc25Pixels[cdx5 + ',' + cdy5] = cdPulse > 0.3 ? '#77ffcc' : cd.color;
+                        }
+                    }
+                }
+            }
+
+            // Wee1 kinase: dim, fading — being ubiquitinated and degraded
+            var wee1Pixels = {};
+            if (cell.wee1 && cell.separated) {
+                var tWee1 = (t * 8000 / 5500) % 1.0;
+                for (var wi = 0; wi < cell.wee1.length; wi++) {
+                    var w = cell.wee1[wi];
+                    var wAngle = w.baseAngle + w.speed * tOrbit;
+                    var wx = Math.round(cell.cx + Math.cos(wAngle) * w.orbitR);
+                    var wy = Math.round(cell.cy + Math.sin(wAngle) * w.orbitR);
+                    var wPulse = Math.sin(tWee1 * 2 * Math.PI + wi * 2.0);
+                    var wDx = wx - cell.cx;
+                    var wDy = wy - cell.cy;
+                    var wDist = Math.sqrt(wDx * wDx + wDy * wDy);
+                    if (wDist < maxR - 1.0 && wDist > nucR + 0.5) {
+                        if (wx >= 0 && wx < size && wy >= 0 && wy < size) {
+                            // Flicker: ubiquitin tags flash before degradation
+                            wee1Pixels[wx + ',' + wy] = wPulse > 0.5 ? '#aa7766' : (wPulse > -0.3 ? w.color : null);
+                            if (!wee1Pixels[wx + ',' + wy]) delete wee1Pixels[wx + ',' + wy];
                         }
                     }
                 }
@@ -1692,7 +1763,9 @@
                 pcnaPixels: pcnaPixels,
                 topoPixels: topoPixels,
                 histPixels: histPixels,
-                ligasePixels: ligasePixels
+                ligasePixels: ligasePixels,
+                cdc25Pixels: cdc25Pixels,
+                wee1Pixels: wee1Pixels
             };
         }
 
@@ -1987,6 +2060,10 @@
                                 color = dd.cycAPixels[key];
                             } else if (dd.cycBPixels && dd.cycBPixels[key]) {
                                 color = dd.cycBPixels[key];
+                            } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
+                                color = dd.cdc25Pixels[key];
+                            } else if (dd.wee1Pixels && dd.wee1Pixels[key]) {
+                                color = dd.wee1Pixels[key];
                             } else if (dd.mitoPixels[key]) {
                                 color = dd.mitoPixels[key];
                             } else if (dd.nucPixels[key]) {
