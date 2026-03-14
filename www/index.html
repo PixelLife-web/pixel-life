@@ -394,6 +394,10 @@
             {exchangerColor:'#dd5577',naInColor:'#ffbb44',hOutColor:'#ff5555',restColor:'#aa3355'},'enterocyte');
         initTransporters('dra','apical',2,0.46,0.22,0.6,1.8,
             {exchangerColor:'#55aa77',clInColor:'#55ddaa',hco3OutColor:'#88ccee',restColor:'#337755'},'enterocyte');
+        initTransporters('dmt1','apical',2,0.42,-0.25,0.9,1.5,
+            {transporterColor:'#cc6633',feColor:'#ee8844',hColor:'#ff6655',restColor:'#993311'},'enterocyte');
+        initTransporters('ferroportin','basal',2,0.48,0.08,0.7,1.7,
+            {channelColor:'#bb5522',feColor:'#ff9944',hephColor:'#dd7733',restColor:'#882211'},'enterocyte');
         for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
             var aqn = granddaughterNuclei[aqi];
             aqn.aquaporins = [];
@@ -1338,6 +1342,10 @@
                     substrates:[{key:'naInColor', dir:'in', startR:1.0, range:2.6},{key:'hOutColor', dir:'out', range:2.0, phaseOff:0.5, spread:0.12}]},
                 {field:'dra', period:9500, activeKey:'exchangerColor', restKey:'restColor', pulseFreq:2.5, cycleSpeed:1.8,
                     substrates:[{key:'clInColor', dir:'in', startR:1.1, range:2.8},{key:'hco3OutColor', dir:'out', range:1.8, phaseOff:0.5, spread:-0.14}]},
+                {field:'dmt1', period:10000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.3, cycleSpeed:2.0,
+                    substrates:[{key:'feColor', dir:'in', startR:1.2, range:3.0},{key:'hColor', dir:'in', startR:0.7, range:2.2, phaseOff:0.08, spread:0.13}]},
+                {field:'ferroportin', period:10500, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
+                    substrates:[{key:'feColor', dir:'out', range:2.2, phaseOff:0.5},{key:'hephColor', dir:'out', range:1.5, phaseOff:0.3, spread:0.15}]},
             ]);
             var tFA = (now % 11000) / 11000;
             for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {
@@ -2374,43 +2382,17 @@
 
             var junctionPx = {};
             var tJn = (Date.now() % 7000) / 7000;
-            for (var gi = 0; gi < gapJunctions.length; gi++) {
-                var gj = gapJunctions[gi];
-                var fpA = cellA.filopodia[gj.filoIdxA], fpB = cellB.filopodia[gj.filoIdxB];
-                var jmx = Math.round((cellA.cx+Math.cos(fpA.angle)*(dA.maxR+fpA.maxLength*0.8)+cellB.cx+Math.cos(fpB.angle)*(dB.maxR+fpB.maxLength*0.8))/2);
-                var jmy = Math.round((cellA.cy+Math.sin(fpA.angle)*(dA.maxR+fpA.maxLength*0.8)+cellB.cy+Math.sin(fpB.angle)*(dB.maxR+fpB.maxLength*0.8))/2);
-                var gapP = Math.sin(tJn*2*Math.PI+gj.pulsePhase);
-                if (inB(jmx,jmy)) junctionPx[jmx+','+jmy] = gapP>0?'#eedd99':gj.color;
-            }
-            for (var di = 0; di < desmosomes.length; di++) {
-                var dm = desmosomes[di];
-                var dpairs = [[cellA,dA,dm.angleA],[cellB,dB,dm.angleB]];
-                for (var dpi = 0; dpi < 2; dpi++) {
-                    var dpc=dpairs[dpi][0],dpd=dpairs[dpi][1],dpa=dpairs[dpi][2],dpr=dpd.maxR-0.3;
-                    var dpx=Math.round(dpc.cx+Math.cos(dpa)*dpr),dpy=Math.round(dpc.cy+Math.sin(dpa)*dpr);
-                    if(inB(dpx,dpy))junctionPx[dpx+','+dpy]=dm.color;
-                    var diax=Math.round(dpc.cx+Math.cos(dpa)*(dpr-1.2)),diay=Math.round(dpc.cy+Math.sin(dpa)*(dpr-1.2));
-                    if(inB(diax,diay))junctionPx[diax+','+diay]=dm.anchorColor;
-                }
-            }
-            for (var tji = 0; tji < tightJunctions.length; tji++) {
-                var tj=tightJunctions[tji];
-                var tjAx=cellA.cx+Math.cos(tj.angleA)*dA.maxR,tjAy=cellA.cy+Math.sin(tj.angleA)*dA.maxR;
-                var tjBx=cellB.cx+Math.cos(tj.angleB)*dB.maxR,tjBy=cellB.cy+Math.sin(tj.angleB)*dB.maxR;
+            for(var gi=0;gi<gapJunctions.length;gi++){var gj=gapJunctions[gi],fpA=cellA.filopodia[gj.filoIdxA],fpB=cellB.filopodia[gj.filoIdxB];
+                var jmx=Math.round((cellA.cx+Math.cos(fpA.angle)*(dA.maxR+fpA.maxLength*0.8)+cellB.cx+Math.cos(fpB.angle)*(dB.maxR+fpB.maxLength*0.8))/2),jmy=Math.round((cellA.cy+Math.sin(fpA.angle)*(dA.maxR+fpA.maxLength*0.8)+cellB.cy+Math.sin(fpB.angle)*(dB.maxR+fpB.maxLength*0.8))/2);
+                if(inB(jmx,jmy))junctionPx[jmx+','+jmy]=Math.sin(tJn*2*Math.PI+gj.pulsePhase)>0?'#eedd99':gj.color;}
+            for(var di=0;di<desmosomes.length;di++){var dm=desmosomes[di];
+                [[cellA,dA,dm.angleA],[cellB,dB,dm.angleB]].forEach(function(d){var r=d[1].maxR-0.3,px=Math.round(d[0].cx+Math.cos(d[2])*r),py=Math.round(d[0].cy+Math.sin(d[2])*r);
+                if(inB(px,py))junctionPx[px+','+py]=dm.color;var ax=Math.round(d[0].cx+Math.cos(d[2])*(r-1.2)),ay=Math.round(d[0].cy+Math.sin(d[2])*(r-1.2));if(inB(ax,ay))junctionPx[ax+','+ay]=dm.anchorColor;});}
+            for(var tji=0;tji<tightJunctions.length;tji++){var tj=tightJunctions[tji],tjAx=cellA.cx+Math.cos(tj.angleA)*dA.maxR,tjAy=cellA.cy+Math.sin(tj.angleA)*dA.maxR,tjBx=cellB.cx+Math.cos(tj.angleB)*dB.maxR,tjBy=cellB.cy+Math.sin(tj.angleB)*dB.maxR;
                 var tjSt=Math.max(Math.abs(Math.round(tjBx)-Math.round(tjAx)),Math.abs(Math.round(tjBy)-Math.round(tjAy)))||1;
-                for(var tjs=Math.floor(tjSt*0.3);tjs<=Math.ceil(tjSt*0.7);tjs++){
-                    var tjx=Math.round(tjAx+(tjBx-tjAx)*tjs/tjSt),tjy=Math.round(tjAy+(tjBy-tjAy)*tjs/tjSt);
-                    if(inB(tjx,tjy)){var tjP=Math.sin(tJn*2*Math.PI+tj.phase+tjs*0.5);junctionPx[tjx+','+tjy]=tjP>0?'#ddccaa':'#ccbb99';}
-                }
-            }
-            for (var aji = 0; aji < adherensJunctions.length; aji++) {
-                var aj=adherensJunctions[aji];
-                var ajAx2=cellA.cx+Math.cos(aj.angleA)*(dA.maxR+0.5),ajAy2=cellA.cy+Math.sin(aj.angleA)*(dA.maxR+0.5);
-                var ajBx2=cellB.cx+Math.cos(aj.angleB)*(dB.maxR+0.5),ajBy2=cellB.cy+Math.sin(aj.angleB)*(dB.maxR+0.5);
-                var ajP=Math.sin(tJn*2*Math.PI+aj.phase);
-                var ajPts2=[[ajAx2,ajAy2],[(ajAx2+ajBx2)/2,(ajAy2+ajBy2)/2],[ajBx2,ajBy2]];
-                for(var ajp=0;ajp<3;ajp++){var apx=Math.round(ajPts2[ajp][0]),apy=Math.round(ajPts2[ajp][1]);if(inB(apx,apy))junctionPx[apx+','+apy]=ajP>0.2?'#ee8866':'#cc7755';}
-            }
+                for(var tjs=Math.floor(tjSt*0.3);tjs<=Math.ceil(tjSt*0.7);tjs++){var tjx=Math.round(tjAx+(tjBx-tjAx)*tjs/tjSt),tjy=Math.round(tjAy+(tjBy-tjAy)*tjs/tjSt);if(inB(tjx,tjy))junctionPx[tjx+','+tjy]=Math.sin(tJn*2*Math.PI+tj.phase+tjs*0.5)>0?'#ddccaa':'#ccbb99';}}
+            for(var aji=0;aji<adherensJunctions.length;aji++){var aj=adherensJunctions[aji],ajP=Math.sin(tJn*2*Math.PI+aj.phase),ajAx2=cellA.cx+Math.cos(aj.angleA)*(dA.maxR+0.5),ajAy2=cellA.cy+Math.sin(aj.angleA)*(dA.maxR+0.5),ajBx2=cellB.cx+Math.cos(aj.angleB)*(dB.maxR+0.5),ajBy2=cellB.cy+Math.sin(aj.angleB)*(dB.maxR+0.5);
+                [[ajAx2,ajAy2],[(ajAx2+ajBx2)/2,(ajAy2+ajBy2)/2],[ajBx2,ajBy2]].forEach(function(p){var px=Math.round(p[0]),py=Math.round(p[1]);if(inB(px,py))junctionPx[px+','+py]=ajP>0.2?'#ee8866':'#cc7755';});}
 
             var signalPx = {};
             var tSig = Date.now();
