@@ -468,22 +468,24 @@
             { scanSpeed: -0.4, phase: 0.7, color: '#22ee99' },
         ];
 
-        // PROPHASE BEGINS: checkpoint passed, MPF (cyclin B-CDK1) triggers mitotic entry
-        // Chromatin condenses into distinct chromosomes, centrosomes migrate to poles
-        // Condensin complexes load onto chromosomes — visible as bright chromosome cores
+        // PROPHASE: condensation advancing, nuclear envelope breaking down
+        // Mitotic spindle forming between separating centrosomes
         cellA.prophase = {
-            condensation: 0.7, // 0=interphase diffuse, 1=fully condensed
+            condensation: 0.9, // nearly fully condensed chromosomes
             // Centrosome migration targets: poles on opposite sides of nucleus
             pole1Target: { x: 23, y: 6 },
             pole2Target: { x: 19, y: 12 },
-            // Early aster microtubules radiate from each separating centrosome
-            asterCount: 5,
+            // Aster microtubules radiate from each centrosome
+            asterCount: 6,
+            // Spindle microtubules forming between poles
+            spindleForming: true,
         };
         cellB.prophase = {
-            condensation: 0.7,
+            condensation: 0.9,
             pole1Target: { x: 13, y: 20 },
             pole2Target: { x: 9, y: 26 },
-            asterCount: 5,
+            asterCount: 6,
+            spindleForming: true,
         };
 
         // G2 growth: cells grow larger than S phase as they prepare for division
@@ -533,10 +535,10 @@
                 var isProphase = cell.prophase ? true : false;
                 for (var ea = 0; ea < 24; ea++) {
                     var eAngle = ea * 2 * Math.PI / 24;
-                    // In prophase, skip some envelope segments (nuclear envelope breakdown begins)
-                    if (isProphase && (ea % 6 === 0 || ea % 6 === 3)) {
+                    // In prophase, nuclear envelope breaking down — more gaps appear
+                    if (isProphase && (ea % 4 === 0 || ea % 6 === 2)) {
                         var flickerT = Math.sin(t * 2 * Math.PI * 3 + ea * 0.8);
-                        if (flickerT > 0.2) continue; // gap in envelope flickers
+                        if (flickerT > -0.1) continue; // wider gaps as NEBD progresses
                     }
                     var ex = Math.round(cell.cx + Math.cos(eAngle) * unifiedNucR);
                     var ey = Math.round(cell.cy + Math.sin(eAngle) * unifiedNucR);
@@ -628,7 +630,7 @@
                     var cs = cell.centrosomes[0];
                     var tCentMig = (t * 8000 / 9000) % 1.0;
                     // Interpolate centrosome positions toward their pole targets
-                    var migFrac = 0.4 + Math.sin(tCentMig * 2 * Math.PI * 0.2) * 0.1; // partial migration
+                    var migFrac = 0.6 + Math.sin(tCentMig * 2 * Math.PI * 0.2) * 0.08; // advancing toward poles
                     var p1x = cs.x + (cell.prophase.pole1Target.x - cs.x) * migFrac;
                     var p1y = cs.y + (cell.prophase.pole1Target.y - cs.y) * migFrac;
                     var p2x = cs.x + (cell.prophase.pole2Target.x - cs.x) * migFrac;
@@ -658,8 +660,8 @@
                             centPixels[hx2 + ',' + hy2] = '#aa993d';
                         }
                     }
-                    // ASTER MICROTUBULES: short radial fibers from each centrosome
-                    var asterCount = cell.prophase.asterCount || 5;
+                    // ASTER MICROTUBULES: radial fibers from each centrosome
+                    var asterCount = cell.prophase.asterCount || 6;
                     for (var ai = 0; ai < asterCount; ai++) {
                         var astAngle = ai * 2 * Math.PI / asterCount + tCentMig * 0.3;
                         for (var al = 1; al <= 2; al++) {
@@ -667,7 +669,6 @@
                             var ay1 = Math.round(p1y + Math.sin(astAngle) * al);
                             var ax2 = Math.round(p2x + Math.cos(astAngle + Math.PI / asterCount) * al);
                             var ay2 = Math.round(p2y + Math.sin(astAngle + Math.PI / asterCount) * al);
-                            // Stay within cell bounds
                             var d1 = Math.sqrt((ax1 - cell.cx) * (ax1 - cell.cx) + (ay1 - cell.cy) * (ay1 - cell.cy));
                             var d2 = Math.sqrt((ax2 - cell.cx) * (ax2 - cell.cx) + (ay2 - cell.cy) * (ay2 - cell.cy));
                             if (d1 < maxR - 0.5 && ax1 >= 0 && ax1 < size && ay1 >= 0 && ay1 < size) {
@@ -675,6 +676,25 @@
                             }
                             if (d2 < maxR - 0.5 && ax2 >= 0 && ax2 < size && ay2 >= 0 && ay2 < size) {
                                 centPixels[ax2 + ',' + ay2] = al === 1 ? '#667788' : '#556677';
+                            }
+                        }
+                    }
+                    // SPINDLE MICROTUBULES: forming between the two poles
+                    if (cell.prophase.spindleForming) {
+                        var spindleCount = 4;
+                        for (var spi = 0; spi < spindleCount; spi++) {
+                            var spFrac = (spi + 1) / (spindleCount + 1);
+                            // Interpolate between pole1 and pole2
+                            var spx = p1x + (p2x - p1x) * spFrac;
+                            var spy = p1y + (p2y - p1y) * spFrac;
+                            // Slight lateral wobble to show dynamic instability
+                            var spWobble = Math.sin(tCentMig * 2 * Math.PI * 2 + spi * 1.7) * 0.6;
+                            var spPerpAngle = Math.atan2(p2y - p1y, p2x - p1x) + Math.PI / 2;
+                            var spxF = Math.round(spx + Math.cos(spPerpAngle) * spWobble);
+                            var spyF = Math.round(spy + Math.sin(spPerpAngle) * spWobble);
+                            if (spxF >= 0 && spxF < size && spyF >= 0 && spyF < size) {
+                                var spPulse = Math.sin(tCentMig * 2 * Math.PI + spi * 0.9);
+                                centPixels[spxF + ',' + spyF] = spPulse > 0 ? '#5588aa' : '#447799';
                             }
                         }
                     }
