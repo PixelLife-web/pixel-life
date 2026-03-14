@@ -1944,283 +1944,89 @@
                     }
                 }
             }
-            // Aquaporin water channels: water molecules transit through membrane pores
-            var tAQ = (now % 7000) / 7000;
-            for (var aqi2 = 0; aqi2 < granddaughterNuclei.length; aqi2++) {
-                var aqG = granddaughterNuclei[aqi2];
-                if (!aqG.aquaporins) continue;
-                var aqBR = aqG.bodyRadius;
-                for (var aqj2 = 0; aqj2 < aqG.aquaporins.length; aqj2++) {
-                    var aq = aqG.aquaporins[aqj2];
-                    // Channel pore sits on membrane
-                    var aqPx = Math.round(aqG.x + Math.cos(aq.angle) * aqBR);
-                    var aqPy = Math.round(aqG.y + Math.sin(aq.angle) * aqBR);
-                    var aqPulse = Math.sin(tAQ * 2 * Math.PI * 2.5 + aq.phase);
-                    set(aqPx, aqPy, aqPulse > 0 ? aq.channelColor : aq.dimColor);
-                    // Water molecule transiting through channel — oscillates in/out
-                    var wP = (tAQ * 3 + aq.phase * 0.3) % 1.0;
-                    var wDir = wP < 0.5 ? 1 : -1; // alternates inward/outward flow
-                    var wFrac = wP < 0.5 ? wP * 2 : (1.0 - wP) * 2; // 0→1→0
-                    var wR = aqBR + wDir * (0.3 + wFrac * 1.2);
-                    var wX = Math.round(aqG.x + Math.cos(aq.angle) * wR);
-                    var wY = Math.round(aqG.y + Math.sin(aq.angle) * wR);
-                    if (wFrac > 0.1 && wFrac < 0.9) {
-                        set(wX, wY, aq.waterColor);
-                    }
-                }
-            }
-            // Na+/K+ ATPase ion pumps: basolateral active transport
-            var tNK = (now % 8000) / 8000;
-            for (var nki2 = 0; nki2 < granddaughterNuclei.length; nki2++) {
-                var nkG = granddaughterNuclei[nki2];
-                if (!nkG.naKPumps) continue;
-                var nkBR = nkG.bodyRadius;
-                for (var nkj2 = 0; nkj2 < nkG.naKPumps.length; nkj2++) {
-                    var nk = nkG.naKPumps[nkj2];
-                    // Pump sits on basolateral membrane
-                    var nkPx2 = Math.round(nkG.x + Math.cos(nk.angle) * nkBR);
-                    var nkPy2 = Math.round(nkG.y + Math.sin(nk.angle) * nkBR);
-                    // ATP hydrolysis cycle: pump flashes when active
-                    var nkCycle = (tNK * 2.5 + nk.phase * 0.3) % 1.0;
-                    var nkActive = Math.sin(tNK * 2 * Math.PI * 3 + nk.phase);
-                    set(nkPx2, nkPy2, nkActive > 0 ? nk.pumpColor : nk.restColor);
-                    // Na+ ions ejected outward (3 ions per cycle, staggered)
-                    for (var nai = 0; nai < 3; nai++) {
-                        var naPhase = (nkCycle + nai * 0.12) % 1.0;
-                        if (naPhase < 0.5) { // outward stroke
-                            var naR = nkBR + 0.3 + naPhase * 2.4;
-                            var naSpread = (nai - 1) * 0.18;
-                            var naX = Math.round(nkG.x + Math.cos(nk.angle + naSpread) * naR);
-                            var naY = Math.round(nkG.y + Math.sin(nk.angle + naSpread) * naR);
-                            if (naPhase > 0.05 && naPhase < 0.45) set(naX, naY, nk.naColor);
-                        }
-                    }
-                    // K+ ions pulled inward (2 ions per cycle, staggered)
-                    for (var ki = 0; ki < 2; ki++) {
-                        var kPhase = (nkCycle + 0.5 + ki * 0.15) % 1.0;
-                        if (kPhase > 0.5) { // inward stroke
-                            var kFrac = (kPhase - 0.5) * 2; // 0→1
-                            var kR = nkBR + 1.2 - kFrac * 1.5;
-                            var kSpread = (ki - 0.5) * 0.2;
-                            var kX = Math.round(nkG.x + Math.cos(nk.angle + kSpread) * kR);
-                            var kY = Math.round(nkG.y + Math.sin(nk.angle + kSpread) * kR);
-                            if (kFrac > 0.1 && kFrac < 0.85) set(kX, kY, nk.kColor);
+            // Generic membrane transporter renderer: protein on membrane + substrates in/out
+            // Each spec: {field, period, activeKey, restKey, restFallback, pulseFreq, cycleSpeed,
+            //   substrates: [{key, dir:'in'|'out', startR, range, spread, phaseOff, minP, maxP, wiggleFreq}]}
+            function renderMembTrans(specs) {
+                for (var si3 = 0; si3 < specs.length; si3++) {
+                    var sp = specs[si3];
+                    var tT = (now % sp.period) / sp.period;
+                    for (var gi2 = 0; gi2 < granddaughterNuclei.length; gi2++) {
+                        var gT = granddaughterNuclei[gi2];
+                        var items = gT[sp.field]; if (!items) continue;
+                        var gBR = gT.bodyRadius;
+                        for (var ij = 0; ij < items.length; ij++) {
+                            var it = items[ij];
+                            var iPx = Math.round(gT.x + Math.cos(it.angle) * gBR);
+                            var iPy = Math.round(gT.y + Math.sin(it.angle) * gBR);
+                            var iAct = Math.sin(tT * 2 * Math.PI * (sp.pulseFreq||2.5) + it.phase);
+                            set(iPx, iPy, iAct > 0 ? it[sp.activeKey] : (it[sp.restKey] || sp.restFallback));
+                            var cyc = (tT * (sp.cycleSpeed||2.0) + it.phase * 0.3) % 1.0;
+                            if (!sp.substrates) continue;
+                            for (var sk = 0; sk < sp.substrates.length; sk++) {
+                                var sub = sp.substrates[sk];
+                                var sPhase = (cyc + (sub.phaseOff||0)) % 1.0;
+                                if (sub.dir === 'in') {
+                                    if (sPhase < 0.5) {
+                                        var sR2 = gBR + (sub.startR||1.0) - sPhase * (sub.range||2.8);
+                                        var sSprd = sub.spread || 0;
+                                        var sWig = sub.wiggleFreq ? Math.sin(sPhase * sub.wiggleFreq + ij * 2.0) * 0.12 : 0;
+                                        var sX2 = Math.round(gT.x + Math.cos(it.angle + sSprd + sWig) * sR2);
+                                        var sY2 = Math.round(gT.y + Math.sin(it.angle + sSprd + sWig) * sR2);
+                                        if (sPhase > 0.05 && sPhase < 0.45) set(sX2, sY2, it[sub.key]);
+                                    }
+                                } else { // 'out'
+                                    if (sPhase < 0.5) {
+                                        var oR2 = gBR + 0.3 + sPhase * (sub.range||2.0);
+                                        var oSprd = sub.spread || 0;
+                                        var oX2 = Math.round(gT.x + Math.cos(it.angle + oSprd) * oR2);
+                                        var oY2 = Math.round(gT.y + Math.sin(it.angle + oSprd) * oR2);
+                                        if (sPhase > 0.05 && sPhase < 0.42) set(oX2, oY2, it[sub.key]);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
-            // SGLT1/GLUT2 glucose transport: enterocytes absorb glucose via apical SGLT1
-            var tSG = (now % 9000) / 9000;
-            for (var sgi2 = 0; sgi2 < granddaughterNuclei.length; sgi2++) {
-                var sgG = granddaughterNuclei[sgi2];
-                if (!sgG.sglt1) continue; // goblet cells skip
-                var sgBR = sgG.bodyRadius;
-                // SGLT1: apical Na+-glucose cotransport
-                for (var sgj2 = 0; sgj2 < sgG.sglt1.length; sgj2++) {
-                    var sg = sgG.sglt1[sgj2];
-                    // Transporter on apical membrane
-                    var sgPx2 = Math.round(sgG.x + Math.cos(sg.angle) * sgBR);
-                    var sgPy2 = Math.round(sgG.y + Math.sin(sg.angle) * sgBR);
-                    var sgCycle = (tSG * 2.0 + sg.phase * 0.3) % 1.0;
-                    var sgActive = Math.sin(tSG * 2 * Math.PI * 2.5 + sg.phase);
-                    set(sgPx2, sgPy2, sgActive > 0 ? sg.transporterColor : '#aa6622');
-                    // Glucose molecule entering from lumen (apical side, moves inward)
-                    if (sgCycle < 0.5) {
-                        var glInR = sgBR + 1.2 - sgCycle * 3.0;
-                        var glInX = Math.round(sgG.x + Math.cos(sg.angle) * glInR);
-                        var glInY = Math.round(sgG.y + Math.sin(sg.angle) * glInR);
-                        if (sgCycle > 0.05 && sgCycle < 0.45) set(glInX, glInY, sg.glucoseColor);
-                    }
-                    // Co-transported Na+ (2 ions flanking the glucose)
-                    for (var nci = 0; nci < 2; nci++) {
-                        var ncPhase = (sgCycle + nci * 0.08) % 1.0;
-                        if (ncPhase < 0.4) {
-                            var ncSpread = (nci - 0.5) * 0.22;
-                            var ncR = sgBR + 0.8 - ncPhase * 2.8;
-                            var ncX = Math.round(sgG.x + Math.cos(sg.angle + ncSpread) * ncR);
-                            var ncY = Math.round(sgG.y + Math.sin(sg.angle + ncSpread) * ncR);
-                            if (ncPhase > 0.03) set(ncX, ncY, sg.naCoColor);
-                        }
-                    }
-                }
-                // GLUT2: basolateral facilitated glucose diffusion (exit to interstitium)
-                if (sgG.glut2) {
-                    for (var glj2 = 0; glj2 < sgG.glut2.length; glj2++) {
-                        var gl = sgG.glut2[glj2];
-                        var glPx2 = Math.round(sgG.x + Math.cos(gl.angle) * sgBR);
-                        var glPy2 = Math.round(sgG.y + Math.sin(gl.angle) * sgBR);
-                        var glCycle = (tSG * 1.8 + gl.phase * 0.3) % 1.0;
-                        var glActive = Math.sin(tSG * 2 * Math.PI * 2 + gl.phase);
-                        set(glPx2, glPy2, glActive > 0 ? gl.channelColor : '#995511');
-                        // Glucose exits outward through GLUT2
-                        if (glCycle > 0.5) {
-                            var glOutFrac = (glCycle - 0.5) * 2;
-                            var glOutR = sgBR + 0.3 + glOutFrac * 1.8;
-                            var glOutX = Math.round(sgG.x + Math.cos(gl.angle) * glOutR);
-                            var glOutY = Math.round(sgG.y + Math.sin(gl.angle) * glOutR);
-                            if (glOutFrac > 0.05 && glOutFrac < 0.85) set(glOutX, glOutY, gl.glucoseColor);
-                        }
-                    }
-                }
-            }
-            // PepT1 H+-coupled peptide transport: enterocytes absorb dipeptides via apical PepT1
-            var tPT = (now % 10000) / 10000;
-            for (var pti2 = 0; pti2 < granddaughterNuclei.length; pti2++) {
-                var ptG = granddaughterNuclei[pti2];
-                if (!ptG.pepT1) continue;
-                var ptBR = ptG.bodyRadius;
-                for (var ptj2 = 0; ptj2 < ptG.pepT1.length; ptj2++) {
-                    var pt = ptG.pepT1[ptj2];
-                    // Transporter on apical membrane
-                    var ptPx2 = Math.round(ptG.x + Math.cos(pt.angle) * ptBR);
-                    var ptPy2 = Math.round(ptG.y + Math.sin(pt.angle) * ptBR);
-                    var ptCycle = (tPT * 2.2 + pt.phase * 0.3) % 1.0;
-                    var ptActive = Math.sin(tPT * 2 * Math.PI * 2.2 + pt.phase);
-                    set(ptPx2, ptPy2, ptActive > 0 ? pt.transporterColor : pt.restColor);
-                    // Peptide molecule entering from lumen (moves inward)
-                    if (ptCycle < 0.5) {
-                        var ppInR = ptBR + 1.0 - ptCycle * 2.8;
-                        var ppInX = Math.round(ptG.x + Math.cos(pt.angle) * ppInR);
-                        var ppInY = Math.round(ptG.y + Math.sin(pt.angle) * ppInR);
-                        if (ptCycle > 0.05 && ptCycle < 0.45) set(ppInX, ppInY, pt.peptideColor);
-                    }
-                    // Co-transported H+ ion (single proton, slightly offset)
-                    var hPhase = (ptCycle + 0.06) % 1.0;
-                    if (hPhase < 0.4) {
-                        var hSpread = 0.15;
-                        var hR = ptBR + 0.6 - hPhase * 2.4;
-                        var hX = Math.round(ptG.x + Math.cos(pt.angle + hSpread) * hR);
-                        var hY = Math.round(ptG.y + Math.sin(pt.angle + hSpread) * hR);
-                        if (hPhase > 0.03) set(hX, hY, pt.hColor);
-                    }
-                }
-            }
-            // CD36/FATP4 fatty acid transport: enterocytes absorb long-chain fatty acids
+            // Consolidated membrane transporters: aquaporins, Na+/K+ ATPase, SGLT1, GLUT2,
+            // PepT1, CD36, CFTR, NHE3, DRA — all rendered by the generic engine
+            renderMembTrans([
+                {field:'aquaporins', period:7000, activeKey:'channelColor', restKey:'dimColor', pulseFreq:2.5, cycleSpeed:3,
+                    substrates:[{key:'waterColor', dir:'out', startR:0, range:1.2, phaseOff:0}]},
+                {field:'naKPumps', period:8000, activeKey:'pumpColor', restKey:'restColor', pulseFreq:3, cycleSpeed:2.5,
+                    substrates:[{key:'naColor', dir:'out', range:2.4, phaseOff:0},{key:'kColor', dir:'in', startR:1.2, range:1.5, phaseOff:0.5, spread:0.1}]},
+                {field:'sglt1', period:9000, activeKey:'transporterColor', restFallback:'#aa6622', pulseFreq:2.5, cycleSpeed:2.0,
+                    substrates:[{key:'glucoseColor', dir:'in', startR:1.2, range:3.0},{key:'naCoColor', dir:'in', startR:0.8, range:2.8, phaseOff:0.04, spread:0.11}]},
+                {field:'glut2', period:9000, activeKey:'channelColor', restFallback:'#995511', pulseFreq:2, cycleSpeed:1.8,
+                    substrates:[{key:'glucoseColor', dir:'out', range:1.8, phaseOff:0.5}]},
+                {field:'pepT1', period:10000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.2, cycleSpeed:2.2,
+                    substrates:[{key:'peptideColor', dir:'in', startR:1.0, range:2.8},{key:'hColor', dir:'in', startR:0.6, range:2.4, phaseOff:0.06, spread:0.15}]},
+                {field:'cd36', period:11000, activeKey:'receptorColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.8,
+                    substrates:[{key:'faColor', dir:'in', startR:1.3, range:3.2, wiggleFreq:12}]},
+                {field:'cftrChannels', period:8500, activeKey:'channelColor', restKey:'dimColor', pulseFreq:2.5, cycleSpeed:2.2,
+                    substrates:[{key:'clColor', dir:'out', range:2.2}]},
+                {field:'nhe3', period:9500, activeKey:'exchangerColor', restKey:'restColor', pulseFreq:2.8, cycleSpeed:2.0,
+                    substrates:[{key:'naInColor', dir:'in', startR:1.0, range:2.6},{key:'hOutColor', dir:'out', range:2.0, phaseOff:0.5, spread:0.12}]},
+                {field:'dra', period:9500, activeKey:'exchangerColor', restKey:'restColor', pulseFreq:2.5, cycleSpeed:1.8,
+                    substrates:[{key:'clInColor', dir:'in', startR:1.1, range:2.8},{key:'hco3OutColor', dir:'out', range:1.8, phaseOff:0.5, spread:-0.14}]},
+            ]);
+            // Chylomicron secretion (special: assembles inside cell then exits)
             var tFA = (now % 11000) / 11000;
             for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {
                 var faG = granddaughterNuclei[fai2];
-                if (!faG.cd36) continue;
+                if (!faG.chylomicrons) continue;
                 var faBR = faG.bodyRadius;
-                // CD36 receptors: apical fatty acid uptake
-                for (var cdj2 = 0; cdj2 < faG.cd36.length; cdj2++) {
-                    var cd = faG.cd36[cdj2];
-                    var cdPx2 = Math.round(faG.x + Math.cos(cd.angle) * faBR);
-                    var cdPy2 = Math.round(faG.y + Math.sin(cd.angle) * faBR);
-                    var cdCycle = (tFA * 1.8 + cd.phase * 0.3) % 1.0;
-                    var cdActive = Math.sin(tFA * 2 * Math.PI * 2.0 + cd.phase);
-                    set(cdPx2, cdPy2, cdActive > 0 ? cd.receptorColor : cd.restColor);
-                    // Fatty acid chain entering from lumen (zigzag motion simulating lipid tail)
-                    if (cdCycle < 0.5) {
-                        var faInR = faBR + 1.3 - cdCycle * 3.2;
-                        var faWiggle = Math.sin(cdCycle * 12 + cdj2 * 2.0) * 0.12;
-                        var faInX = Math.round(faG.x + Math.cos(cd.angle + faWiggle) * faInR);
-                        var faInY = Math.round(faG.y + Math.sin(cd.angle + faWiggle) * faInR);
-                        if (cdCycle > 0.04 && cdCycle < 0.46) set(faInX, faInY, cd.faColor);
-                    }
-                }
-                // Chylomicrons: large lipoprotein particles budding from ER toward basolateral exit
-                if (faG.chylomicrons) {
-                    for (var cmj2 = 0; cmj2 < faG.chylomicrons.length; cmj2++) {
-                        var cm = faG.chylomicrons[cmj2];
-                        var cmCycle = (tFA * cm.speed + cm.phase * 0.3) % 1.0;
-                        // Chylomicron assembles inside cell then exits basolateral
+                for (var cmj2 = 0; cmj2 < faG.chylomicrons.length; cmj2++) {
+                    var cm = faG.chylomicrons[cmj2];
+                    var cmCycle = (tFA * cm.speed + cm.phase * 0.3) % 1.0;
+                    var cmPulse = Math.sin(tFA * 2 * Math.PI * 1.5 + cm.phase);
+                    if (cmCycle < 0.7) {
                         var cmInR = faBR * 0.45 + cmCycle * (faBR * 0.7);
-                        var cmX = Math.round(faG.x + Math.cos(cm.angle) * cmInR);
-                        var cmY = Math.round(faG.y + Math.sin(cm.angle) * cmInR);
-                        var cmPulse = Math.sin(tFA * 2 * Math.PI * 1.5 + cm.phase);
-                        // Inside cell: assembling; outside: secreted particle
-                        if (cmCycle < 0.7) {
-                            setR(cmX, cmY, cmPulse > 0 ? cm.coreColor : cm.coatColor, faG.x, faG.y, faBR);
-                        } else {
-                            // Secreted into extracellular space
-                            var cmOutR = faBR + 0.4 + (cmCycle - 0.7) * 4.0;
-                            var cmOutX = Math.round(faG.x + Math.cos(cm.angle) * cmOutR);
-                            var cmOutY = Math.round(faG.y + Math.sin(cm.angle) * cmOutR);
-                            set(cmOutX, cmOutY, cmPulse > 0 ? cm.coreColor : cm.coatColor);
-                        }
-                    }
-                }
-            }
-            // CFTR Cl⁻ channels on goblet cells: cAMP-activated chloride secretion
-            var tCF = (now % 8500) / 8500;
-            for (var cfi2 = 0; cfi2 < granddaughterNuclei.length; cfi2++) {
-                var cfG = granddaughterNuclei[cfi2];
-                if (!cfG.cftrChannels) continue;
-                var cfBR = cfG.bodyRadius;
-                for (var cfj = 0; cfj < cfG.cftrChannels.length; cfj++) {
-                    var cf = cfG.cftrChannels[cfj];
-                    var cfPx2 = Math.round(cfG.x + Math.cos(cf.angle) * cfBR);
-                    var cfPy2 = Math.round(cfG.y + Math.sin(cf.angle) * cfBR);
-                    var cfActive = Math.sin(tCF * 2 * Math.PI * 2.5 + cf.phase);
-                    set(cfPx2, cfPy2, cfActive > 0 ? cf.channelColor : cf.dimColor);
-                    // Cl⁻ ions secreted outward into lumen
-                    var clCycle = (tCF * 2.2 + cf.phase * 0.3) % 1.0;
-                    if (clCycle < 0.5) {
-                        var clR = cfBR + 0.3 + clCycle * 2.2;
-                        var clSpread = Math.sin(clCycle * 3 + cfj) * 0.15;
-                        var clX = Math.round(cfG.x + Math.cos(cf.angle + clSpread) * clR);
-                        var clY = Math.round(cfG.y + Math.sin(cf.angle + clSpread) * clR);
-                        if (clCycle > 0.05 && clCycle < 0.45) set(clX, clY, cf.clColor);
-                    }
-                }
-            }
-            // NHE3 Na+/H+ exchange and DRA Cl-/HCO3- exchange on enterocytes
-            var tNHE = (now % 9500) / 9500;
-            for (var nhei2 = 0; nhei2 < granddaughterNuclei.length; nhei2++) {
-                var nheG = granddaughterNuclei[nhei2];
-                if (!nheG.nhe3) continue;
-                var nheBR = nheG.bodyRadius;
-                // NHE3: Na+ in, H+ out (apical)
-                for (var nhej2 = 0; nhej2 < nheG.nhe3.length; nhej2++) {
-                    var nhe = nheG.nhe3[nhej2];
-                    // Exchanger on apical membrane
-                    var nhePx2 = Math.round(nheG.x + Math.cos(nhe.angle) * nheBR);
-                    var nhePy2 = Math.round(nheG.y + Math.sin(nhe.angle) * nheBR);
-                    var nheCycle = (tNHE * 2.0 + nhe.phase * 0.3) % 1.0;
-                    var nheActive = Math.sin(tNHE * 2 * Math.PI * 2.8 + nhe.phase);
-                    set(nhePx2, nhePy2, nheActive > 0 ? nhe.exchangerColor : nhe.restColor);
-                    // Na+ entering from lumen (moves inward)
-                    if (nheCycle < 0.5) {
-                        var naInR = nheBR + 1.0 - nheCycle * 2.6;
-                        var naInX = Math.round(nheG.x + Math.cos(nhe.angle) * naInR);
-                        var naInY = Math.round(nheG.y + Math.sin(nhe.angle) * naInR);
-                        if (nheCycle > 0.05 && nheCycle < 0.45) set(naInX, naInY, nhe.naInColor);
-                    }
-                    // H+ expelled outward to lumen (counter-transported)
-                    var hOutPhase = (nheCycle + 0.5) % 1.0;
-                    if (hOutPhase < 0.5) {
-                        var hOutR = nheBR + 0.3 + hOutPhase * 2.0;
-                        var hOutSpread = 0.12;
-                        var hOutX = Math.round(nheG.x + Math.cos(nhe.angle + hOutSpread) * hOutR);
-                        var hOutY = Math.round(nheG.y + Math.sin(nhe.angle + hOutSpread) * hOutR);
-                        if (hOutPhase > 0.05 && hOutPhase < 0.42) set(hOutX, hOutY, nhe.hOutColor);
-                    }
-                }
-                // DRA: Cl- in, HCO3- out (apical, parallel to NHE3)
-                if (nheG.dra) {
-                    for (var draj2 = 0; draj2 < nheG.dra.length; draj2++) {
-                        var dra = nheG.dra[draj2];
-                        var draPx2 = Math.round(nheG.x + Math.cos(dra.angle) * nheBR);
-                        var draPy2 = Math.round(nheG.y + Math.sin(dra.angle) * nheBR);
-                        var draCycle = (tNHE * 1.8 + dra.phase * 0.3) % 1.0;
-                        var draActive = Math.sin(tNHE * 2 * Math.PI * 2.5 + dra.phase);
-                        set(draPx2, draPy2, draActive > 0 ? dra.exchangerColor : dra.restColor);
-                        // Cl- entering from lumen
-                        if (draCycle < 0.5) {
-                            var clInR = nheBR + 1.1 - draCycle * 2.8;
-                            var clInX = Math.round(nheG.x + Math.cos(dra.angle) * clInR);
-                            var clInY = Math.round(nheG.y + Math.sin(dra.angle) * clInR);
-                            if (draCycle > 0.05 && draCycle < 0.45) set(clInX, clInY, dra.clInColor);
-                        }
-                        // HCO3- expelled to lumen (counter-transported)
-                        var hco3Phase = (draCycle + 0.5) % 1.0;
-                        if (hco3Phase < 0.5) {
-                            var hco3R = nheBR + 0.3 + hco3Phase * 1.8;
-                            var hco3Spread = -0.14;
-                            var hco3X = Math.round(nheG.x + Math.cos(dra.angle + hco3Spread) * hco3R);
-                            var hco3Y = Math.round(nheG.y + Math.sin(dra.angle + hco3Spread) * hco3R);
-                            if (hco3Phase > 0.05 && hco3Phase < 0.42) set(hco3X, hco3Y, dra.hco3OutColor);
-                        }
+                        setR(Math.round(faG.x+Math.cos(cm.angle)*cmInR), Math.round(faG.y+Math.sin(cm.angle)*cmInR), cmPulse>0?cm.coreColor:cm.coatColor, faG.x, faG.y, faBR);
+                    } else {
+                        var cmOutR = faBR + 0.4 + (cmCycle - 0.7) * 4.0;
+                        set(Math.round(faG.x+Math.cos(cm.angle)*cmOutR), Math.round(faG.y+Math.sin(cm.angle)*cmOutR), cmPulse>0?cm.coreColor:cm.coatColor);
                     }
                 }
             }
@@ -2279,6 +2085,38 @@
                         var ipP = Math.sin(tHD * 2 * Math.PI * 2.5 + hi * 2.0);
                         set(ipx, ipy, ipP > 0 ? '#eebb66' : '#ccaa55');
                     }
+                }
+            }
+            // Submucosal capillary network: fenestrated blood vessels beneath the basal lamina
+            // Absorb nutrients (glucose, amino acids, fatty acids) from enterocytes
+            // Blood flows through capillary loops, carrying absorbed solutes to the portal vein
+            var tCap = (now % 13000) / 13000;
+            var capillaryPath = [
+                {x:30,y:10},{x:31,y:14},{x:30,y:18},{x:28,y:22},
+                {x:25,y:26},{x:21,y:29},{x:16,y:31},{x:11,y:30},
+                {x:7,y:27},{x:4,y:23},
+            ];
+            for (var cpi = 0; cpi < capillaryPath.length; cpi++) {
+                var cp = capillaryPath[cpi];
+                var cpP = Math.sin(tCap * 2 * Math.PI * 1.2 + cpi * 0.7);
+                set(cp.x, cp.y, cpP > 0.2 ? '#cc4444' : '#993333');
+                // Interpolate between points
+                if (cpi < capillaryPath.length - 1) {
+                    var cpN = capillaryPath[cpi + 1];
+                    var cpdx = cpN.x - cp.x, cpdy = cpN.y - cp.y;
+                    var cpSt = Math.max(Math.abs(cpdx), Math.abs(cpdy));
+                    for (var cps = 1; cps < cpSt; cps++) {
+                        var cpsh = Math.sin(tCap * 2 * Math.PI * 1.8 + cpi * 0.9 + cps * 0.5);
+                        set(Math.round(cp.x+cpdx*cps/cpSt), Math.round(cp.y+cpdy*cps/cpSt), cpsh>0?'#bb3333':'#882222');
+                    }
+                }
+                // Blood cells flowing through capillary — erythrocytes carry oxygen
+                var bcPhase = (tCap * 2.5 + cpi * 0.11) % 1.0;
+                if (bcPhase > 0.4 && bcPhase < 0.6) {
+                    var bcOff = Math.sin(tCap * 2 * Math.PI * 3 + cpi * 1.3);
+                    var bcX = cp.x + Math.round(bcOff * 0.5);
+                    var bcY = cp.y + Math.round(bcOff * 0.3);
+                    set(bcX, bcY, '#ee5555');
                 }
             }
             return px;
