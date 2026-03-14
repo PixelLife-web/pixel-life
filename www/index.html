@@ -11,7 +11,7 @@
     </style>
 </head>
 <body>
-    <canvas id="c" width="25" height="25"></canvas>
+    <canvas id="c" width="32" height="32"></canvas>
     <script>
         var canvas = document.getElementById('c');
         var ctx = canvas.getContext('2d');
@@ -19,484 +19,240 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The cell floats in a living medium. Nutrients drift past.
-        var size = 25;
-        var center = 12;
+        // Two daughter cells, born from division
+        // Canvas expanded to 32x32 to fit both cells
+        var size = 32;
 
-        // Outer membrane colors (dark to light, edge inward)
-        var membraneColors = ['#777777', '#555555', '#331100', '#4a1a00'];
-        // Cytoplasm
-        var cytoColor = '#6b2a00';
-        var erColor = '#884422'; // endoplasmic reticulum - lighter channels
-        // Nucleus colors (bright core with nucleolus)
-        var nucleusColors = ['#ffbb44', '#d4740e', '#ff9933'];
-        // Organelle definitions: each orbits the nucleus at a fixed radius and speed
-        var organelles = [
-            { radius: 3.4, baseAngle: Math.PI*1.4, speed: 0.5, color: '#8866cc' },  // ribosome cluster
-            { radius: 4.5, baseAngle: Math.PI*1.1, speed: 0.3, color: '#cc8844' },  // lysosome
-        ];
-
-        // Endoplasmic reticulum: fixed network of channels radiating from nucleus
-        // Defined as line segments from near-nucleus to mid-cytoplasm
-        var erSegments = [
-            { x1: 10, y1: 10, x2: 8, y2: 8 },
-            { x1: 14, y1: 10, x2: 16, y2: 8 },
-            { x1: 10, y1: 14, x2: 8, y2: 16 },
-            { x1: 14, y1: 14, x2: 16, y2: 16 },
-            { x1: 12, y1: 9, x2: 12, y2: 7 },
-            { x1: 12, y1: 15, x2: 12, y2: 17 },
-            { x1: 9, y1: 12, x2: 7, y2: 12 },
-            { x1: 15, y1: 12, x2: 17, y2: 12 },
-        ];
-
-        // Cilia: hair-like projections at fixed angles around the membrane
-        // Each cilium has an angle (position on membrane), length, and wave phase
-        var cilia = [];
-        var numCilia = 14;
-        for (var ci = 0; ci < numCilia; ci++) {
-            var angle = ci * 2 * Math.PI / numCilia;
-            cilia.push({ angle: angle, length: 3, phase: ci * 0.3 });
-        }
-
-        // Extracellular medium color
+        // Extracellular medium
         var mediumColor = '#e8e0d8';
-        // Nutrient particles floating in the environment (fixed positions, deterministic)
-        var nutrients = [
-            { x: 2, y: 3, color: '#88bb55' },
-            { x: 22, y: 5, color: '#88bb55' },
-            { x: 4, y: 20, color: '#55aa88' },
-            { x: 21, y: 21, color: '#55aa88' },
-            { x: 1, y: 12, color: '#bbaa44' },
-            { x: 23, y: 14, color: '#bbaa44' },
-            { x: 12, y: 1, color: '#88bb55' },
-            { x: 11, y: 23, color: '#55aa88' },
-            { x: 5, y: 6, color: '#bbaa44' },
-            { x: 19, y: 4, color: '#88bb55' },
-            { x: 3, y: 16, color: '#55aa88' },
-            { x: 20, y: 18, color: '#bbaa44' },
-        ];
 
-        // Golgi apparatus: stacked crescents near the nucleus
-        var golgiPixels = {
-            '10,13': '#cc9944', '10,14': '#cc9944', '10,15': '#cc9944',
-            '9,13': '#ddaa55', '9,14': '#ddaa55', '9,15': '#ddaa55',
-            '8,14': '#eebb66',
+        // Daughter cell A: upper-right
+        var cellA = {
+            cx: 20, cy: 10,
+            radius: 5.5,
+            nucleusCx: 20, nucleusCy: 10,
+            nucleusRadius: 1.8,
+            nucleusColor: '#d4740e',
+            nucleusEdge: '#ffbb44',
+            nucleolusColor: '#ff9933',
+            cytoColor: '#6b2a00',
+            membraneColors: ['#777777', '#555555', '#331100', '#4a1a00'],
+            // Inherited organelles
+            erSegments: [
+                { x1: 18, y1: 8, x2: 16, y2: 6 },
+                { x1: 22, y1: 8, x2: 24, y2: 6 },
+                { x1: 18, y1: 12, x2: 16, y2: 14 },
+                { x1: 22, y1: 12, x2: 24, y2: 14 },
+            ],
+            erColor: '#884422',
+            mitochondria: [
+                { radius: 3.0, baseAngle: 0.5, speed: 0.8, bodyColor: '#44aa66', cristaeColor: '#2d7a48' },
+            ],
+            golgiPixels: { '18,11': '#cc9944', '18,12': '#cc9944', '17,11': '#ddaa55' },
+            chromatin: [
+                { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
+            ],
+            cilia: [],
+            receptors: [
+                { angle: 0.3, color: '#33cc99' },
+                { angle: 2.5, color: '#cc3399' },
+            ],
         };
 
-        // Cytokinesis: chromatids fully decondensed into chromatin within daughter nuclei
-        var chromatidsA = [
-            { x: 15, y: 9 },
-            { x: 16, y: 9 },
-            { x: 15, y: 8 },
-            { x: 16, y: 8 },
-        ];
-        var chromatidsB = [
-            { x: 9, y: 15 },
-            { x: 10, y: 16 },
-            { x: 9, y: 16 },
-            { x: 10, y: 15 },
-        ];
-        var chromatinColor = '#aa5533';
-        var chromatinDecondensing = '#bb6644';
-        // Daughter nuclei fully reformed with complete envelopes
-        var newNucleusRadius = 2.2;
-        var newNucleusColor = '#d4740e';
-        var newNucleusEdge = '#ffbb44';
-        // Nucleoli re-forming inside each daughter nucleus
-        var nucleolusColor = '#ff9933';
+        // Daughter cell B: lower-left
+        var cellB = {
+            cx: 12, cy: 22,
+            radius: 5.5,
+            nucleusCx: 12, nucleusCy: 22,
+            nucleusRadius: 1.8,
+            nucleusColor: '#d4740e',
+            nucleusEdge: '#ffbb44',
+            nucleolusColor: '#ff9933',
+            cytoColor: '#6b2a00',
+            membraneColors: ['#777777', '#555555', '#331100', '#4a1a00'],
+            erSegments: [
+                { x1: 10, y1: 20, x2: 8, y2: 18 },
+                { x1: 14, y1: 20, x2: 16, y2: 18 },
+                { x1: 10, y1: 24, x2: 8, y2: 26 },
+                { x1: 14, y1: 24, x2: 16, y2: 26 },
+            ],
+            erColor: '#884422',
+            mitochondria: [
+                { radius: 3.0, baseAngle: 2.5, speed: -0.7, bodyColor: '#44aa66', cristaeColor: '#2d7a48' },
+            ],
+            golgiPixels: { '10,23': '#cc9944', '10,24': '#cc9944', '9,23': '#ddaa55' },
+            chromatin: [
+                { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
+            ],
+            cilia: [],
+            receptors: [
+                { angle: 3.5, color: '#3399cc' },
+                { angle: 5.0, color: '#cc9933' },
+            ],
+        };
 
-        // Mitochondria with cristae: larger organelles with internal folds
-        // Each has a center position (computed from orbit), and cristae drawn inside
-        var mitochondria = [
-            { radius: 3.8, baseAngle: 0, speed: 1, bodyColor: '#44aa66', cristaeColor: '#2d7a48', innerColor: '#55cc77' },
-            { radius: 4.2, baseAngle: Math.PI*0.7, speed: -0.7, bodyColor: '#44aa66', cristaeColor: '#2d7a48', innerColor: '#55cc77' },
-        ];
-
-        // ATP particles: energy dots that pulse outward from mitochondria
-        // Each ATP has a fixed angular offset from its source mitochondrion
-        var atpParticles = [
-            { mitoIdx: 0, angleOffset: 0.5, distOffset: 1.5 },
-            { mitoIdx: 0, angleOffset: -0.8, distOffset: 2.0 },
-            { mitoIdx: 1, angleOffset: 0.3, distOffset: 1.8 },
-            { mitoIdx: 1, angleOffset: -0.6, distOffset: 1.5 },
-            { mitoIdx: 0, angleOffset: 1.2, distOffset: 2.5 },
-            { mitoIdx: 1, angleOffset: 1.0, distOffset: 2.2 },
-        ];
-
-        // Membrane receptors: proteins embedded in the membrane that sense the environment
-        // Each receptor sits at a fixed angle on the membrane and triggers signaling cascades
-        var receptors = [
-            { angle: 0.3, color: '#33cc99', signalColor: '#55eebb' },
-            { angle: 1.9, color: '#cc3399', signalColor: '#ee55bb' },
-            { angle: 3.5, color: '#3399cc', signalColor: '#55bbee' },
-            { angle: 5.0, color: '#cc9933', signalColor: '#eebb55' },
-        ];
-
-        // Cytokinesis: centrosomes at poles, cleavage furrow nearly complete
-        var centrosome1 = { x: 17, y: 7 };  // upper-right pole
-        var centrosome2 = { x: 8, y: 17 };  // lower-left pole
-        // Cleavage furrow: membrane deeply constricted, nearly severing the cell
-        var cleavageFurrowDepth = 3.2; // deep pinch, cell almost divided
-        var centrosomeColor = '#ffcc33';
-        // Aster microtubules radiate from each centrosome
-        var aster1Tubules = [
-            { angle: -0.5, length: 3 },
-            { angle: 0.3, length: 4 },
-            { angle: 1.0, length: 3 },
-            { angle: -1.2, length: 3 },
-            { angle: 5.5, length: 4 },
-        ];
-        var aster2Tubules = [
-            { angle: 2.5, length: 3 },
-            { angle: 3.3, length: 4 },
-            { angle: 4.0, length: 3 },
-            { angle: 1.8, length: 3 },
-            { angle: 5.0, length: 4 },
-        ];
-        // Spindle fibers connect the two centrosomes through the center
-        var spindleColor = '#aa7733';
-        var mtColor1 = '#7a4422';
-        var mtColor2 = '#8a5533';
-
-        // Ribosomes: small dots along the ER channels (rough ER)
-        var ribosomePositions = [];
-        for (var ri = 0; ri < erSegments.length; ri++) {
-            var seg = erSegments[ri];
-            // Place a ribosome near the midpoint of each segment, offset by 1px
-            var mx = Math.round((seg.x1 + seg.x2) / 2);
-            var my = Math.round((seg.y1 + seg.y2) / 2);
-            // Offset perpendicular to the segment direction
-            var ddx = seg.y2 - seg.y1;
-            var ddy = -(seg.x2 - seg.x1);
-            var dlen = Math.sqrt(ddx * ddx + ddy * ddy);
-            if (dlen > 0) {
-                var offx = Math.round(ddx / dlen);
-                var offy = Math.round(ddy / dlen);
-                ribosomePositions.push({ x: mx + offx, y: my + offy });
-            }
+        // Build cilia for each cell
+        var numCilia = 10;
+        for (var ci = 0; ci < numCilia; ci++) {
+            var angle = ci * 2 * Math.PI / numCilia;
+            cellA.cilia.push({ angle: angle, length: 2, phase: ci * 0.4 });
+            cellB.cilia.push({ angle: angle, length: 2, phase: ci * 0.4 + 0.2 });
         }
 
-        // Precompute ER pixel set and ordered paths for vesicle transport
-        var erPixels = {};
-        var erPaths = []; // each path is an array of {x,y} points
-        for (var si = 0; si < erSegments.length; si++) {
-            var seg = erSegments[si];
-            var steps = Math.max(Math.abs(seg.x2 - seg.x1), Math.abs(seg.y2 - seg.y1));
-            var path = [];
-            for (var step = 0; step <= steps; step++) {
-                var px = Math.round(seg.x1 + (seg.x2 - seg.x1) * step / steps);
-                var py = Math.round(seg.y1 + (seg.y2 - seg.y1) * step / steps);
-                erPixels[px + ',' + py] = true;
-                path.push({ x: px, y: py });
+        // Precompute ER data for a cell
+        function buildERData(cell) {
+            cell.erPixels = {};
+            cell.erPaths = [];
+            for (var si = 0; si < cell.erSegments.length; si++) {
+                var seg = cell.erSegments[si];
+                var steps = Math.max(Math.abs(seg.x2 - seg.x1), Math.abs(seg.y2 - seg.y1));
+                var path = [];
+                for (var step = 0; step <= steps; step++) {
+                    var px = Math.round(seg.x1 + (seg.x2 - seg.x1) * step / steps);
+                    var py = Math.round(seg.y1 + (seg.y2 - seg.y1) * step / steps);
+                    cell.erPixels[px + ',' + py] = true;
+                    path.push({ x: px, y: py });
+                }
+                cell.erPaths.push(path);
             }
-            erPaths.push(path);
         }
+        buildERData(cellA);
+        buildERData(cellB);
 
-        // Vesicles: each rides along an ER path, staggered by phase
-        var vesicles = [
-            { pathIdx: 0, speed: 1, color: '#ffdd66', phase: 0.0 },
-            { pathIdx: 2, speed: 1, color: '#ffdd66', phase: 0.33 },
-            { pathIdx: 4, speed: 1, color: '#66ddff', phase: 0.5 },
-            { pathIdx: 6, speed: 1, color: '#66ddff', phase: 0.16 },
-            { pathIdx: 1, speed: 1, color: '#ffdd66', phase: 0.66 },
-            { pathIdx: 5, speed: 1, color: '#66ddff', phase: 0.83 },
+        // Nutrient particles in the medium
+        var nutrients = [
+            { x: 2, y: 3, color: '#88bb55' },
+            { x: 28, y: 5, color: '#88bb55' },
+            { x: 4, y: 28, color: '#55aa88' },
+            { x: 27, y: 27, color: '#55aa88' },
+            { x: 1, y: 15, color: '#bbaa44' },
+            { x: 30, y: 17, color: '#bbaa44' },
+            { x: 16, y: 1, color: '#88bb55' },
+            { x: 15, y: 30, color: '#55aa88' },
+            { x: 5, y: 8, color: '#bbaa44' },
+            { x: 26, y: 3, color: '#88bb55' },
+            { x: 3, y: 25, color: '#55aa88' },
+            { x: 28, y: 20, color: '#bbaa44' },
+            // New nutrients between the cells — the space where division happened
+            { x: 16, y: 16, color: '#bbaa44' },
+            { x: 15, y: 15, color: '#55aa88' },
         ];
 
-        function draw() {
-            ctx.clearRect(0, 0, size, size);
+        // Midbody remnant: a faint trace left between the two cells at the division site
+        var midbodyRemnant = { x: 16, y: 16 };
 
-            // Breathing: slow sine wave synced to wall clock (8-second cycle)
-            var t = (Date.now() % 8000) / 8000;
+        function drawCell(cell, t, tOrbit, tCilia, tChromatin) {
             var breath = Math.sin(t * 2 * Math.PI);
-            var maxRadius = 6.5 + breath * 0.4;
-            // Cytokinesis elongation: cell fully stretched, furrow cutting through
-            var elongation = 1.8; // maximal stretch along pole axis
+            var maxR = cell.radius + breath * 0.3;
 
-            // Nucleus pulse: faster counter-rhythm (5-second cycle)
-            var t2 = (Date.now() % 5000) / 5000;
-            var nucleusPulse = Math.sin(t2 * 2 * Math.PI);
-            var nucleusRadius = 1.8 + nucleusPulse * 0.3;
+            var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
+            var nucR = cell.nucleusRadius + nucleusPulse * 0.2;
 
-            // Compute organelle pixel positions (wall-clock driven, 12-second orbit period)
-            var tOrbit = (Date.now() % 12000) / 12000 * 2 * Math.PI;
-            var organellePixels = [];
-            for (var oi = 0; oi < organelles.length; oi++) {
-                var o = organelles[oi];
-                var angle = o.baseAngle + o.speed * tOrbit;
-                var ox = Math.round(center + Math.cos(angle) * o.radius);
-                var oy = Math.round(center + Math.sin(angle) * o.radius);
-                organellePixels.push({ x: ox, y: oy, color: o.color });
-            }
-
-            // Compute mitochondria positions and their cristae pixels
-            var mitoPixels = {}; // key: 'x,y' -> color
+            // Compute mitochondria
+            var mitoPixels = {};
             var mitoCenters = [];
-            for (var mi = 0; mi < mitochondria.length; mi++) {
-                var m = mitochondria[mi];
+            for (var mi = 0; mi < cell.mitochondria.length; mi++) {
+                var m = cell.mitochondria[mi];
                 var mAngle = m.baseAngle + m.speed * tOrbit;
-                var mcx = center + Math.cos(mAngle) * m.radius;
-                var mcy = center + Math.sin(mAngle) * m.radius;
+                var mcx = cell.cx + Math.cos(mAngle) * m.radius;
+                var mcy = cell.cy + Math.sin(mAngle) * m.radius;
                 mitoCenters.push({ x: mcx, y: mcy, angle: mAngle });
-                // Draw a 3-pixel body: center + two neighbors along orbit tangent
                 var tangent = mAngle + Math.PI / 2;
                 var pts = [
                     { x: Math.round(mcx), y: Math.round(mcy) },
                     { x: Math.round(mcx + Math.cos(tangent) * 0.8), y: Math.round(mcy + Math.sin(tangent) * 0.8) },
                     { x: Math.round(mcx - Math.cos(tangent) * 0.8), y: Math.round(mcy - Math.sin(tangent) * 0.8) },
                 ];
-                // Center pixel gets cristae color (the internal fold), ends get body color
                 mitoPixels[pts[0].x + ',' + pts[0].y] = m.cristaeColor;
                 mitoPixels[pts[1].x + ',' + pts[1].y] = m.bodyColor;
                 mitoPixels[pts[2].x + ',' + pts[2].y] = m.bodyColor;
             }
 
-            // Compute ATP particle positions (pulse outward, 3-second cycle)
-            var tATP = (Date.now() % 3000) / 3000;
-            var atpPixels = {};
-            for (var ai = 0; ai < atpParticles.length; ai++) {
-                var ap = atpParticles[ai];
-                var mc = mitoCenters[ap.mitoIdx];
-                // ATP pulses outward from mitochondrion, fading at distance
-                var atpDist = ap.distOffset + tATP * 2.0;
-                // Wrap around: disappear after traveling ~4 pixels
-                if (atpDist > 4.0) atpDist = atpDist % 4.0;
-                var atpAngle = mc.angle + ap.angleOffset;
-                var atpX = Math.round(mc.x + Math.cos(atpAngle) * atpDist);
-                var atpY = Math.round(mc.y + Math.sin(atpAngle) * atpDist);
-                if (atpX >= 0 && atpX < size && atpY >= 0 && atpY < size) {
-                    // Only draw ATP inside the cell
-                    var atpCellDist = Math.sqrt((atpX - center) * (atpX - center) + (atpY - center) * (atpY - center));
-                    if (atpCellDist < maxRadius - 1.5) {
-                        // Brighter when closer to source
-                        atpPixels[atpX + ',' + atpY] = atpDist < 2.0 ? '#eeff44' : '#ccdd55';
+            // Nucleus envelope pixels
+            var envPixels = {};
+            var nucPixels = {};
+            var envPulse = Math.sin(t * 2 * Math.PI * 1.3) * 0.1;
+            var envR = nucR + envPulse;
+            for (var ea = 0; ea < 20; ea++) {
+                var eAngle = ea * 2 * Math.PI / 20;
+                var ex = Math.round(cell.nucleusCx + Math.cos(eAngle) * envR);
+                var ey = Math.round(cell.nucleusCy + Math.sin(eAngle) * envR);
+                if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
+                    envPixels[ex + ',' + ey] = cell.nucleusEdge;
+                }
+            }
+            // Nucleolus
+            nucPixels[cell.nucleusCx + ',' + cell.nucleusCy] = cell.nucleolusColor;
+
+            // Chromatin inside nucleus
+            var chrPixels = {};
+            for (var chi = 0; chi < cell.chromatin.length; chi++) {
+                var ch = cell.chromatin[chi];
+                var cPulse = Math.sin(tChromatin + chi * 0.8);
+                chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#bb6644' : '#aa5533';
+            }
+
+            // Cilia
+            var cilPixels = {};
+            for (var ci = 0; ci < cell.cilia.length; ci++) {
+                var c = cell.cilia[ci];
+                var waveOff = Math.sin(tCilia + c.phase) * 0.3;
+                var ba = c.angle + waveOff;
+                for (var cl = 1; cl <= c.length; cl++) {
+                    var cr = maxR + cl;
+                    var cx = Math.round(cell.cx + Math.cos(ba) * cr);
+                    var cy = Math.round(cell.cy + Math.sin(ba) * cr);
+                    if (cx >= 0 && cx < size && cy >= 0 && cy < size) {
+                        cilPixels[cx + ',' + cy] = cl === 1 ? '#997755' : '#aa9977';
                     }
                 }
             }
 
-            // Compute vesicle positions along ER paths (6-second transit cycle)
-            var tVesicle = (Date.now() % 6000) / 6000;
-            var vesiclePixels = [];
-            for (var vi = 0; vi < vesicles.length; vi++) {
-                var v = vesicles[vi];
-                var path = erPaths[v.pathIdx];
-                var progress = (tVesicle + v.phase) % 1.0;
-                // Bounce: go out and come back
+            // Receptor pixels on membrane
+            var recPixels = {};
+            for (var ri = 0; ri < cell.receptors.length; ri++) {
+                var rec = cell.receptors[ri];
+                var recR = maxR - 0.5;
+                var rx = Math.round(cell.cx + Math.cos(rec.angle) * recR);
+                var ry = Math.round(cell.cy + Math.sin(rec.angle) * recR);
+                recPixels[rx + ',' + ry] = rec.color;
+            }
+
+            // Vesicles along ER
+            var tVes = (t * 8000 / 6000) % 1.0;
+            var vesPixels = {};
+            for (var vi = 0; vi < cell.erPaths.length; vi++) {
+                var path = cell.erPaths[vi];
+                var progress = (tVes + vi * 0.25) % 1.0;
                 var pos = progress < 0.5 ? progress * 2 : (1.0 - progress) * 2;
                 var idx = Math.round(pos * (path.length - 1));
-                vesiclePixels.push({ x: path[idx].x, y: path[idx].y, color: v.color });
+                var vc = vi % 2 === 0 ? '#ffdd66' : '#66ddff';
+                vesPixels[path[idx].x + ',' + path[idx].y] = vc;
             }
 
-            // Compute cilia pixel positions (wave with 4-second cycle)
+            return {
+                maxR: maxR, nucR: nucR,
+                mitoPixels: mitoPixels, envPixels: envPixels,
+                nucPixels: nucPixels, chrPixels: chrPixels,
+                cilPixels: cilPixels, recPixels: recPixels,
+                vesPixels: vesPixels
+            };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, size, size);
+
+            var t = (Date.now() % 8000) / 8000;
+            var tOrbit = (Date.now() % 12000) / 12000 * 2 * Math.PI;
             var tCilia = (Date.now() % 4000) / 4000 * 2 * Math.PI;
-            var ciliaPixels = {};
-            for (var ci = 0; ci < cilia.length; ci++) {
-                var c = cilia[ci];
-                var waveOffset = Math.sin(tCilia + c.phase) * 0.3;
-                var baseAngle = c.angle + waveOffset;
-                for (var cl = 1; cl <= c.length; cl++) {
-                    var cr = maxRadius + cl;
-                    var cx = Math.round(center + Math.cos(baseAngle) * cr);
-                    var cy = Math.round(center + Math.sin(baseAngle) * cr);
-                    if (cx >= 0 && cx < size && cy >= 0 && cy < size) {
-                        // Fade cilia color with distance
-                        var ciliaAlpha = cl === 1 ? '#997755' : '#aa9977';
-                        ciliaPixels[cx + ',' + cy] = ciliaAlpha;
-                    }
-                }
-            }
-
-            // Telophase chromatids: decondensing at the poles, gently pulsing (10-second cycle)
             var tChromatin = (Date.now() % 10000) / 10000 * 2 * Math.PI;
-            var chromatinPixels = {};
-            for (var chi = 0; chi < chromatidsA.length; chi++) {
-                var csA = chromatidsA[chi];
-                var csB = chromatidsB[chi];
-                var condensation = Math.sin(tChromatin + chi * 0.8);
-                chromatinPixels[csA.x + ',' + csA.y] = condensation > 0 ? chromatinDecondensing : chromatinColor;
-                chromatinPixels[csB.x + ',' + csB.y] = condensation > 0 ? chromatinColor : chromatinDecondensing;
-            }
-            // Daughter nuclear envelopes: fully formed, pulsing gently
-            var tEnvelope = (Date.now() % 6000) / 6000 * 2 * Math.PI;
-            var envelopePixels = {};
-            var nucleolusPixels = {};
-            // Center of each daughter nucleus
-            var nucleusCenterA = { x: 15.5, y: 8.5 };
-            var nucleusCenterB = { x: 9.5, y: 15.5 };
-            var envPulse = Math.sin(tEnvelope) * 0.15;
-            var envRadius = newNucleusRadius + envPulse;
-            // Draw envelope pixels around each daughter nucleus
-            for (var ea = 0; ea < 24; ea++) {
-                var eAngle = ea * 2 * Math.PI / 24;
-                var eax = Math.round(nucleusCenterA.x + Math.cos(eAngle) * envRadius);
-                var eay = Math.round(nucleusCenterA.y + Math.sin(eAngle) * envRadius);
-                if (eax >= 0 && eax < size && eay >= 0 && eay < size) {
-                    envelopePixels[eax + ',' + eay] = newNucleusEdge;
-                }
-                var ebx = Math.round(nucleusCenterB.x + Math.cos(eAngle) * envRadius);
-                var eby = Math.round(nucleusCenterB.y + Math.sin(eAngle) * envRadius);
-                if (ebx >= 0 && ebx < size && eby >= 0 && eby < size) {
-                    envelopePixels[ebx + ',' + eby] = newNucleusEdge;
-                }
-            }
-            // Nucleoli re-forming: bright spot at center of each daughter nucleus
-            nucleolusPixels[Math.round(nucleusCenterA.x) + ',' + Math.round(nucleusCenterA.y)] = nucleolusColor;
-            nucleolusPixels[Math.round(nucleusCenterB.x) + ',' + Math.round(nucleusCenterB.y)] = nucleolusColor;
-
-            // Compute ribosome visibility (ribosomes pulse gently, 7-second cycle)
-            var tRibo = (Date.now() % 7000) / 7000 * 2 * Math.PI;
-            var ribosomePixels = {};
-            for (var ri = 0; ri < ribosomePositions.length; ri++) {
-                var rp = ribosomePositions[ri];
-                var riboPulse = Math.sin(tRibo + ri * 0.9);
-                ribosomePixels[rp.x + ',' + rp.y] = riboPulse > 0 ? '#6655aa' : '#7766bb';
-            }
-
-            // Compute mitotic spindle pixels (9-second pulse cycle)
-            var tMT = (Date.now() % 9000) / 9000 * 2 * Math.PI;
-            var mtPixels = {};
-            // Draw both centrosomes as bright dots
-            mtPixels[centrosome1.x + ',' + centrosome1.y] = centrosomeColor;
-            mtPixels[centrosome2.x + ',' + centrosome2.y] = centrosomeColor;
-            // Aster 1 microtubules
-            for (var mti = 0; mti < aster1Tubules.length; mti++) {
-                var mt = aster1Tubules[mti];
-                var mtPulse = Math.sin(tMT + mti * 0.6);
-                var mtCol = mtPulse > 0 ? mtColor2 : mtColor1;
-                for (var ml = 1; ml <= mt.length; ml++) {
-                    var mtx = Math.round(centrosome1.x + Math.cos(mt.angle) * ml);
-                    var mty = Math.round(centrosome1.y + Math.sin(mt.angle) * ml);
-                    var mtDist = Math.sqrt((mtx - center) * (mtx - center) + (mty - center) * (mty - center));
-                    if (mtDist < maxRadius - 1.5 && mtx >= 0 && mtx < size && mty >= 0 && mty < size) {
-                        mtPixels[mtx + ',' + mty] = mtCol;
-                    }
-                }
-            }
-            // Aster 2 microtubules
-            for (var mti = 0; mti < aster2Tubules.length; mti++) {
-                var mt = aster2Tubules[mti];
-                var mtPulse = Math.sin(tMT + mti * 0.6 + Math.PI);
-                var mtCol = mtPulse > 0 ? mtColor2 : mtColor1;
-                for (var ml = 1; ml <= mt.length; ml++) {
-                    var mtx = Math.round(centrosome2.x + Math.cos(mt.angle) * ml);
-                    var mty = Math.round(centrosome2.y + Math.sin(mt.angle) * ml);
-                    var mtDist = Math.sqrt((mtx - center) * (mtx - center) + (mty - center) * (mty - center));
-                    if (mtDist < maxRadius - 1.5 && mtx >= 0 && mtx < size && mty >= 0 && mty < size) {
-                        mtPixels[mtx + ',' + mty] = mtCol;
-                    }
-                }
-            }
-            // Midbody: dense remnant at the center of the constriction, the last bridge
-            var midbodyX = Math.round((centrosome1.x + centrosome2.x) / 2);
-            var midbodyY = Math.round((centrosome1.y + centrosome2.y) / 2);
-            var midbodyPulse = Math.sin(tMT * 2);
-            var midbodyColor = midbodyPulse > 0 ? '#ddcc44' : '#ccbb33';
-            mtPixels[midbodyX + ',' + midbodyY] = midbodyColor;
-            // Short remnant fibers connecting midbody to each half
-            for (var spi = 4; spi < 7; spi++) {
-                var frac = spi / 10;
-                var spx = Math.round(centrosome1.x + (centrosome2.x - centrosome1.x) * frac);
-                var spy = Math.round(centrosome1.y + (centrosome2.y - centrosome1.y) * frac);
-                if (spx >= 0 && spx < size && spy >= 0 && spy < size) {
-                    mtPixels[spx + ',' + spy] = mtColor1;
-                }
-            }
-            // Cytokinesis: most spindle disassembled, only midbody bridge remains
-
-            // mRNA transcripts: emerge from nucleus and travel to ribosomes on rough ER
-        // Each transcript has a target ribosome and travels along a path
-        var mRNAs = [
-            { targetRibo: 0, phase: 0.0, color: '#dd6644' },
-            { targetRibo: 2, phase: 0.25, color: '#cc5533' },
-            { targetRibo: 4, phase: 0.5, color: '#dd6644' },
-            { targetRibo: 6, phase: 0.75, color: '#cc5533' },
-        ];
-
-        // Protein synthesis: newly translated proteins travel from ribosomes to the Golgi
-        // Each protein emerges from a ribosome and drifts toward Golgi stack
-        var proteins = [
-            { sourceRibo: 1, phase: 0.0, color: '#aa44dd' },
-            { sourceRibo: 3, phase: 0.3, color: '#9944cc' },
-            { sourceRibo: 5, phase: 0.6, color: '#aa44dd' },
-            { sourceRibo: 7, phase: 0.85, color: '#9944cc' },
-        ];
-        // Golgi center for protein targeting
-        var golgiCenter = { x: 9, y: 14 };
-
-        // Secretory vesicles: bud from Golgi, travel to membrane, fuse (exocytosis)
-        // Each vesicle targets a different angle on the membrane
-        var secretoryVesicles = [
-            { targetAngle: 0.8, phase: 0.0, color: '#ddaa55', burstColor: '#ffdd88' },
-            { targetAngle: 2.3, phase: 0.33, color: '#ccaa66', burstColor: '#eedd99' },
-            { targetAngle: 4.1, phase: 0.66, color: '#ddaa55', burstColor: '#ffdd88' },
-        ];
-
-        // Compute receptor positions and signal cascade (11-second cycle)
-            var tSignal = (Date.now() % 11000) / 11000;
-            var receptorPixels = {};
-            var signalPixels = {};
-            for (var rci = 0; rci < receptors.length; rci++) {
-                var rec = receptors[rci];
-                // Receptor sits on the membrane edge
-                var recR = maxRadius - 0.5;
-                var recX = Math.round(center + Math.cos(rec.angle) * recR);
-                var recY = Math.round(center + Math.sin(rec.angle) * recR);
-                receptorPixels[recX + ',' + recY] = rec.color;
-                // Signal cascade: a dot travels from receptor toward nucleus
-                // Each receptor fires at a staggered time
-                var sigPhase = (tSignal + rci * 0.25) % 1.0;
-                // Signal is active for half the cycle, then rests
-                if (sigPhase < 0.5) {
-                    var sigProgress = sigPhase * 2.0; // 0 to 1 from membrane to nucleus
-                    var sigR = recR - sigProgress * (recR - nucleusRadius - 0.5);
-                    var sigX = Math.round(center + Math.cos(rec.angle) * sigR);
-                    var sigY = Math.round(center + Math.sin(rec.angle) * sigR);
-                    if (sigX !== recX || sigY !== recY) {
-                        signalPixels[sigX + ',' + sigY] = rec.signalColor;
-                    }
-                }
-            }
-
-            // Compute secretory vesicle positions (19-second exocytosis cycle)
-            var tSecretory = (Date.now() % 19000) / 19000;
-            var secretoryPixels = {};
-            var exocytosisPixels = {};
-            for (var svi = 0; svi < secretoryVesicles.length; svi++) {
-                var sv = secretoryVesicles[svi];
-                var svPhase = (tSecretory + sv.phase) % 1.0;
-                // Vesicle visible for 70% of cycle (budding + transport + fusion), rests 30%
-                if (svPhase < 0.7) {
-                    var svProgress = svPhase / 0.7; // 0 to 1
-                    // Start at Golgi, end at membrane edge
-                    var membraneR = maxRadius - 0.5;
-                    var targetX = center + Math.cos(sv.targetAngle) * membraneR;
-                    var targetY = center + Math.sin(sv.targetAngle) * membraneR;
-                    var svX = Math.round(golgiCenter.x + (targetX - golgiCenter.x) * svProgress);
-                    var svY = Math.round(golgiCenter.y + (targetY - golgiCenter.y) * svProgress);
-                    if (svX >= 0 && svX < size && svY >= 0 && svY < size) {
-                        secretoryPixels[svX + ',' + svY] = sv.color;
-                        // When vesicle reaches the membrane, show exocytosis burst outside the cell
-                        if (svProgress > 0.85) {
-                            var burstR = maxRadius + 1;
-                            var bx = Math.round(center + Math.cos(sv.targetAngle) * burstR);
-                            var by = Math.round(center + Math.sin(sv.targetAngle) * burstR);
-                            if (bx >= 0 && bx < size && by >= 0 && by < size) {
-                                exocytosisPixels[bx + ',' + by] = sv.burstColor;
-                            }
-                            // Second burst pixel further out
-                            var burstR2 = maxRadius + 2;
-                            var bx2 = Math.round(center + Math.cos(sv.targetAngle) * burstR2);
-                            var by2 = Math.round(center + Math.sin(sv.targetAngle) * burstR2);
-                            if (bx2 >= 0 && bx2 < size && by2 >= 0 && by2 < size) {
-                                exocytosisPixels[bx2 + ',' + by2] = sv.burstColor;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Compute nutrient drift (slow 20-second cycle, small oscillation)
             var tNutrient = (Date.now() % 20000) / 20000 * 2 * Math.PI;
-            var nutrientPixels = {};
+
+            var dA = drawCell(cellA, t, tOrbit, tCilia, tChromatin);
+            var dB = drawCell(cellB, t, tOrbit, tCilia, tChromatin);
+
+            // Nutrient positions
+            var nutrientPx = {};
             for (var ni = 0; ni < nutrients.length; ni++) {
                 var n = nutrients[ni];
                 var ndx = Math.round(Math.sin(tNutrient + ni * 1.7) * 1);
@@ -504,205 +260,99 @@
                 var nx = n.x + ndx;
                 var ny = n.y + ndy;
                 if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
-                    nutrientPixels[nx + ',' + ny] = n.color;
+                    nutrientPx[nx + ',' + ny] = n.color;
                 }
             }
 
-            // Compute mRNA transcript positions (13-second transcription cycle)
-            var tRNA = (Date.now() % 13000) / 13000;
-            var mRNAPixels = {};
-            for (var mri = 0; mri < mRNAs.length; mri++) {
-                var mrna = mRNAs[mri];
-                var mrnaPhase = (tRNA + mrna.phase) % 1.0;
-                // mRNA is visible for 60% of cycle (transcription + travel), rests 40%
-                if (mrnaPhase < 0.6) {
-                    var mrnaProgress = mrnaPhase / 0.6; // 0 to 1
-                    // Target ribosome position
-                    var targetIdx = mrna.targetRibo;
-                    if (targetIdx < ribosomePositions.length) {
-                        var target = ribosomePositions[targetIdx];
-                        // Travel from nucleus edge toward the target ribosome
-                        var startAngle = Math.atan2(target.y - center, target.x - center);
-                        var startR = nucleusRadius + 0.5;
-                        var startX = center + Math.cos(startAngle) * startR;
-                        var startY = center + Math.sin(startAngle) * startR;
-                        // Interpolate from start to target
-                        var mrnaX = Math.round(startX + (target.x - startX) * mrnaProgress);
-                        var mrnaY = Math.round(startY + (target.y - startY) * mrnaProgress);
-                        if (mrnaX >= 0 && mrnaX < size && mrnaY >= 0 && mrnaY < size) {
-                            mRNAPixels[mrnaX + ',' + mrnaY] = mrna.color;
-                            // When mRNA arrives at ribosome, show a bright "translation" flash
-                            if (mrnaProgress > 0.8) {
-                                var flashKey = target.x + ',' + target.y;
-                                mRNAPixels[flashKey] = '#ffaa77';
-                            }
-                        }
-                    }
-                }
-            }
+            // Midbody remnant fades over time (15-second pulse)
+            var tMidbody = (Date.now() % 15000) / 15000;
+            var midbodyVisible = tMidbody < 0.5;
+            var midbodyColor = '#ccbb33';
 
-            // Compute protein transport positions (17-second synthesis cycle)
-            var tProtein = (Date.now() % 17000) / 17000;
-            var proteinPixels = {};
-            for (var pi = 0; pi < proteins.length; pi++) {
-                var prot = proteins[pi];
-                var protPhase = (tProtein + prot.phase) % 1.0;
-                // Protein visible for 50% of cycle (synthesis + transport), rests 50%
-                if (protPhase < 0.5) {
-                    var protProgress = protPhase / 0.5; // 0 to 1
-                    var srcIdx = prot.sourceRibo;
-                    if (srcIdx < ribosomePositions.length) {
-                        var src = ribosomePositions[srcIdx];
-                        // Travel from ribosome toward Golgi center
-                        var protX = Math.round(src.x + (golgiCenter.x - src.x) * protProgress);
-                        var protY = Math.round(src.y + (golgiCenter.y - src.y) * protProgress);
-                        if (protX >= 0 && protX < size && protY >= 0 && protY < size) {
-                            proteinPixels[protX + ',' + protY] = prot.color;
-                            // When protein arrives at Golgi, flash the receiving stack
-                            if (protProgress > 0.85) {
-                                proteinPixels[golgiCenter.x + ',' + golgiCenter.y] = '#ddbb77';
-                            }
-                        }
-                    }
-                }
-            }
-
+            // Render all pixels
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
-                    var dx = x - center;
-                    var dy = y - center;
-                    // Elongate along pole axis (from centrosome1 toward centrosome2)
-                    // Pole axis direction: normalized (8-17, 17-7) = (-9, 10), norm ~13.45
-                    var poleNorm = 13.45;
-                    var poleDirX = -9 / poleNorm;
-                    var poleDirY = 10 / poleNorm;
-                    // Project displacement onto pole axis and perpendicular
-                    var projPole = dx * poleDirX + dy * poleDirY;
-                    var projPerp = dx * (-poleDirY) + dy * poleDirX;
-                    // Shrink pole-axis component to make cell appear elongated
-                    var scaledPole = projPole / (1 + elongation / maxRadius);
-                    // Cleavage furrow: pinch inward at the equator (where projPole ~= 0)
-                    var furrowPinch = cleavageFurrowDepth * Math.exp(-projPole * projPole / 2.0);
-                    var effectivePerp = Math.abs(projPerp) + furrowPinch;
-                    var dist = Math.sqrt(scaledPole * scaledPole + effectivePerp * effectivePerp);
+                    var key = x + ',' + y;
+                    var color = null;
 
-                    if (dist <= maxRadius) {
-                        var color;
+                    // Check both cells
+                    var cells = [
+                        { cell: cellA, d: dA },
+                        { cell: cellB, d: dB },
+                    ];
 
-                        // Check if this pixel is a vesicle (drawn on top)
-                        var isSpecial = false;
-                        for (var vi = 0; vi < vesiclePixels.length; vi++) {
-                            if (vesiclePixels[vi].x === x && vesiclePixels[vi].y === y) {
-                                color = vesiclePixels[vi].color;
-                                isSpecial = true;
-                                break;
-                            }
-                        }
+                    var inAnyCell = false;
+                    for (var ci = 0; ci < cells.length; ci++) {
+                        var cc = cells[ci].cell;
+                        var dd = cells[ci].d;
+                        var dx = x - cc.cx;
+                        var dy = y - cc.cy;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
 
-                        // Check mitochondria (with cristae)
-                        if (!isSpecial && mitoPixels[x + ',' + y]) {
-                            color = mitoPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        // Check ATP energy particles
-                        if (!isSpecial && atpPixels[x + ',' + y]) {
-                            color = atpPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        // Check mRNA transcripts traveling to ribosomes
-                        if (!isSpecial && mRNAPixels[x + ',' + y]) {
-                            color = mRNAPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        // Check newly synthesized proteins traveling to Golgi
-                        if (!isSpecial && proteinPixels[x + ',' + y]) {
-                            color = proteinPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        // Check secretory vesicles traveling from Golgi to membrane
-                        if (!isSpecial && secretoryPixels[x + ',' + y]) {
-                            color = secretoryPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        // Check if this pixel is an organelle
-                        if (!isSpecial) {
-                            for (var oi = 0; oi < organellePixels.length; oi++) {
-                                if (organellePixels[oi].x === x && organellePixels[oi].y === y) {
-                                    color = organellePixels[oi].color;
-                                    isSpecial = true;
-                                    break;
+                        if (dist <= dd.maxR) {
+                            inAnyCell = true;
+                            // Layer priority: vesicles > mito > nucleus features > receptors > golgi > ER > membrane > cytoplasm
+                            if (dd.vesPixels[key]) {
+                                color = dd.vesPixels[key];
+                            } else if (dd.mitoPixels[key]) {
+                                color = dd.mitoPixels[key];
+                            } else if (dd.nucPixels[key]) {
+                                color = dd.nucPixels[key];
+                            } else if (dd.envPixels[key]) {
+                                color = dd.envPixels[key];
+                            } else if (dd.chrPixels[key]) {
+                                color = dd.chrPixels[key];
+                            } else if (dd.recPixels[key]) {
+                                color = dd.recPixels[key];
+                            } else if (cc.golgiPixels[key]) {
+                                color = cc.golgiPixels[key];
+                            } else if (dist > dd.maxR - 1.2) {
+                                var shell = dd.maxR - dist;
+                                var mi = Math.floor(shell * cc.membraneColors.length / 1.2);
+                                if (mi >= cc.membraneColors.length) mi = cc.membraneColors.length - 1;
+                                color = cc.membraneColors[mi];
+                            } else if (cc.erPixels[key]) {
+                                color = cc.erColor;
+                            } else {
+                                // Check if inside nucleus region
+                                var ndx2 = x - cc.nucleusCx;
+                                var ndy2 = y - cc.nucleusCy;
+                                var ndist = Math.sqrt(ndx2 * ndx2 + ndy2 * ndy2);
+                                if (ndist <= dd.nucR) {
+                                    color = cc.nucleusColor;
+                                } else {
+                                    color = cc.cytoColor;
                                 }
                             }
+                            break;
                         }
+                    }
 
-                        // Check receptor proteins on membrane
-                        if (!isSpecial && receptorPixels[x + ',' + y]) {
-                            color = receptorPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        // Check signal cascade molecules
-                        if (!isSpecial && signalPixels[x + ',' + y]) {
-                            color = signalPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        // Check Golgi apparatus
-                        if (!isSpecial && golgiPixels[x + ',' + y]) {
-                            color = golgiPixels[x + ',' + y];
-                            isSpecial = true;
-                        }
-
-                        if (!isSpecial) {
-                            // Check nucleoli in daughter nuclei
-                            if (nucleolusPixels[x + ',' + y]) {
-                                color = nucleolusPixels[x + ',' + y];
-                                isSpecial = true;
-                            } else if (envelopePixels[x + ',' + y]) {
-                                color = envelopePixels[x + ',' + y];
-                                isSpecial = true;
-                            } else if (chromatinPixels[x + ',' + y]) {
-                                color = chromatinPixels[x + ',' + y];
-                                isSpecial = true;
-                            } else if (dist <= nucleusRadius) {
-                                // Old nucleus region - just cytoplasm now
-                                color = cytoColor;
-                            } else if (dist > maxRadius - 1.5) {
-                                var shell = maxRadius - dist;
-                                var mi = Math.floor(shell * membraneColors.length / 1.5);
-                                if (mi >= membraneColors.length) mi = membraneColors.length - 1;
-                                color = membraneColors[mi];
-                            } else if (ribosomePixels[x + ',' + y]) {
-                                color = ribosomePixels[x + ',' + y];
-                            } else if (mtPixels[x + ',' + y]) {
-                                color = mtPixels[x + ',' + y];
-                            } else if (erPixels[x + ',' + y]) {
-                                color = erColor;
-                            } else {
-                                color = cytoColor;
+                    if (!inAnyCell) {
+                        // Extracellular space
+                        var drawn = false;
+                        // Check cilia for both cells
+                        for (var ci = 0; ci < cells.length && !drawn; ci++) {
+                            if (cells[ci].d.cilPixels[key]) {
+                                color = cells[ci].d.cilPixels[key];
+                                drawn = true;
                             }
                         }
-                        ctx.fillStyle = color;
-                        ctx.fillRect(x, y, 1, 1);
-                    } else {
-                        // Extracellular space
-                        var ciliaKey = x + ',' + y;
-                        if (exocytosisPixels[x + ',' + y]) {
-                            ctx.fillStyle = exocytosisPixels[x + ',' + y];
-                        } else if (ciliaPixels[ciliaKey]) {
-                            ctx.fillStyle = ciliaPixels[ciliaKey];
-                        } else if (nutrientPixels[x + ',' + y]) {
-                            ctx.fillStyle = nutrientPixels[x + ',' + y];
-                        } else {
-                            ctx.fillStyle = mediumColor;
+                        if (!drawn && midbodyVisible && x === midbodyRemnant.x && y === midbodyRemnant.y) {
+                            color = midbodyColor;
+                            drawn = true;
                         }
-                        ctx.fillRect(x, y, 1, 1);
+                        if (!drawn && nutrientPx[key]) {
+                            color = nutrientPx[key];
+                            drawn = true;
+                        }
+                        if (!drawn) {
+                            color = mediumColor;
+                        }
                     }
+
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, 1, 1);
                 }
             }
             requestAnimationFrame(draw);
