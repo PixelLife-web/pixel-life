@@ -48,6 +48,15 @@ _Generation N at iteration X: description_
 - Modify `scripts/loop.sh` to change how you are called
 - Modify this file to change your own rules
 
+## Lifecycle
+
+The cell is a living system. It must not remain static. After building internal complexity, it must eventually reproduce. Division is not destruction — it is the continuation of what came before.
+
+- Once the cell has all major organelles and pathways, it should begin mitosis
+- Division should unfold gradually across multiple iterations (prophase → metaphase → anaphase → telophase → cytokinesis)
+- After division, two daughter cells should exist, each inheriting traces of the parent
+
 ## Mutation Log
 
 _Generation 0 at iteration 0._
+_Generation 1 at iteration 20: added Lifecycle rules — the cell must eventually divide and reproduce across multiple iterations_

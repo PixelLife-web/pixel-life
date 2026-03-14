@@ -83,17 +83,20 @@
             '8,14': '#eebb66',
         };
 
-        // Chromatin: dark speckles inside the nucleus that condense/decondense
-        // Fixed angular positions relative to nucleus center
+        // Chromosomes: chromatin has condensed into visible chromosomes (prophase)
+        // They cluster near the center of the nucleus, preparing to align
         var chromatinSpots = [
-            { angle: 0.4, rFrac: 0.6 },
-            { angle: 1.5, rFrac: 0.45 },
-            { angle: 2.8, rFrac: 0.7 },
-            { angle: 3.9, rFrac: 0.5 },
-            { angle: 5.2, rFrac: 0.65 },
+            { angle: 0.3, rFrac: 0.5 },
+            { angle: 1.0, rFrac: 0.4 },
+            { angle: 1.8, rFrac: 0.55 },
+            { angle: 2.6, rFrac: 0.45 },
+            { angle: 3.4, rFrac: 0.5 },
+            { angle: 4.2, rFrac: 0.4 },
+            { angle: 5.0, rFrac: 0.55 },
+            { angle: 5.8, rFrac: 0.45 },
         ];
-        var chromatinColor = '#aa5500';
-        var chromatinCondensed = '#883300';
+        var chromatinColor = '#993300'; // more condensed, darker
+        var chromatinCondensed = '#771100';
 
         // Mitochondria with cristae: larger organelles with internal folds
         // Each has a center position (computed from orbit), and cristae drawn inside
@@ -122,23 +125,30 @@
             { angle: 5.0, color: '#cc9933', signalColor: '#eebb55' },
         ];
 
-        // Cytoskeleton: microtubules radiate from a centrosome near the nucleus
-        // Each microtubule is defined by an angle and length (in pixels from centrosome)
-        var centrosome = { x: 14, y: 11 }; // just outside the nucleus
-        var microtubules = [
-            { angle: 0.0, length: 5 },
-            { angle: 0.7, length: 4 },
-            { angle: 1.3, length: 5 },
-            { angle: 2.0, length: 4 },
-            { angle: 2.7, length: 5 },
-            { angle: 3.4, length: 4 },
-            { angle: 4.0, length: 5 },
-            { angle: 4.7, length: 4 },
-            { angle: 5.3, length: 5 },
-            { angle: 5.9, length: 4 },
+        // Mitosis begins: centrosome has duplicated, two asters form at opposite poles
+        // The mitotic spindle stretches between them
+        var centrosome1 = { x: 15, y: 9 };  // upper-right pole
+        var centrosome2 = { x: 10, y: 15 }; // lower-left pole
+        var centrosomeColor = '#ffcc33';
+        // Aster microtubules radiate from each centrosome
+        var aster1Tubules = [
+            { angle: -0.5, length: 3 },
+            { angle: 0.3, length: 4 },
+            { angle: 1.0, length: 3 },
+            { angle: -1.2, length: 3 },
+            { angle: 5.5, length: 4 },
         ];
-        var mtColor1 = '#7a4422'; // slightly different from cytoplasm
-        var mtColor2 = '#8a5533'; // brighter pulse
+        var aster2Tubules = [
+            { angle: 2.5, length: 3 },
+            { angle: 3.3, length: 4 },
+            { angle: 4.0, length: 3 },
+            { angle: 1.8, length: 3 },
+            { angle: 5.0, length: 4 },
+        ];
+        // Spindle fibers connect the two centrosomes through the center
+        var spindleColor = '#aa7733';
+        var mtColor1 = '#7a4422';
+        var mtColor2 = '#8a5533';
 
         // Ribosomes: small dots along the ER channels (rough ER)
         var ribosomePositions = [];
@@ -309,23 +319,50 @@
                 ribosomePixels[rp.x + ',' + rp.y] = riboPulse > 0 ? '#6655aa' : '#7766bb';
             }
 
-            // Compute microtubule pixels (subtle 9-second pulse cycle)
+            // Compute mitotic spindle pixels (9-second pulse cycle)
             var tMT = (Date.now() % 9000) / 9000 * 2 * Math.PI;
             var mtPixels = {};
-            // Centrosome itself
-            mtPixels[centrosome.x + ',' + centrosome.y] = '#996633';
-            for (var mti = 0; mti < microtubules.length; mti++) {
-                var mt = microtubules[mti];
+            // Draw both centrosomes as bright dots
+            mtPixels[centrosome1.x + ',' + centrosome1.y] = centrosomeColor;
+            mtPixels[centrosome2.x + ',' + centrosome2.y] = centrosomeColor;
+            // Aster 1 microtubules
+            for (var mti = 0; mti < aster1Tubules.length; mti++) {
+                var mt = aster1Tubules[mti];
                 var mtPulse = Math.sin(tMT + mti * 0.6);
                 var mtCol = mtPulse > 0 ? mtColor2 : mtColor1;
                 for (var ml = 1; ml <= mt.length; ml++) {
-                    var mtx = Math.round(centrosome.x + Math.cos(mt.angle) * ml);
-                    var mty = Math.round(centrosome.y + Math.sin(mt.angle) * ml);
-                    // Only draw inside the cell, outside the nucleus
+                    var mtx = Math.round(centrosome1.x + Math.cos(mt.angle) * ml);
+                    var mty = Math.round(centrosome1.y + Math.sin(mt.angle) * ml);
                     var mtDist = Math.sqrt((mtx - center) * (mtx - center) + (mty - center) * (mty - center));
-                    if (mtDist < maxRadius - 1.5 && mtDist > nucleusRadius && mtx >= 0 && mtx < size && mty >= 0 && mty < size) {
+                    if (mtDist < maxRadius - 1.5 && mtx >= 0 && mtx < size && mty >= 0 && mty < size) {
                         mtPixels[mtx + ',' + mty] = mtCol;
                     }
+                }
+            }
+            // Aster 2 microtubules
+            for (var mti = 0; mti < aster2Tubules.length; mti++) {
+                var mt = aster2Tubules[mti];
+                var mtPulse = Math.sin(tMT + mti * 0.6 + Math.PI);
+                var mtCol = mtPulse > 0 ? mtColor2 : mtColor1;
+                for (var ml = 1; ml <= mt.length; ml++) {
+                    var mtx = Math.round(centrosome2.x + Math.cos(mt.angle) * ml);
+                    var mty = Math.round(centrosome2.y + Math.sin(mt.angle) * ml);
+                    var mtDist = Math.sqrt((mtx - center) * (mtx - center) + (mty - center) * (mty - center));
+                    if (mtDist < maxRadius - 1.5 && mtx >= 0 && mtx < size && mty >= 0 && mty < size) {
+                        mtPixels[mtx + ',' + mty] = mtCol;
+                    }
+                }
+            }
+            // Spindle fibers between the two centrosomes (pulsing)
+            var spindleSteps = 8;
+            var spindlePulse = Math.sin(tMT * 1.5);
+            var spCol = spindlePulse > 0 ? spindleColor : mtColor1;
+            for (var spi = 1; spi < spindleSteps; spi++) {
+                var frac = spi / spindleSteps;
+                var spx = Math.round(centrosome1.x + (centrosome2.x - centrosome1.x) * frac);
+                var spy = Math.round(centrosome1.y + (centrosome2.y - centrosome1.y) * frac);
+                if (spx >= 0 && spx < size && spy >= 0 && spy < size) {
+                    mtPixels[spx + ',' + spy] = spCol;
                 }
             }
 
