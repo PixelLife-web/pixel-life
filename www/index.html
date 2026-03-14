@@ -338,6 +338,21 @@
                     phase: gbi * 0.9 + mvi * 1.1,
                 });
             }
+            // Glycocalyx: carbohydrate-rich coat on the apical surface
+            // Oligosaccharide chains (N-linked and O-linked glycans) extend from membrane glycoproteins
+            // Forms a fuzzy protective layer beyond microvilli tips — mucin-type sugars sway gently
+            gn.glycocalyx = [];
+            var gcCount = 5 + (gbi % 2); // 5-6 sugar chains per cell
+            for (var gci = 0; gci < gcCount; gci++) {
+                var gcSpread = (gci - (gcCount - 1) / 2) * 0.28;
+                gn.glycocalyx.push({
+                    angle: apicalAngle + gcSpread,
+                    length: 1.0 + gn.nucleolusSize * 0.6,
+                    phase: gbi * 1.2 + gci * 0.9,
+                    color: gci % 3 === 0 ? '#eedd99' : (gci % 3 === 1 ? '#ddcc88' : '#ccddaa'),
+                    tipColor: gci % 2 === 0 ? '#ffeeaa' : '#eeffbb',
+                });
+            }
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -1861,6 +1876,28 @@
                             var isTip2 = mr > mv.length - 0.5;
                             var mPulse = Math.sin(tMV2 * 1.3 + i * 1.7 + mvi2 * 2.0 + mr * 1.5);
                             set(mx, my, isTip2 ? (mPulse > 0 ? '#ddbb88' : '#ccaa77') : (mPulse > 0.3 ? '#bb9966' : '#aa8855'));
+                        }
+                    }
+                }
+                // Glycocalyx: fuzzy sugar coat extending beyond microvilli tips
+                // Oligosaccharide chains sway with a slower, more fluid motion than microvilli
+                var tGC = (now % 11000) / 11000 * 2 * Math.PI;
+                if (g.glycocalyx) {
+                    for (var gci2 = 0; gci2 < g.glycocalyx.length; gci2++) {
+                        var gc = g.glycocalyx[gci2];
+                        var gcSway = Math.sin(tGC * 0.8 + gc.phase) * 0.15;
+                        var gcBaseA = gc.angle + gcSway;
+                        // Glycocalyx starts beyond microvilli tips
+                        var gcStartR = bR + 1.8 + g.nucleolusSize * 0.6;
+                        var gcBaseX = g.x + Math.cos(gcBaseA) * gcStartR;
+                        var gcBaseY = g.y + Math.sin(gcBaseA) * gcStartR;
+                        for (var gl = 0; gl <= Math.ceil(gc.length * 2); gl++) {
+                            var gr = gl * 0.5; if (gr > gc.length) break;
+                            var gx = Math.round(gcBaseX + Math.cos(gcBaseA) * gr);
+                            var gy = Math.round(gcBaseY + Math.sin(gcBaseA) * gr);
+                            var isGcTip = gr > gc.length - 0.5;
+                            var gcPulse = Math.sin(tGC * 1.2 + i * 1.3 + gci2 * 1.7 + gr * 1.0);
+                            set(gx, gy, isGcTip ? (gcPulse > 0 ? gc.tipColor : gc.color) : (gcPulse > 0.2 ? gc.color : '#bbbb77'));
                         }
                     }
                 }
