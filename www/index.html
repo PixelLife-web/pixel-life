@@ -349,6 +349,14 @@
         // Golgi center for protein targeting
         var golgiCenter = { x: 9, y: 14 };
 
+        // Secretory vesicles: bud from Golgi, travel to membrane, fuse (exocytosis)
+        // Each vesicle targets a different angle on the membrane
+        var secretoryVesicles = [
+            { targetAngle: 0.8, phase: 0.0, color: '#ddaa55', burstColor: '#ffdd88' },
+            { targetAngle: 2.3, phase: 0.33, color: '#ccaa66', burstColor: '#eedd99' },
+            { targetAngle: 4.1, phase: 0.66, color: '#ddaa55', burstColor: '#ffdd88' },
+        ];
+
         // Compute receptor positions and signal cascade (11-second cycle)
             var tSignal = (Date.now() % 11000) / 11000;
             var receptorPixels = {};
@@ -371,6 +379,44 @@
                     var sigY = Math.round(center + Math.sin(rec.angle) * sigR);
                     if (sigX !== recX || sigY !== recY) {
                         signalPixels[sigX + ',' + sigY] = rec.signalColor;
+                    }
+                }
+            }
+
+            // Compute secretory vesicle positions (19-second exocytosis cycle)
+            var tSecretory = (Date.now() % 19000) / 19000;
+            var secretoryPixels = {};
+            var exocytosisPixels = {};
+            for (var svi = 0; svi < secretoryVesicles.length; svi++) {
+                var sv = secretoryVesicles[svi];
+                var svPhase = (tSecretory + sv.phase) % 1.0;
+                // Vesicle visible for 70% of cycle (budding + transport + fusion), rests 30%
+                if (svPhase < 0.7) {
+                    var svProgress = svPhase / 0.7; // 0 to 1
+                    // Start at Golgi, end at membrane edge
+                    var membraneR = maxRadius - 0.5;
+                    var targetX = center + Math.cos(sv.targetAngle) * membraneR;
+                    var targetY = center + Math.sin(sv.targetAngle) * membraneR;
+                    var svX = Math.round(golgiCenter.x + (targetX - golgiCenter.x) * svProgress);
+                    var svY = Math.round(golgiCenter.y + (targetY - golgiCenter.y) * svProgress);
+                    if (svX >= 0 && svX < size && svY >= 0 && svY < size) {
+                        secretoryPixels[svX + ',' + svY] = sv.color;
+                        // When vesicle reaches the membrane, show exocytosis burst outside the cell
+                        if (svProgress > 0.85) {
+                            var burstR = maxRadius + 1;
+                            var bx = Math.round(center + Math.cos(sv.targetAngle) * burstR);
+                            var by = Math.round(center + Math.sin(sv.targetAngle) * burstR);
+                            if (bx >= 0 && bx < size && by >= 0 && by < size) {
+                                exocytosisPixels[bx + ',' + by] = sv.burstColor;
+                            }
+                            // Second burst pixel further out
+                            var burstR2 = maxRadius + 2;
+                            var bx2 = Math.round(center + Math.cos(sv.targetAngle) * burstR2);
+                            var by2 = Math.round(center + Math.sin(sv.targetAngle) * burstR2);
+                            if (bx2 >= 0 && bx2 < size && by2 >= 0 && by2 < size) {
+                                exocytosisPixels[bx2 + ',' + by2] = sv.burstColor;
+                            }
+                        }
                     }
                 }
             }
@@ -491,6 +537,12 @@
                             isSpecial = true;
                         }
 
+                        // Check secretory vesicles traveling from Golgi to membrane
+                        if (!isSpecial && secretoryPixels[x + ',' + y]) {
+                            color = secretoryPixels[x + ',' + y];
+                            isSpecial = true;
+                        }
+
                         // Check if this pixel is an organelle
                         if (!isSpecial) {
                             for (var oi = 0; oi < organellePixels.length; oi++) {
@@ -550,7 +602,9 @@
                     } else {
                         // Extracellular space
                         var ciliaKey = x + ',' + y;
-                        if (ciliaPixels[ciliaKey]) {
+                        if (exocytosisPixels[x + ',' + y]) {
+                            ctx.fillStyle = exocytosisPixels[x + ',' + y];
+                        } else if (ciliaPixels[ciliaKey]) {
                             ctx.fillStyle = ciliaPixels[ciliaKey];
                         } else if (nutrientPixels[x + ',' + y]) {
                             ctx.fillStyle = nutrientPixels[x + ',' + y];
