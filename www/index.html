@@ -250,6 +250,23 @@
             { filoIdxA: 2, filoIdxB: 0, color: '#ddbb88', pulsePhase: 3.0 },
         ];
 
+        // Peroxisomes: small detoxification organelles, slower orbit than lysosomes
+        cellA.peroxisomes = [
+            { orbitR: 3.8, baseAngle: 0.3, speed: 0.6, color: '#66aa88' },
+            { orbitR: 2.0, baseAngle: 3.5, speed: -0.5, color: '#55bb77' },
+        ];
+        cellB.peroxisomes = [
+            { orbitR: 3.8, baseAngle: 1.8, speed: -0.6, color: '#66aa88' },
+            { orbitR: 2.0, baseAngle: 5.0, speed: 0.5, color: '#55bb77' },
+        ];
+
+        // Desmosomes: mechanical anchoring junctions (button-like spots on membranes)
+        // Unlike gap junctions which pass signals, desmosomes hold tissue together
+        var desmosomes = [
+            { angleA: 2.0, angleB: 5.2, color: '#bb8844', anchorColor: '#998866' },
+            { angleA: 2.8, angleB: 5.9, color: '#bb8844', anchorColor: '#998866' },
+        ];
+
         // Lysosomes: small digestive organelles orbiting in the cytoplasm
         cellA.lysosomes = [
             { orbitR: 2.5, baseAngle: 1.0, speed: 1.2, color: '#8855aa' },
@@ -496,6 +513,20 @@
                 }
             }
 
+            // Peroxisomes orbiting in cytoplasm (slower, distinct from lysosomes)
+            var peroxPixels = {};
+            if (cell.peroxisomes) {
+                for (var pi = 0; pi < cell.peroxisomes.length; pi++) {
+                    var prox = cell.peroxisomes[pi];
+                    var proxAngle = prox.baseAngle + prox.speed * tOrbit;
+                    var px2 = Math.round(cell.cx + Math.cos(proxAngle) * prox.orbitR);
+                    var py2 = Math.round(cell.cy + Math.sin(proxAngle) * prox.orbitR);
+                    if (px2 >= 0 && px2 < size && py2 >= 0 && py2 < size) {
+                        peroxPixels[px2 + ',' + py2] = prox.color;
+                    }
+                }
+            }
+
             // Ribosomes on rough ER: small dots that pulse with protein synthesis
             var riboPixels = {};
             if (cell.ribosomes && cell.erPaths) {
@@ -555,7 +586,7 @@
                 vesPixels: vesPixels, atpPixels: atpPixels,
                 centPixels: centPixels, furrowPixels: furrowPixels,
                 lysoPixels: lysoPixels, filoPixels: filoPixels,
-                riboPixels: riboPixels
+                riboPixels: riboPixels, peroxPixels: peroxPixels
             };
         }
 
@@ -666,6 +697,37 @@
                 }
             }
 
+            // Desmosome pixels: mechanical anchoring spots on cell membranes
+            var desmoPx = {};
+            for (var di = 0; di < desmosomes.length; di++) {
+                var desmo = desmosomes[di];
+                // Plaque on cell A membrane
+                var daxR = dA.maxR - 0.3;
+                var dax = Math.round(cellA.cx + Math.cos(desmo.angleA) * daxR);
+                var day = Math.round(cellA.cy + Math.sin(desmo.angleA) * daxR);
+                // Plaque on cell B membrane
+                var dbxR = dB.maxR - 0.3;
+                var dbx = Math.round(cellB.cx + Math.cos(desmo.angleB) * dbxR);
+                var dby = Math.round(cellB.cy + Math.sin(desmo.angleB) * dbxR);
+                if (dax >= 0 && dax < size && day >= 0 && day < size) {
+                    desmoPx[dax + ',' + day] = desmo.color;
+                }
+                if (dbx >= 0 && dbx < size && dby >= 0 && dby < size) {
+                    desmoPx[dbx + ',' + dby] = desmo.color;
+                }
+                // Intermediate filament anchor: one pixel inward from each plaque
+                var iaX = Math.round(cellA.cx + Math.cos(desmo.angleA) * (daxR - 1.2));
+                var iaY = Math.round(cellA.cy + Math.sin(desmo.angleA) * (daxR - 1.2));
+                var ibX = Math.round(cellB.cx + Math.cos(desmo.angleB) * (dbxR - 1.2));
+                var ibY = Math.round(cellB.cy + Math.sin(desmo.angleB) * (dbxR - 1.2));
+                if (iaX >= 0 && iaX < size && iaY >= 0 && iaY < size) {
+                    desmoPx[iaX + ',' + iaY] = desmo.anchorColor;
+                }
+                if (ibX >= 0 && ibX < size && ibY >= 0 && ibY < size) {
+                    desmoPx[ibX + ',' + ibY] = desmo.anchorColor;
+                }
+            }
+
             // Signal molecule positions
             var signalPx = {};
             var tSig = Date.now();
@@ -739,6 +801,8 @@
                                 color = dd.atpPixels[key];
                             } else if (dd.lysoPixels && dd.lysoPixels[key]) {
                                 color = dd.lysoPixels[key];
+                            } else if (dd.peroxPixels && dd.peroxPixels[key]) {
+                                color = dd.peroxPixels[key];
                             } else if (dd.mitoPixels[key]) {
                                 color = dd.mitoPixels[key];
                             } else if (dd.nucPixels[key]) {
@@ -795,6 +859,10 @@
                         }
                         if (!drawn && gapPx[key]) {
                             color = gapPx[key];
+                            drawn = true;
+                        }
+                        if (!drawn && desmoPx[key]) {
+                            color = desmoPx[key];
                             drawn = true;
                         }
                         if (!drawn && signalPx[key]) {
