@@ -19,22 +19,29 @@
         canvas.style.width = s + 'px';
         canvas.style.height = s + 'px';
 
-        // The circle is complete. It breathes.
+        // The cell lives. A nucleus forms within.
         var size = 11;
         var center = 5;
 
-        // Warm core palette, now fully rounded
-        var coreColors = ['#8b3a10', '#6b2a00', '#4a1a00', '#331100', '#555555', '#888888'];
+        // Outer membrane colors (dark to light, edge inward)
+        var membraneColors = ['#888888', '#555555', '#331100', '#4a1a00'];
+        // Cytoplasm
+        var cytoColor = '#6b2a00';
+        // Nucleus colors (bright core)
+        var nucleusColors = ['#d4740e', '#ff9933'];
 
         function draw() {
             ctx.clearRect(0, 0, size, size);
 
             // Breathing: slow sine wave synced to wall clock (8-second cycle)
-            // Two viewers see the same phase
             var t = (Date.now() % 8000) / 8000;
             var breath = Math.sin(t * 2 * Math.PI);
-            // Radius oscillates between 4.2 and 5.0
             var maxRadius = 4.6 + breath * 0.4;
+
+            // Nucleus pulse: faster counter-rhythm (5-second cycle)
+            var t2 = (Date.now() % 5000) / 5000;
+            var nucleusPulse = Math.sin(t2 * 2 * Math.PI);
+            var nucleusRadius = 1.2 + nucleusPulse * 0.3;
 
             for (var y = 0; y < size; y++) {
                 for (var x = 0; x < size; x++) {
@@ -43,10 +50,23 @@
                     var dist = Math.sqrt(dx * dx + dy * dy);
 
                     if (dist <= maxRadius) {
-                        // Map distance to color index
-                        var idx = Math.floor(dist * coreColors.length / (maxRadius + 0.5));
-                        if (idx >= coreColors.length) idx = coreColors.length - 1;
-                        ctx.fillStyle = coreColors[idx];
+                        var color;
+                        if (dist <= nucleusRadius) {
+                            // Nucleus: bright inner glow
+                            var ni = Math.floor(dist * nucleusColors.length / (nucleusRadius + 0.3));
+                            if (ni >= nucleusColors.length) ni = nucleusColors.length - 1;
+                            color = nucleusColors[ni];
+                        } else if (dist > maxRadius - 1.5) {
+                            // Membrane: outer ring
+                            var shell = maxRadius - dist; // 0 at edge, 1.5 at inner
+                            var mi = Math.floor(shell * membraneColors.length / 1.5);
+                            if (mi >= membraneColors.length) mi = membraneColors.length - 1;
+                            color = membraneColors[mi];
+                        } else {
+                            // Cytoplasm: the space between
+                            color = cytoColor;
+                        }
+                        ctx.fillStyle = color;
                         ctx.fillRect(x, y, 1, 1);
                     }
                 }
