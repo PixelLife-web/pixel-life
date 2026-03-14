@@ -440,18 +440,16 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // Cyclin E-CDK2: peaking then declining — SCF-Skp2 ubiquitinates cyclin E
-        // One nuclear particle lost (degraded); remaining ones dimmer
-        // Cytoplasmic pool also shrinking as CDK2 switches to cyclin A partner
+        // Cyclin E-CDK2: nearly gone — SCF-Skp2 ubiquitination almost complete
+        // Only one dim nuclear particle remains; cytoplasmic pool depleted
+        // CDK2 now predominantly bound to cyclin A
         cellA.cyclinE = [
-            { orbitR: 0.9, baseAngle: 2.1, speed: 0.9, color: '#2ab870', nuclear: true },
-            { orbitR: 2.4, baseAngle: 0.5, speed: 0.5, color: '#2aaa66', nuclear: false },
-            { orbitR: 3.3, baseAngle: 3.0, speed: -0.4, color: '#2aaa66', nuclear: false },
+            { orbitR: 0.9, baseAngle: 2.1, speed: 0.9, color: '#228855', nuclear: true },
+            { orbitR: 2.4, baseAngle: 0.5, speed: 0.5, color: '#1a8855', nuclear: false },
         ];
         cellB.cyclinE = [
-            { orbitR: 0.8, baseAngle: 0.7, speed: -0.85, color: '#2ab870', nuclear: true },
-            { orbitR: 2.4, baseAngle: 2.2, speed: -0.45, color: '#2aaa66', nuclear: false },
-            { orbitR: 3.3, baseAngle: 5.5, speed: 0.42, color: '#2aaa66', nuclear: false },
+            { orbitR: 0.8, baseAngle: 0.7, speed: -0.85, color: '#228855', nuclear: true },
+            { orbitR: 2.4, baseAngle: 2.2, speed: -0.45, color: '#1a8855', nuclear: false },
         ];
 
         // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
@@ -485,16 +483,14 @@
             { orbitR: 2.4, baseAngle: 2.2, speed: -0.5, color: '#338877' },
         ];
 
-        // E2F transcription factors: cyclin A-CDK2 phosphorylates E2F, beginning degradation
-        // Negative feedback: E2F activated S-phase genes, now S-phase kinase silences E2F
-        // Dimmer, one particle lost — transcription program winding down
+        // E2F transcription factors: mostly degraded by cyclin A-CDK2 phosphorylation
+        // S-phase gene program fully established; E2F no longer needed
+        // Only one dim particle remains per cell — nearly silenced
         cellA.e2fFactors = [
-            { orbitR: 0.8, baseAngle: 0.4, speed: 1.1, color: '#339daa' },
-            { orbitR: 0.6, baseAngle: 2.8, speed: -0.9, color: '#2a8899' },
+            { orbitR: 0.6, baseAngle: 2.8, speed: -0.9, color: '#226677' },
         ];
         cellB.e2fFactors = [
-            { orbitR: 0.7, baseAngle: 1.2, speed: -1.0, color: '#339daa' },
-            { orbitR: 0.8, baseAngle: 3.9, speed: 0.85, color: '#2a8899' },
+            { orbitR: 0.7, baseAngle: 1.2, speed: -1.0, color: '#226677' },
         ];
 
         // Cyclin A-CDK2: rising sharply in S phase — APC/C-Cdh1 inactivated by Emi1
@@ -525,31 +521,35 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // EARLY S PHASE: replication origins fire, DNA synthesis begins
-        // ORC-loaded origins activate via CDK2/Cdc7 — MCM helicase unwinds, polymerase extends
-        // Cyclin E peaks then declines (SCF-Skp2 ubiquitination), cyclin A-CDK2 rises
+        // MID S PHASE: replication forks progress, late origins fire
+        // CAF-1 deposits H3-H4 histones behind each fork, restoring chromatin on daughter strands
+        // Cyclin E almost gone (SCF-Skp2), cyclin A-CDK2 dominates S-phase kinase activity
         cellA.prophase = null;
         cellB.prophase = null;
 
         // Replication forks: bidirectional forks emanate from fired origins
         // Each fork has two arms (leading/lagging strand) moving in opposite directions
         // PCNA sliding clamps ride at each fork; RPA coats single-stranded DNA
+        // Replication forks: early + late-firing origins now active
+        // 4th fork = late replicon firing as CDK2 activity reaches threshold
         cellA.replicationForks = [
             { originAngle: 0.8, speed: 0.3, armSpread: 0.4, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
             { originAngle: 2.5, speed: -0.25, armSpread: 0.35, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
             { originAngle: 4.2, speed: 0.28, armSpread: 0.38, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
+            { originAngle: 5.6, speed: -0.22, armSpread: 0.33, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
         ];
         cellB.replicationForks = [
             { originAngle: 1.5, speed: -0.28, armSpread: 0.42, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
             { originAngle: 3.8, speed: 0.32, armSpread: 0.36, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
             { originAngle: 5.5, speed: -0.26, armSpread: 0.4, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
+            { originAngle: 0.3, speed: 0.24, armSpread: 0.34, pcnaColor: '#ffdd44', rpaColor: '#88ccff' },
         ];
 
         // Condensins: unloaded from chromatin in G1 — no longer needed
         cellA.condensins = [];
         cellB.condensins = [];
 
-        // S phase: daughters replicating DNA, origins firing across the genome
+        // Mid S phase: forks extending, late origins firing, histones deposited behind forks
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1579,6 +1579,29 @@
                 }
             }
 
+            // Histone deposition: CAF-1 chaperone deposits H3-H4 tetramers behind each fork
+            // Green-teal dots trail behind the advancing PCNA, restoring nucleosome structure
+            var histonePixels = {};
+            if (cell.replicationForks && cell.separated) {
+                var tHist = (t * 8000 / 6000) % 1.0;
+                for (var hfi = 0; hfi < cell.replicationForks.length; hfi++) {
+                    var hrf = cell.replicationForks[hfi];
+                    var hforkProgress = (tHist + hfi * 0.33) % 1.0;
+                    // Histone trail: behind the leading fork (smaller radius = already replicated)
+                    var histR = nucR * 0.2 + hforkProgress * nucR * 0.35;
+                    var histAngle = hrf.originAngle + hrf.speed * tOrbit + Math.sin(hforkProgress * 2 * Math.PI) * 0.2;
+                    var hx = Math.round(cell.cx + Math.cos(histAngle) * histR);
+                    var hy = Math.round(cell.cy + Math.sin(histAngle) * histR);
+                    var hdx = hx - cell.cx, hdy = hy - cell.cy;
+                    if (Math.sqrt(hdx * hdx + hdy * hdy) < nucR + 0.3) {
+                        if (hx >= 0 && hx < size && hy >= 0 && hy < size) {
+                            var histPulse = Math.sin(tHist * 2 * Math.PI * 2 + hfi * 1.7);
+                            histonePixels[hx + ',' + hy] = histPulse > 0.2 ? '#55ccaa' : '#449988';
+                        }
+                    }
+                }
+            }
+
             // Cyclin A-CDK2: rising in S phase, pink-magenta particles
             var cycAPixels = {};
             if (cell.cyclinA && cell.separated) {
@@ -1917,6 +1940,7 @@
                 sacPixels: sacPixels,
                 e2fPixels: e2fPixels,
                 forkPixels: forkPixels,
+                histonePixels: histonePixels,
                 cycAPixels: cycAPixels,
                 cdc25Pixels: cdc25Pixels,
                 cycEPixels: cycEPixels,
@@ -2233,6 +2257,8 @@
                                 color = dd.sacPixels[key];
                             } else if (dd.forkPixels && dd.forkPixels[key]) {
                                 color = dd.forkPixels[key];
+                            } else if (dd.histonePixels && dd.histonePixels[key]) {
+                                color = dd.histonePixels[key];
                             } else if (dd.e2fPixels && dd.e2fPixels[key]) {
                                 color = dd.e2fPixels[key];
                             } else if (dd.checkPixels && dd.checkPixels[key]) {
