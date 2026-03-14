@@ -2166,6 +2166,42 @@
                     if (inB(clvX, clvY)) set(clvX, clvY, nP > 0.7 ? '#ffddee' : '#eeccdd');
                 }
             }
+            var tMicro = (now % 23000) / 23000;
+            var commensals = [
+                {x:3,y:1,color:'#55cc77',dimColor:'#339955',coated:true,speed:0.30,phase:0},
+                {x:7,y:3,color:'#77bb55',dimColor:'#558833',coated:false,speed:0.25,phase:0.4},
+                {x:1,y:5,color:'#55cc77',dimColor:'#339955',coated:true,speed:0.35,phase:0.8},
+                {x:10,y:1,color:'#99aa44',dimColor:'#778822',coated:false,speed:0.28,phase:1.2},
+                {x:5,y:0,color:'#77bb55',dimColor:'#558833',coated:true,speed:0.32,phase:1.6},
+                {x:12,y:3,color:'#55cc77',dimColor:'#339955',coated:false,speed:0.22,phase:2.0},
+                {x:0,y:10,color:'#99aa44',dimColor:'#778822',coated:true,speed:0.30,phase:2.4},
+                {x:2,y:8,color:'#77bb55',dimColor:'#558833',coated:false,speed:0.26,phase:2.8},
+            ];
+            for (var baci = 0; baci < commensals.length; baci++) {
+                var bac = commensals[baci];
+                var bacPh = tMicro * 2 * Math.PI + bac.phase;
+                var bacP = Math.sin(bacPh);
+                var bacDX = Math.sin(tMicro * 2 * Math.PI * bac.speed * 3 + bac.phase * 2.0) * 1.5;
+                var bacDY = Math.cos(tMicro * 2 * Math.PI * bac.speed * 2.5 + bac.phase * 3.0) * 1.2;
+                var bacX = Math.round(bac.x + bacDX);
+                var bacY = Math.round(bac.y + bacDY);
+                if (inB(bacX, bacY)) {
+                    set(bacX, bacY, bacP > 0 ? bac.color : bac.dimColor);
+                    if (bac.coated && bacP > -0.3) {
+                        var sigAP = Math.sin(bacPh * 2.0 + baci * 1.7);
+                        var coatA = bacPh * 0.3 + baci * 1.57;
+                        var coatX = Math.round(bacX + Math.cos(coatA) * 0.8);
+                        var coatY = Math.round(bacY + Math.sin(coatA) * 0.8);
+                        if (inB(coatX, coatY)) set(coatX, coatY, sigAP > 0 ? '#eedd88' : '#ccbb66');
+                    }
+                    if (bacP > 0.7) {
+                        var divA = bacPh * 0.5 + baci * 2.3;
+                        var divX = Math.round(bacX + Math.cos(divA) * 0.9);
+                        var divY = Math.round(bacY + Math.sin(divA) * 0.9);
+                        if (inB(divX, divY)) set(divX, divY, bac.dimColor);
+                    }
+                }
+            }
             return px;
         }
 
