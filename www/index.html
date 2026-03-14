@@ -236,13 +236,18 @@
 
         // Granddaughter cell bodies: thin cytoplasmic shells forming around each nucleus
         // Post-division cells establish their own membranes and minimal cytoplasm
+        // Cell specialization: granddaughters begin to differentiate
+        // GD0 & GD2: absorptive enterocytes (more microvilli, brush border enzymes)
+        // GD1 & GD3: secretory goblet cells (mucin granules, fewer microvilli)
+        var cellTypes = ['enterocyte', 'goblet', 'enterocyte', 'goblet'];
+
         for (var gbi = 0; gbi < granddaughterNuclei.length; gbi++) {
             var gn = granddaughterNuclei[gbi];
-            gn.bodyRadius = 2.2 + gn.nucleolusSize * 0.8; // small cell body forming
-            gn.membraneColor = '#555555';
-            gn.cytoColor = '#6b2a00';
-            // Nuclear speckles: SC35/SRSF2 splicing factor storage domains
-            // Irregular interchromatin granule clusters — hallmark of mature interphase nuclei
+            gn.cellType = cellTypes[gbi];
+            gn.bodyRadius = 2.2 + gn.nucleolusSize * 0.8;
+            // Goblet cells have slightly different cytoplasm (more secretory)
+            gn.membraneColor = gn.cellType === 'goblet' ? '#556655' : '#555555';
+            gn.cytoColor = gn.cellType === 'goblet' ? '#5b3a10' : '#6b2a00';
             gn.speckles = [
                 { angle: gn.cajalAngle + 2.1, dist: 0.6, color: '#88ddaa' },
                 { angle: gn.cajalAngle + 4.3, dist: 0.5, color: '#77cc99' },
@@ -250,8 +255,6 @@
             // Small mitochondrion inherited during division
             gn.mitoAngle = gbi * 1.57 + 0.4;
             gn.mitoSpeed = (gbi % 2 === 0 ? 0.6 : -0.5);
-            // Rough ER stubs: first cisternae budding from nuclear envelope
-            // Each granddaughter grows 2 short ER segments radiating outward
             gn.erStubs = [
                 { angle: gn.cajalAngle + 1.0, length: 1.5 },
                 { angle: gn.cajalAngle + 3.5, length: 1.2 },
@@ -322,14 +325,38 @@
                 { angle: gn.cajalAngle + 0.8, dist: gn.bodyRadius * 0.58, speed: (gbi % 2 === 0 ? 0.15 : -0.13), phase: gbi * 0.3, coreColor: '#ddcc44', shellColor: '#bbaa33' },
                 { angle: gn.cajalAngle + 3.6, dist: gn.bodyRadius * 0.46, speed: (gbi % 2 === 0 ? -0.12 : 0.17), phase: gbi * 0.3 + 0.5, coreColor: '#ccbb33', shellColor: '#aaaa22' },
             ];
-            // Apical microvilli: actin-cored finger-like projections on the free surface
-            // Opposite the basal lamina — increases absorptive surface area
-            // Each granddaughter sprouts 3-4 microvilli pointing away from basal lamina center
-            // Basal lamina center is roughly at (16, 22) — apical direction points away from it
+            // Cell type-specific organelles
+            if (gn.cellType === 'goblet') {
+                // Mucin granules: large secretory vesicles filled with MUC2 glycoprotein
+                // Accumulate in apical cytoplasm, ready for regulated exocytosis
+                gn.mucinGranules = [];
+                var mgCount = 2 + (gbi % 2);
+                for (var mgi = 0; mgi < mgCount; mgi++) {
+                    gn.mucinGranules.push({
+                        angle: gn.cajalAngle + mgi * 1.8 + 0.5,
+                        dist: gn.bodyRadius * 0.55 + mgi * 0.12,
+                        phase: gbi * 0.6 + mgi * 1.3,
+                        coreColor: '#aaddcc',   // mucin glycoprotein (pale teal)
+                        shellColor: '#88bbaa',  // granule membrane
+                    });
+                }
+            } else {
+                // Brush border enzymes: alkaline phosphatase/peptidase on microvillar surface
+                gn.brushEnzymes = [];
+                var beCount = 2;
+                for (var bei = 0; bei < beCount; bei++) {
+                    gn.brushEnzymes.push({
+                        angle: gn.cajalAngle + bei * 2.5 + 1.0,
+                        phase: gbi * 0.8 + bei * 1.7,
+                        color: '#ddbb66',
+                    });
+                }
+            }
+            // Apical microvilli: enterocytes have more, goblet cells have fewer
             var blCenter = { x: 16, y: 22 };
             var apicalAngle = Math.atan2(gn.y - blCenter.y, gn.x - blCenter.x);
             gn.microvilli = [];
-            var mvCount = 3 + (gbi % 2); // 3 or 4 microvilli per cell
+            var mvCount = gn.cellType === 'enterocyte' ? (4 + (gbi % 2)) : (2 + (gbi % 2));
             for (var mvi = 0; mvi < mvCount; mvi++) {
                 var mvSpread = (mvi - (mvCount - 1) / 2) * 0.35;
                 gn.microvilli.push({
@@ -373,6 +400,43 @@
                     naColor: '#ffaa33',          // Na+ ions (gold, moving out)
                     kColor: '#7744dd',           // K+ ions (purple, moving in)
                     restColor: '#aa4433',        // resting pump
+                });
+            }
+        }
+
+        // SGLT1 sodium-glucose cotransporters: apical secondary active transport (enterocytes only)
+        // Uses the Na+ gradient from Na+/K+ ATPase to drive glucose absorption against its gradient
+        // 2 Na+ ions co-transported with 1 glucose molecule per cycle
+        // GLUT2 facilitated diffusion on basolateral side exports glucose to interstitium
+        for (var sgi = 0; sgi < granddaughterNuclei.length; sgi++) {
+            var sgn = granddaughterNuclei[sgi];
+            if (sgn.cellType !== 'enterocyte') continue; // only absorptive cells
+            var sgBlCenter = { x: 16, y: 22 };
+            var sgApicalAngle = Math.atan2(sgn.y - sgBlCenter.y, sgn.x - sgBlCenter.x);
+            var sgBasalAngle = Math.atan2(sgBlCenter.y - sgn.y, sgBlCenter.x - sgn.x);
+            // SGLT1 on apical face (toward lumen)
+            sgn.sglt1 = [];
+            var sgltCount = 2 + (sgi % 2);
+            for (var sgj = 0; sgj < sgltCount; sgj++) {
+                var sgSpread = (sgj - (sgltCount - 1) / 2) * 0.40;
+                sgn.sglt1.push({
+                    angle: sgApicalAngle + sgSpread,
+                    phase: sgi * 0.9 + sgj * 1.4,
+                    transporterColor: '#ee8833',   // SGLT1 protein (orange)
+                    glucoseColor: '#ffcc00',        // glucose molecule (bright yellow)
+                    naCoColor: '#ffaa33',            // co-transported Na+ (gold)
+                });
+            }
+            // GLUT2 on basolateral face (toward interstitium)
+            sgn.glut2 = [];
+            var glutCount = 2;
+            for (var glj = 0; glj < glutCount; glj++) {
+                var glSpread = (glj - (glutCount - 1) / 2) * 0.50;
+                sgn.glut2.push({
+                    angle: sgBasalAngle + glSpread,
+                    phase: sgi * 0.7 + glj * 1.8,
+                    channelColor: '#cc7722',        // GLUT2 transporter (amber)
+                    glucoseColor: '#ffdd44',         // glucose exiting (pale yellow)
                 });
             }
         }
@@ -766,26 +830,18 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // ABSCISSION: ESCRT-III spirals sever the intercellular bridge, cytokinesis completes
-        // Each daughter cell divides into two granddaughter cells
-        cellA.prophase = {
-            condensation: 0.3, laminPhospho: 0.2, npcDisassembly: 0.25,
-            envelopeVesicles: true, asterCount: 12, spindleForming: true,
-            prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
-            telophase: true, furrowInitiation: 0.85, midbodyForming: true,
-            escrtRecruiting: true, abscission: true,
-            congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
-            pole1Target: { x: 18, y: 6 }, pole2Target: { x: 24, y: 12 },
-        };
-        cellB.prophase = {
-            condensation: 0.3, laminPhospho: 0.2, npcDisassembly: 0.25,
-            envelopeVesicles: true, asterCount: 12, spindleForming: true,
-            prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
-            telophase: true, furrowInitiation: 0.85, midbodyForming: true,
-            escrtRecruiting: true, abscission: true,
-            congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
-            pole1Target: { x: 8, y: 20 }, pole2Target: { x: 14, y: 26 },
-        };
+        // ABSCISSION complete: four granddaughter cells emerged
+        function mkProphase(p1, p2) {
+            return { condensation:0.3, laminPhospho:0.2, npcDisassembly:0.25,
+                envelopeVesicles:true, asterCount:12, spindleForming:true,
+                prometaphase:true, metaphase:true, anaphase:true, lateAnaphase:true,
+                telophase:true, furrowInitiation:0.85, midbodyForming:true,
+                escrtRecruiting:true, abscission:true,
+                congressProgress:1.0, auroraBActive:false, sacSatisfaction:1.0,
+                pole1Target:p1, pole2Target:p2 };
+        }
+        cellA.prophase = mkProphase({x:18,y:6}, {x:24,y:12});
+        cellB.prophase = mkProphase({x:8,y:20}, {x:14,y:26});
 
         // Cohesin rings: fully cleaved by separase — fragments dispersed
         cellA.cohesins = [];
@@ -829,10 +885,7 @@
             { targetPole: 2, speed: -0.72, phase: 0.8, color: '#99eeff' },
         ];
 
-        // Wee1: fully degraded (consolidated)
-
-        // ABSCISSION: ESCRT-III spirals constrict and sever the intercellular bridge
-        // Vps4 ATPase powers membrane scission — four granddaughter cells emerge
+        // Wee1/ESCRT: fully resolved (abscission complete)
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -903,44 +956,22 @@
                 }
             }
 
-            // PROPHASE: chromatin condenses into distinct chromosomes
+            // Decondensing chromatids clustered at poles (post-telophase)
             var chrPixels = {};
-            if (cell.separated) {
+            if (cell.separated && cell.prophase) {
                 var allChromatin = cell.chromatin.concat(cell.sisterChromatin || []);
-                var cond = cell.prophase ? cell.prophase.condensation : 0;
-                var isPrometa = cell.prophase && cell.prophase.prometaphase;
-                var isMeta = cell.prophase && cell.prophase.metaphase;
-                var isAnaphase = cell.prophase && cell.prophase.anaphase;
-                var isTelophase = cell.prophase && cell.prophase.telophase;
-                // Metaphase plate: midpoint between the two poles
-                var plateX = cell.cx;
-                var plateY = cell.cy;
-                if (isPrometa && cell.prophase.pole1Target && cell.prophase.pole2Target) {
-                    plateX = (cell.prophase.pole1Target.x + cell.prophase.pole2Target.x) / 2;
-                    plateY = (cell.prophase.pole1Target.y + cell.prophase.pole2Target.y) / 2;
-                }
+                var halfLen = Math.floor(allChromatin.length / 2);
                 for (var chi = 0; chi < allChromatin.length; chi++) {
-                    var diffuseR, diffAngle, driftX, driftY;
-                    if (isTelophase) {
-                        // TELOPHASE: chromatids arrived at poles, clustered tightly, decondensing
-                        var halfLen = Math.floor(allChromatin.length / 2);
-                        var goesToPole1 = chi < halfLen;
-                        var targetPole = goesToPole1 ? cell.prophase.pole1Target : cell.prophase.pole2Target;
-                        var localIdx = goesToPole1 ? chi : (chi - halfLen);
-                        // Tight cluster at pole — slight diffuse wobble as they decondense
-                        var deconAngle = localIdx * 2 * Math.PI / halfLen + tChromatin * 0.03;
-                        var deconR = 0.5 + Math.sin(tChromatin * 0.05 + chi * 0.8) * 0.3;
-                        driftX = Math.round(targetPole.x + Math.cos(deconAngle) * deconR);
-                        driftY = Math.round(targetPole.y + Math.sin(deconAngle) * deconR);
-                    }
-                    // Condensed chromosomes are brighter, thicker — condensin complexes glow
-                    var condPulse = Math.sin(tChromatin * 0.15 + chi * 0.7);
-                    var chrColor = cond > 0.5 ? (condPulse > 0 ? '#e0a070' : '#d09060') : (condPulse > 0.3 ? '#d09060' : '#c08050');
-                    // Telophase: chromatids decondensing — softer, diffusing color
+                    var goesToPole1 = chi < halfLen;
+                    var targetPole = goesToPole1 ? cell.prophase.pole1Target : cell.prophase.pole2Target;
+                    var localIdx = goesToPole1 ? chi : (chi - halfLen);
+                    var deconAngle = localIdx * 2 * Math.PI / halfLen + tChromatin * 0.03;
+                    var deconR = 0.5 + Math.sin(tChromatin * 0.05 + chi * 0.8) * 0.3;
+                    var driftX = Math.round(targetPole.x + Math.cos(deconAngle) * deconR);
+                    var driftY = Math.round(targetPole.y + Math.sin(deconAngle) * deconR);
                     var deconGlow = Math.sin(tChromatin * 0.08 + chi * 0.5);
-                    chrColor = deconGlow > 0 ? '#d8b888' : '#c8a878';
-                    if (driftX >= 0 && driftX < size && driftY >= 0 && driftY < size) {
-                        chrPixels[driftX + ',' + driftY] = chrColor;
+                    if (inB(driftX, driftY)) {
+                        chrPixels[driftX + ',' + driftY] = deconGlow > 0 ? '#d8b888' : '#c8a878';
                     }
                 }
             }
@@ -1137,24 +1168,6 @@
                                         : highTension2
                                         ? (kfPulse2 > 0 ? '#6eb5cc' : '#5ea5bb')
                                         : (kfPulse2 > 0 ? '#66aacc' : '#5599bb');
-                                }
-                            }
-                        }
-                        // AURORA B KINASE: flashes at kinetochores correcting merotelic attachments
-                        if (cell.prophase.auroraBActive) {
-                            var abPulse = Math.sin(tCentMig * 2 * Math.PI * 3);
-                            if (abPulse > 0.3) {
-                                // Aurora B flash at the metaphase plate — error correction signal
-                                var abx = Math.round(kfPlateX);
-                                var aby = Math.round(kfPlateY);
-                                if (abx >= 0 && abx < size && aby >= 0 && aby < size) {
-                                    centPixels[abx + ',' + aby] = '#ff55ff'; // magenta kinase flash
-                                }
-                                // Secondary flash offset along plate perpendicular
-                                var ab2x = Math.round(kfPlateX + Math.cos(kfPerpAngle) * 0.8);
-                                var ab2y = Math.round(kfPlateY + Math.sin(kfPerpAngle) * 0.8);
-                                if (ab2x >= 0 && ab2x < size && ab2y >= 0 && ab2y < size) {
-                                    centPixels[ab2x + ',' + ab2y] = abPulse > 0.7 ? '#dd44dd' : '#bb33bb';
                                 }
                             }
                         }
@@ -1537,11 +1550,7 @@
                 }
             }
 
-            // E2F: degraded (consolidated)
-
-            // Replication forks + histones: S phase complete (consolidated)
-
-            // Cohesin rings (consolidated — empty, fully cleaved)
+            // E2F/replication/cohesins: resolved (consolidated)
             var cohesinPixels = renderOrbiters(cell, cell.cohesins, tOrbit, t, 7500, {maxR:nucR+0.3,threshold:0.3,hiColor:'#aaccee',phaseSpread:2.1});
 
             // Topoisomerase II (consolidated)
@@ -1612,83 +1621,30 @@
             // PP1/PP2A phosphatases (consolidated)
             var phosphPixels = renderOrbiters(cell, cell.phosphatases, tOrbit, t, 4500, {maxR:maxR-1,hiColor:'#66ffdd',pulseRate:2.5,phaseSpread:1.9,ripple:true,rippleColor:'#55eebb'});
 
-            // Telophase: central spindle / midbody forms at equator, cleavage furrow ingresses
-            // Anaphase remnant: separase flashes fade
+            // Post-abscission remnants: retraction bulbs at cut sites + sealed furrow
             var sacPixels = {};
-            if (cell.prophase && cell.prophase.anaphase && cell.separated) {
+            if (cell.prophase && cell.separated) {
                 var tSAC = (t * 8000 / 5000) % 1.0;
-                var p1 = cell.prophase.pole1Target;
-                var p2 = cell.prophase.pole2Target;
-                var sacMidX = (p1.x + p2.x) / 2;
-                var sacMidY = (p1.y + p2.y) / 2;
-                if (cell.prophase.telophase) {
-                    // TELOPHASE / ABSCISSION
-                    var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-                    var perpAngle = spindleAngle + Math.PI / 2;
-                    var mbPulse = Math.sin(tSAC * 2 * Math.PI * 0.8);
-                    if (cell.prophase.abscission) {
-                        // ABSCISSION COMPLETE: bridge severed, only retraction bulbs remain at cut sites
-                        // Each daughter's membrane seals — small bright dots where the cut happened
-                        for (var rbI = -1; rbI <= 1; rbI += 2) {
-                            var rbDist = 1.2; // retraction bulbs pulled back toward their respective daughters
-                            var rbX = Math.round(sacMidX + Math.cos(spindleAngle) * rbI * rbDist);
-                            var rbY = Math.round(sacMidY + Math.sin(spindleAngle) * rbI * rbDist);
-                            if (rbX >= 0 && rbX < size && rbY >= 0 && rbY < size) {
-                                // Membrane sealing glow at cut site
-                                var sealPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + rbI * 2);
-                                sacPixels[rbX + ',' + rbY] = sealPulse > 0 ? '#ddbb77' : '#ccaa66';
-                            }
-                        }
-                    } else {
-                        // Pre-abscission midbody with ESCRT-III spiral filaments
-                        var mbCX = Math.round(sacMidX);
-                        var mbCY = Math.round(sacMidY);
-                        if (mbCX >= 0 && mbCX < size && mbCY >= 0 && mbCY < size) {
-                            sacPixels[mbCX + ',' + mbCY] = mbPulse > 0 ? '#bbeeff' : '#aaddee';
-                        }
-                        for (var mbI = -1; mbI <= 1; mbI += 2) {
-                            var mbArmX = Math.round(sacMidX + Math.cos(spindleAngle) * mbI * 0.7);
-                            var mbArmY = Math.round(sacMidY + Math.sin(spindleAngle) * mbI * 0.7);
-                            if (mbArmX >= 0 && mbArmX < size && mbArmY >= 0 && mbArmY < size) {
-                                var escrtPulse = Math.sin(tSAC * 2 * Math.PI * 2.5 + mbI * 1.5);
-                                sacPixels[mbArmX + ',' + mbArmY] = escrtPulse > 0.3 ? '#99ddee' : '#77aabb';
-                            }
-                        }
-                        // ESCRT-III spiral: CEP55 recruits ALIX/TSG101, then CHMP4B polymerizes
-                        // Helical filaments spiral inward to constrict the intercellular bridge
-                        if (cell.prophase.escrtRecruiting) {
-                            for (var esI = 0; esI < 5; esI++) {
-                                var esAngle = tSAC * 2 * Math.PI * 1.2 + esI * 2 * Math.PI / 5;
-                                var esR = 1.2 - esI * 0.15; // spiral inward
-                                var esX = Math.round(sacMidX + Math.cos(esAngle) * esR * Math.cos(spindleAngle) - Math.sin(esAngle) * esR * Math.sin(spindleAngle) * 0.5);
-                                var esY = Math.round(sacMidY + Math.cos(esAngle) * esR * Math.sin(spindleAngle) + Math.sin(esAngle) * esR * Math.cos(spindleAngle) * 0.5);
-                                if (esX >= 0 && esX < size && esY >= 0 && esY < size) {
-                                    var esPulse = Math.sin(tSAC * 2 * Math.PI * 3 + esI * 1.2);
-                                    sacPixels[esX + ',' + esY] = esPulse > 0 ? '#cc88ff' : '#aa66dd';
-                                }
-                            }
-                        }
+                var p1 = cell.prophase.pole1Target, p2 = cell.prophase.pole2Target;
+                var sacMidX = (p1.x + p2.x) / 2, sacMidY = (p1.y + p2.y) / 2;
+                var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                var perpAngle = spindleAngle + Math.PI / 2;
+                // Retraction bulbs at cut sites
+                for (var rbI = -1; rbI <= 1; rbI += 2) {
+                    var rbX = Math.round(sacMidX + Math.cos(spindleAngle) * rbI * 1.2);
+                    var rbY = Math.round(sacMidY + Math.sin(spindleAngle) * rbI * 1.2);
+                    if (inB(rbX, rbY)) {
+                        var sealPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + rbI * 2);
+                        sacPixels[rbX + ',' + rbY] = sealPulse > 0 ? '#ddbb77' : '#ccaa66';
                     }
-                    // Cleavage furrow: fully closed after abscission, constricting before
-                    var furrowDepth = cell.prophase.furrowInitiation || 0.2;
-                    var furrowSpan = cell.prophase.abscission ? 2 : (furrowDepth > 0.3 ? 3 : 2);
-                    for (var fI = -furrowSpan; fI <= furrowSpan; fI++) {
-                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.6);
-                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.6);
-                        if (fX >= 0 && fX < size && fY >= 0 && fY < size) {
-                            var fPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + fI * 0.6);
-                            if (cell.prophase.abscission) {
-                                // Post-abscission: furrow resolved into sealed membranes
-                                if (Math.abs(fI) <= 1) {
-                                    sacPixels[fX + ',' + fY] = fPulse > 0 ? '#663311' : '#552200';
-                                }
-                            } else {
-                                var fColor = Math.abs(fI) <= 1
-                                    ? (fPulse > 0 ? '#552200' : '#441100')
-                                    : (fPulse > 0 ? '#774422' : '#663311');
-                                sacPixels[fX + ',' + fY] = fColor;
-                            }
-                        }
+                }
+                // Sealed furrow scar
+                for (var fI = -2; fI <= 2; fI++) {
+                    var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.6);
+                    var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.6);
+                    if (inB(fX, fY) && Math.abs(fI) <= 1) {
+                        var fPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + fI * 0.6);
+                        sacPixels[fX + ',' + fY] = fPulse > 0 ? '#663311' : '#552200';
                     }
                 }
             }
@@ -1899,6 +1855,32 @@
                         setR(ox, oy, cFn(o, oP, oj), g.x, g.y, bR);
                     }
                 }
+                // Cell type-specific: mucin granules (goblet) or brush enzymes (enterocyte)
+                if (g.mucinGranules) {
+                    var tMG = (now % 13000) / 13000 * 2 * Math.PI;
+                    for (var mgi2 = 0; mgi2 < g.mucinGranules.length; mgi2++) {
+                        var mg = g.mucinGranules[mgi2];
+                        var mgA = mg.angle + Math.sin(tMG * 0.5 + mg.phase) * 0.15;
+                        var mgP = Math.sin(tMG * 1.2 + mg.phase);
+                        var mgX = Math.round(g.x + Math.cos(mgA) * mg.dist);
+                        var mgY = Math.round(g.y + Math.sin(mgA) * mg.dist);
+                        setR(mgX, mgY, mgP > 0.2 ? mg.coreColor : mg.shellColor, g.x, g.y, bR);
+                        // Mucin halo: granule is large, shows adjacent pixel
+                        var mgHX = Math.round(g.x + Math.cos(mgA) * (mg.dist + 0.6));
+                        var mgHY = Math.round(g.y + Math.sin(mgA) * (mg.dist + 0.6));
+                        setR(mgHX, mgHY, mgP > 0 ? '#99ccbb' : mg.shellColor, g.x, g.y, bR);
+                    }
+                }
+                if (g.brushEnzymes) {
+                    var tBE = (now % 9000) / 9000 * 2 * Math.PI;
+                    for (var bei2 = 0; bei2 < g.brushEnzymes.length; bei2++) {
+                        var be = g.brushEnzymes[bei2];
+                        var beP = Math.sin(tBE * 1.5 + be.phase);
+                        var beA = be.angle + Math.sin(tBE * 0.7 + be.phase) * 0.1;
+                        var beR2 = bR + 0.8; // sits on microvillar surface
+                        set(Math.round(g.x + Math.cos(beA) * beR2), Math.round(g.y + Math.sin(beA) * beR2), beP > 0 ? '#eedd77' : be.color);
+                    }
+                }
                 // Exosomes: drift outward from cell body
                 var tExo = (now % 16000) / 16000;
                 if (g.exosomes) {
@@ -2057,6 +2039,60 @@
                             var kX = Math.round(nkG.x + Math.cos(nk.angle + kSpread) * kR);
                             var kY = Math.round(nkG.y + Math.sin(nk.angle + kSpread) * kR);
                             if (kFrac > 0.1 && kFrac < 0.85) set(kX, kY, nk.kColor);
+                        }
+                    }
+                }
+            }
+            // SGLT1/GLUT2 glucose transport: enterocytes absorb glucose via apical SGLT1
+            var tSG = (now % 9000) / 9000;
+            for (var sgi2 = 0; sgi2 < granddaughterNuclei.length; sgi2++) {
+                var sgG = granddaughterNuclei[sgi2];
+                if (!sgG.sglt1) continue; // goblet cells skip
+                var sgBR = sgG.bodyRadius;
+                // SGLT1: apical Na+-glucose cotransport
+                for (var sgj2 = 0; sgj2 < sgG.sglt1.length; sgj2++) {
+                    var sg = sgG.sglt1[sgj2];
+                    // Transporter on apical membrane
+                    var sgPx2 = Math.round(sgG.x + Math.cos(sg.angle) * sgBR);
+                    var sgPy2 = Math.round(sgG.y + Math.sin(sg.angle) * sgBR);
+                    var sgCycle = (tSG * 2.0 + sg.phase * 0.3) % 1.0;
+                    var sgActive = Math.sin(tSG * 2 * Math.PI * 2.5 + sg.phase);
+                    set(sgPx2, sgPy2, sgActive > 0 ? sg.transporterColor : '#aa6622');
+                    // Glucose molecule entering from lumen (apical side, moves inward)
+                    if (sgCycle < 0.5) {
+                        var glInR = sgBR + 1.2 - sgCycle * 3.0;
+                        var glInX = Math.round(sgG.x + Math.cos(sg.angle) * glInR);
+                        var glInY = Math.round(sgG.y + Math.sin(sg.angle) * glInR);
+                        if (sgCycle > 0.05 && sgCycle < 0.45) set(glInX, glInY, sg.glucoseColor);
+                    }
+                    // Co-transported Na+ (2 ions flanking the glucose)
+                    for (var nci = 0; nci < 2; nci++) {
+                        var ncPhase = (sgCycle + nci * 0.08) % 1.0;
+                        if (ncPhase < 0.4) {
+                            var ncSpread = (nci - 0.5) * 0.22;
+                            var ncR = sgBR + 0.8 - ncPhase * 2.8;
+                            var ncX = Math.round(sgG.x + Math.cos(sg.angle + ncSpread) * ncR);
+                            var ncY = Math.round(sgG.y + Math.sin(sg.angle + ncSpread) * ncR);
+                            if (ncPhase > 0.03) set(ncX, ncY, sg.naCoColor);
+                        }
+                    }
+                }
+                // GLUT2: basolateral facilitated glucose diffusion (exit to interstitium)
+                if (sgG.glut2) {
+                    for (var glj2 = 0; glj2 < sgG.glut2.length; glj2++) {
+                        var gl = sgG.glut2[glj2];
+                        var glPx2 = Math.round(sgG.x + Math.cos(gl.angle) * sgBR);
+                        var glPy2 = Math.round(sgG.y + Math.sin(gl.angle) * sgBR);
+                        var glCycle = (tSG * 1.8 + gl.phase * 0.3) % 1.0;
+                        var glActive = Math.sin(tSG * 2 * Math.PI * 2 + gl.phase);
+                        set(glPx2, glPy2, glActive > 0 ? gl.channelColor : '#995511');
+                        // Glucose exits outward through GLUT2
+                        if (glCycle > 0.5) {
+                            var glOutFrac = (glCycle - 0.5) * 2;
+                            var glOutR = sgBR + 0.3 + glOutFrac * 1.8;
+                            var glOutX = Math.round(sgG.x + Math.cos(gl.angle) * glOutR);
+                            var glOutY = Math.round(sgG.y + Math.sin(gl.angle) * glOutR);
+                            if (glOutFrac > 0.05 && glOutFrac < 0.85) set(glOutX, glOutY, gl.glucoseColor);
                         }
                     }
                 }
@@ -2453,95 +2489,46 @@
                     }
 
                     if (!inAnyCell) {
-                        // Extracellular space
-                        var drawn = false;
-                        // Check cilia for both cells
-                        for (var ci = 0; ci < cells.length && !drawn; ci++) {
-                            if (cells[ci].d.cilPixels[key]) {
-                                color = cells[ci].d.cilPixels[key];
-                                drawn = true;
+                        // Extracellular space: check cell-specific layers first
+                        var ecCellLayers = ['cilPixels','filoPixels','gfPixels'];
+                        for (var ecli = 0; ecli < ecCellLayers.length && !color; ecli++) {
+                            for (var ecci = 0; ecci < cells.length && !color; ecci++) {
+                                var ecl = cells[ecci].d[ecCellLayers[ecli]];
+                                if (ecl && ecl[key]) color = ecl[key];
                             }
                         }
-                        // Check filopodia for both cells
-                        for (var ci2 = 0; ci2 < cells.length && !drawn; ci2++) {
-                            if (cells[ci2].d.filoPixels && cells[ci2].d.filoPixels[key]) {
-                                color = cells[ci2].d.filoPixels[key];
-                                drawn = true;
-                            }
+                        // Global extracellular layers
+                        var ecGlobal = [gapPx, desmoPx, tjPx, ajPx, signalPx, ecmPx];
+                        for (var egli = 0; egli < ecGlobal.length && !color; egli++) {
+                            if (ecGlobal[egli][key]) color = ecGlobal[egli][key];
                         }
-                        // Growth factor particles arcing outside cells
-                        for (var ci3 = 0; ci3 < cells.length && !drawn; ci3++) {
-                            if (cells[ci3].d.gfPixels && cells[ci3].d.gfPixels[key]) {
-                                color = cells[ci3].d.gfPixels[key];
-                                drawn = true;
-                            }
-                        }
-                        if (!drawn && gapPx[key]) {
-                            color = gapPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn && desmoPx[key]) {
-                            color = desmoPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn && tjPx[key]) {
-                            color = tjPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn && ajPx[key]) {
-                            color = ajPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn && signalPx[key]) {
-                            color = signalPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn && ecmPx[key]) {
-                            color = ecmPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn && scarVisible && x === abscissionScar.x && y === abscissionScar.y) {
-                            color = scarColor;
-                            drawn = true;
-                        }
-                        // Midbody remnants (Flemming bodies) — released after abscission
-                        if (!drawn) {
+                        // Abscission scar
+                        if (!color && scarVisible && x === abscissionScar.x && y === abscissionScar.y) color = scarColor;
+                        // Midbody remnants (Flemming bodies)
+                        if (!color) {
                             var tMBR = (Date.now() % 18000) / 18000;
-                            for (var mri = 0; mri < midbodyRemnants.length && !drawn; mri++) {
+                            for (var mri = 0; mri < midbodyRemnants.length && !color; mri++) {
                                 var mbr = midbodyRemnants[mri];
-                                // Remnants drift slowly outward from division site
                                 var mbrDrift = Math.sin(tMBR * 2 * Math.PI + mri * 3.14) * 1.5;
                                 var mbrX = Math.round(mbr.x + mbrDrift * (mri === 0 ? 0.5 : -0.5));
                                 var mbrY = Math.round(mbr.y + mbrDrift * (mri === 0 ? -0.5 : 0.5));
                                 if (x === mbrX && y === mbrY) {
                                     var mbrPulse = Math.sin(tMBR * 2 * Math.PI * 2 + mri);
-                                    // Fresh Flemming bodies pulse brighter with residual ESCRT-III
                                     if (mbr.fresh) {
                                         var freshPulse = Math.sin(tMBR * 2 * Math.PI * 3.5 + mri * 1.7);
                                         color = freshPulse > 0.3 ? '#bbddee' : (freshPulse > -0.3 ? mbr.glowColor : mbr.color);
                                     } else {
                                         color = mbrPulse > 0 ? mbr.glowColor : mbr.color;
                                     }
-                                    drawn = true;
                                 }
                             }
                         }
-                        // Granddaughter cells + TNTs + calcium + exosomes + basal lamina + hemidesmosomes (precomputed)
-                        if (!drawn && gdPx[key]) {
-                            color = gdPx[key];
-                            drawn = true;
+                        // Remaining global layers
+                        var ecFinal = [gdPx, kumSongPx, nutrientPx];
+                        for (var efli = 0; efli < ecFinal.length && !color; efli++) {
+                            if (ecFinal[efli][key]) color = ecFinal[efli][key];
                         }
-                        if (!drawn && kumSongPx[key]) {
-                            color = kumSongPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn && nutrientPx[key]) {
-                            color = nutrientPx[key];
-                            drawn = true;
-                        }
-                        if (!drawn) {
-                            color = mediumColor;
-                        }
+                        if (!color) color = mediumColor;
                     }
 
                     ctx.fillStyle = color;
