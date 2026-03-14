@@ -401,19 +401,25 @@
             { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
         ];
 
-        // S phase: DNA replication begins — replication forks flash inside nuclei
-        // Each cell gets replication bubbles that open along chromatin
+        // S PHASE: origins fired by cyclin E-CDK2, replication forks now fully active
+        // MCM helicase unwinding DNA at multiple origins simultaneously
         cellA.replicationForks = [
-            { chrIdx: 0, speed: 0.3, phase: 0, color: '#66eeff' },
-            { chrIdx: 2, speed: 0.35, phase: 0.25, color: '#55ddee' },
-            { chrIdx: 4, speed: 0.28, phase: 0.5, color: '#66eeff' },
-            { chrIdx: 6, speed: 0.32, phase: 0.75, color: '#55ddee' },
+            { chrIdx: 0, speed: 0.4, phase: 0, color: '#66eeff' },
+            { chrIdx: 1, speed: 0.38, phase: 0.15, color: '#55ddee' },
+            { chrIdx: 2, speed: 0.42, phase: 0.3, color: '#66eeff' },
+            { chrIdx: 3, speed: 0.36, phase: 0.45, color: '#55ddee' },
+            { chrIdx: 4, speed: 0.35, phase: 0.55, color: '#66eeff' },
+            { chrIdx: 5, speed: 0.39, phase: 0.7, color: '#55ddee' },
+            { chrIdx: 6, speed: 0.37, phase: 0.85, color: '#66eeff' },
         ];
         cellB.replicationForks = [
-            { chrIdx: 1, speed: 0.31, phase: 0.1, color: '#66eeff' },
-            { chrIdx: 3, speed: 0.34, phase: 0.4, color: '#55ddee' },
-            { chrIdx: 5, speed: 0.29, phase: 0.6, color: '#66eeff' },
-            { chrIdx: 7, speed: 0.33, phase: 0.85, color: '#55ddee' },
+            { chrIdx: 0, speed: 0.39, phase: 0.05, color: '#66eeff' },
+            { chrIdx: 1, speed: 0.41, phase: 0.2, color: '#55ddee' },
+            { chrIdx: 2, speed: 0.35, phase: 0.35, color: '#66eeff' },
+            { chrIdx: 3, speed: 0.38, phase: 0.5, color: '#55ddee' },
+            { chrIdx: 4, speed: 0.36, phase: 0.65, color: '#66eeff' },
+            { chrIdx: 5, speed: 0.4, phase: 0.8, color: '#55ddee' },
+            { chrIdx: 6, speed: 0.37, phase: 0.9, color: '#66eeff' },
         ];
 
         // Genome: "PETAR RAKOVI" encoded as nucleotide colors — the cell's genetic identity
@@ -476,23 +482,36 @@
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
 
-        // Cyclin E-CDK2: accumulating in response to E2F activation, drives S-phase entry
+        // S PHASE ENTRY: Cyclin E-CDK2 has reached threshold, firing replication origins
+        // Cyclin E now abundant — multiple particles orbit the cytoplasm
         cellA.cyclinE = [
             { orbitR: 2.8, baseAngle: 0.6, speed: 0.7, color: '#66ddcc' },
             { orbitR: 3.2, baseAngle: 3.5, speed: -0.6, color: '#55ccbb' },
+            { orbitR: 2.5, baseAngle: 1.9, speed: 0.8, color: '#66ddcc' },
+            { orbitR: 3.0, baseAngle: 5.0, speed: -0.5, color: '#55ccbb' },
         ];
         cellB.cyclinE = [
             { orbitR: 2.8, baseAngle: 2.2, speed: -0.65, color: '#66ddcc' },
             { orbitR: 3.2, baseAngle: 5.3, speed: 0.55, color: '#55ccbb' },
+            { orbitR: 2.5, baseAngle: 0.8, speed: -0.75, color: '#66ddcc' },
+            { orbitR: 3.0, baseAngle: 3.8, speed: 0.6, color: '#55ccbb' },
         ];
 
-        // G1 PHASE: mitotic machinery fully dismantled, cells return to interphase
+        // Cyclin A begins accumulating in early S phase — will drive S/G2 transition
+        cellA.cyclinA = [
+            { orbitR: 2.3, baseAngle: 1.5, speed: 0.5, color: '#dd77aa' },
+        ];
+        cellB.cyclinA = [
+            { orbitR: 2.3, baseAngle: 4.2, speed: -0.45, color: '#dd77aa' },
+        ];
+
+        // S PHASE: cells have entered S phase, replication origins firing
         // prophase cleared — APC/C has degraded all mitotic cyclins
         cellA.prophase = null;
         cellB.prophase = null;
 
-        // G1 growth: daughter cells are small after division, slowly growing back
-        var growthRate = 0.35; // reduced — G1 cells grow gradually
+        // S phase growth: cells growing as DNA replicates, nucleus swelling with 2n→4n
+        var growthRate = 0.4; // slightly faster — S phase cells are metabolically active
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -1224,7 +1243,7 @@
                 }
             }
 
-            // Replication forks: fading as S phase completes → G2 transition
+            // S PHASE ACTIVE: replication forks firing at multiple origins, bright and busy
             var replPixels = {};
             if (cell.replicationForks && cell.separated) {
                 var tRepl = (t * 8000 / 4000) % 1.0;
@@ -1238,15 +1257,21 @@
                     var chrAngle = chrIdx * 2 * Math.PI / allChr.length + tChromatin * 0.05;
                     var chrX = cell.cx + Math.cos(chrAngle) * chrR;
                     var chrY = cell.cy + Math.sin(chrAngle) * chrR;
-                    // Forks only flash briefly now — replication nearly done
-                    if (forkActive > 0.5) {
-                        var forkSpread = 0.4 + forkActive * 0.2;
+                    // Active forks: bright flashes as helicase unwinds and polymerase synthesizes
+                    if (forkActive > 0.0) {
+                        var forkSpread = 0.4 + forkActive * 0.3;
                         var fPerpAngle = chrAngle + Math.PI / 2;
                         var fx1 = Math.round(chrX + Math.cos(fPerpAngle) * forkSpread);
                         var fy1 = Math.round(chrY + Math.sin(fPerpAngle) * forkSpread);
                         if (fx1 >= 0 && fx1 < size && fy1 >= 0 && fy1 < size) {
-                            // Dimmer fork color — winding down
-                            replPixels[fx1 + ',' + fy1] = '#448899';
+                            // Bright fork color — active replication
+                            replPixels[fx1 + ',' + fy1] = forkActive > 0.5 ? '#66eeff' : '#55ccdd';
+                        }
+                        // Second fork arm (bidirectional replication)
+                        var fx2 = Math.round(chrX - Math.cos(fPerpAngle) * forkSpread);
+                        var fy2 = Math.round(chrY - Math.sin(fPerpAngle) * forkSpread);
+                        if (fx2 >= 0 && fx2 < size && fy2 >= 0 && fy2 < size) {
+                            replPixels[fx2 + ',' + fy2] = forkActive > 0.5 ? '#55ddee' : '#44bbcc';
                         }
                     }
                 }
@@ -1425,6 +1450,27 @@
                 }
             }
 
+            // Cyclin A: early S phase accumulation, pink-magenta particles in cytoplasm
+            var cycAPixels = {};
+            if (cell.cyclinA && cell.separated) {
+                var tCycA = (t * 8000 / 5200) % 1.0;
+                for (var cai = 0; cai < cell.cyclinA.length; cai++) {
+                    var cya = cell.cyclinA[cai];
+                    var cyaAngle = cya.baseAngle + cya.speed * tOrbit;
+                    var cax = Math.round(cell.cx + Math.cos(cyaAngle) * cya.orbitR);
+                    var cay = Math.round(cell.cy + Math.sin(cyaAngle) * cya.orbitR);
+                    var caPulse = Math.sin(tCycA * 2 * Math.PI + cai * 1.4);
+                    var cadx = cax - cell.cx;
+                    var cady = cay - cell.cy;
+                    var caDist = Math.sqrt(cadx * cadx + cady * cady);
+                    if (caDist < maxR - 1.0 && caDist > nucR + 1.0) {
+                        if (cax >= 0 && cax < size && cay >= 0 && cay < size) {
+                            cycAPixels[cax + ',' + cay] = caPulse > 0.3 ? '#ee88bb' : cya.color;
+                        }
+                    }
+                }
+            }
+
             // Telophase: central spindle / midbody forms at equator, cleavage furrow ingresses
             // Anaphase remnant: separase flashes fade
             var sacPixels = {};
@@ -1554,7 +1600,8 @@
                 checkPixels: checkPixels,
                 sacPixels: sacPixels,
                 e2fPixels: e2fPixels,
-                cycEPixels: cycEPixels
+                cycEPixels: cycEPixels,
+                cycAPixels: cycAPixels
             };
         }
 
@@ -1845,6 +1892,8 @@
                                 color = dd.cyclinPixels[key];
                             } else if (dd.cycEPixels && dd.cycEPixels[key]) {
                                 color = dd.cycEPixels[key];
+                            } else if (dd.cycAPixels && dd.cycAPixels[key]) {
+                                color = dd.cycAPixels[key];
                             } else if (dd.cycBPixels && dd.cycBPixels[key]) {
                                 color = dd.cycBPixels[key];
                             } else if (dd.mitoPixels[key]) {
