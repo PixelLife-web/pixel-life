@@ -1412,6 +1412,42 @@
                     set(bcX, bcY, '#ee5555');
                 }
             }
+            // Pericytes: α-SMA+ mural cells wrapping capillaries
+            // Contractile processes regulate capillary diameter; PDGF-BB recruitment from endothelium
+            var tPeri = (now % 21000) / 21000;
+            for (var pci2 = 0; pci2 < capillaryPath.length; pci2 += 2) {
+                var pcCap = capillaryPath[pci2];
+                var periPh = tPeri * 2 * Math.PI + pci2 * 1.3;
+                var periP = Math.sin(periPh);
+                // Pericyte soma adjacent to capillary (offset inward toward tissue center)
+                var periA = Math.atan2(16 - pcCap.y, 16 - pcCap.x);
+                var periX = Math.round(pcCap.x + Math.cos(periA) * 1.2);
+                var periY = Math.round(pcCap.y + Math.sin(periA) * 1.2);
+                if (inB(periX, periY)) set(periX, periY, periP > 0 ? '#bb7755' : '#995544');
+                // Contractile processes wrapping vessel (two arms flanking capillary)
+                for (var pw = 0; pw < 2; pw++) {
+                    var pwA = periA + Math.PI / 2 * (pw === 0 ? 1 : -1);
+                    var pwSway = Math.sin(periPh * 0.8 + pw * 2.5) * 0.12;
+                    var pwX = Math.round(pcCap.x + Math.cos(pwA + pwSway) * 0.9);
+                    var pwY = Math.round(pcCap.y + Math.sin(pwA + pwSway) * 0.9);
+                    var contractP = Math.sin(periPh * 1.5 + pw * 1.8);
+                    if (inB(pwX, pwY)) set(pwX, pwY, contractP > 0.2 ? '#cc8866' : '#aa6644');
+                }
+                // PDGF-BB signal from endothelium to pericyte (recruitment/survival)
+                var pdgfPh = (tPeri * 2.5 + pci2 * 0.18) % 1.0;
+                if (pdgfPh < 0.4 && periP > -0.3) {
+                    var pdgfR = 0.3 + pdgfPh * 2.5;
+                    var pdgfX = Math.round(pcCap.x + Math.cos(periA) * pdgfR);
+                    var pdgfY = Math.round(pcCap.y + Math.sin(periA) * pdgfR);
+                    if (inB(pdgfX, pdgfY)) set(pdgfX, pdgfY, pdgfPh < 0.15 ? '#ffbb77' : '#ddaa66');
+                }
+                // Angiopoietin-1 from pericyte to endothelium (vessel stabilization)
+                if (periP > 0.3) {
+                    var ang1X = Math.round(periX + Math.cos(periA + Math.PI) * 0.8);
+                    var ang1Y = Math.round(periY + Math.sin(periA + Math.PI) * 0.8);
+                    if (inB(ang1X, ang1Y)) set(ang1X, ang1Y, periP > 0.6 ? '#77ddbb' : '#55bb99');
+                }
+            }
             var tNerv = (now % 15000) / 15000;
             var ganglia = [
                 {x:31,y:12, color:'#8866aa', axonEnd:{x:6,y:24}},
