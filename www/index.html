@@ -1998,6 +1998,54 @@
                     }
                 }
             }
+            // Muscularis externa — longitudinal muscle layer: outermost smooth muscle coat
+            // Fibers run parallel to the gut's long axis (perpendicular to circular muscle)
+            // Contraction shortens the gut segment; relaxation lengthens it — coordinated with circular layer
+            // Serosa-facing surface; sparse ICC network couples longitudinal to Auerbach's pacemaker rhythm
+            var tLM = (now % 25000) / 25000;
+            var longMusclePath = [
+                {x:31,y:4},{x:31,y:8},{x:31,y:12},{x:31,y:16},
+                {x:30,y:20},{x:28,y:23},{x:26,y:26},{x:22,y:29},
+                {x:17,y:31},{x:12,y:31},{x:7,y:29},{x:4,y:26},{x:1,y:22},
+            ];
+            // Peristaltic wave: phase-offset from circular muscle — longitudinal relaxes where circular contracts
+            // This creates the "receive-and-push" pattern: lumen opens (long contracts) then squeezes (circ contracts)
+            var lmWavePos = (tLM * 1.8 + 0.25) % 1.0; // quarter-phase offset from circular
+            for (var lmi = 0; lmi < longMusclePath.length; lmi++) {
+                var lmP = longMusclePath[lmi];
+                var lmFrac = lmi / (longMusclePath.length - 1);
+                var lmDist = Math.abs(lmFrac - lmWavePos);
+                if (lmDist > 0.5) lmDist = 1.0 - lmDist;
+                var lmContract = Math.max(0, 1.0 - lmDist * 3.0);
+                var lmPulse = Math.sin(tLM * 2 * Math.PI * 1.0 + lmi * 0.6);
+                var lmActive = lmContract > 0.3;
+                // Longitudinal fibers: darker purple-brown tones (distinct from circular's red-brown)
+                set(lmP.x, lmP.y, lmActive ? '#995566' : (lmPulse > 0 ? '#774455' : '#553344'));
+                // Interpolate between path points
+                if (lmi < longMusclePath.length - 1) {
+                    var lmN = longMusclePath[lmi + 1];
+                    var lmdx = lmN.x - lmP.x, lmdy = lmN.y - lmP.y;
+                    var lmSt = Math.max(Math.abs(lmdx), Math.abs(lmdy));
+                    for (var lms = 1; lms < lmSt; lms++) {
+                        var lmsFrac = lmi / (longMusclePath.length - 1) + (1.0 / (longMusclePath.length - 1)) * (lms / lmSt);
+                        var lmsDist = Math.abs(lmsFrac - lmWavePos);
+                        if (lmsDist > 0.5) lmsDist = 1.0 - lmsDist;
+                        var lmsContract = Math.max(0, 1.0 - lmsDist * 3.0);
+                        var lmsP = Math.sin(tLM * 2 * Math.PI * 1.3 + lmi * 0.7 + lms * 0.4);
+                        var lmsActive = lmsContract > 0.3;
+                        set(Math.round(lmP.x+lmdx*lms/lmSt), Math.round(lmP.y+lmdy*lms/lmSt),
+                            lmsActive ? '#aa6677' : (lmsP > 0 ? '#664455' : '#443344'));
+                    }
+                }
+                // Myosin-II power strokes visible during peak contraction — brief bright flashes
+                if (lmContract > 0.6) {
+                    var myoP = Math.sin(tLM * 2 * Math.PI * 6.0 + lmi * 2.1);
+                    if (myoP > 0.5) {
+                        var myoOff = Math.round(Math.sin(tLM * 2 * Math.PI * 3.5 + lmi * 1.5) * 0.6);
+                        set(lmP.x + myoOff, lmP.y + myoOff, '#ddbbcc');
+                    }
+                }
+            }
             return px;
         }
 
