@@ -31,7 +31,7 @@
             cx: 21, cy: 9,
             radius: 5.5,
             nucleusCx: 21, nucleusCy: 9,
-            nucleusRadius: 1.8,
+            nucleusRadius: 2.0,
             nucleusColor: '#d4740e',
             nucleusEdge: '#ffbb44',
             nucleolusColor: '#ff9933',
@@ -76,7 +76,7 @@
             cx: 11, cy: 23,
             radius: 5.5,
             nucleusCx: 11, nucleusCy: 23,
-            nucleusRadius: 1.8,
+            nucleusRadius: 2.0,
             nucleusColor: '#d4740e',
             nucleusEdge: '#ffbb44',
             nucleolusColor: '#ff9933',
@@ -482,27 +482,42 @@
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
 
-        // S PHASE ENTRY: Cyclin E-CDK2 has reached threshold, firing replication origins
-        // Cyclin E now abundant — multiple particles orbit the cytoplasm
+        // MID-S PHASE: Cyclin E being degraded by SCF ubiquitin ligase — origins already fired
+        // Only 2 particles remain (down from 4), dimmer as proteasome digests them
         cellA.cyclinE = [
-            { orbitR: 2.8, baseAngle: 0.6, speed: 0.7, color: '#66ddcc' },
-            { orbitR: 3.2, baseAngle: 3.5, speed: -0.6, color: '#55ccbb' },
-            { orbitR: 2.5, baseAngle: 1.9, speed: 0.8, color: '#66ddcc' },
-            { orbitR: 3.0, baseAngle: 5.0, speed: -0.5, color: '#55ccbb' },
+            { orbitR: 2.8, baseAngle: 0.6, speed: 0.7, color: '#55bbaa' },
+            { orbitR: 3.0, baseAngle: 5.0, speed: -0.5, color: '#44aa99' },
         ];
         cellB.cyclinE = [
-            { orbitR: 2.8, baseAngle: 2.2, speed: -0.65, color: '#66ddcc' },
-            { orbitR: 3.2, baseAngle: 5.3, speed: 0.55, color: '#55ccbb' },
-            { orbitR: 2.5, baseAngle: 0.8, speed: -0.75, color: '#66ddcc' },
-            { orbitR: 3.0, baseAngle: 3.8, speed: 0.6, color: '#55ccbb' },
+            { orbitR: 2.8, baseAngle: 2.2, speed: -0.65, color: '#55bbaa' },
+            { orbitR: 3.0, baseAngle: 3.8, speed: 0.6, color: '#44aa99' },
         ];
 
-        // Cyclin A begins accumulating in early S phase — will drive S/G2 transition
+        // Cyclin A accumulating through mid-S phase — 3 particles now, driving S/G2 transition
         cellA.cyclinA = [
             { orbitR: 2.3, baseAngle: 1.5, speed: 0.5, color: '#dd77aa' },
+            { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
+            { orbitR: 3.1, baseAngle: 0.2, speed: 0.55, color: '#dd77aa' },
         ];
         cellB.cyclinA = [
             { orbitR: 2.3, baseAngle: 4.2, speed: -0.45, color: '#dd77aa' },
+            { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
+            { orbitR: 3.1, baseAngle: 5.8, speed: -0.5, color: '#dd77aa' },
+        ];
+
+        // PCNA sliding clamps: ring-shaped processivity factors loaded at replication forks
+        // They encircle DNA and tether DNA polymerase, enabling continuous synthesis
+        cellA.pcnaClamps = [
+            { chrIdx: 0, orbitPhase: 0, color: '#88ffaa' },
+            { chrIdx: 2, orbitPhase: 0.3, color: '#77ee99' },
+            { chrIdx: 4, orbitPhase: 0.6, color: '#88ffaa' },
+            { chrIdx: 6, orbitPhase: 0.85, color: '#77ee99' },
+        ];
+        cellB.pcnaClamps = [
+            { chrIdx: 1, orbitPhase: 0.1, color: '#88ffaa' },
+            { chrIdx: 3, orbitPhase: 0.4, color: '#77ee99' },
+            { chrIdx: 5, orbitPhase: 0.7, color: '#88ffaa' },
+            { chrIdx: 6, orbitPhase: 0.9, color: '#77ee99' },
         ];
 
         // S PHASE: cells have entered S phase, replication origins firing
@@ -510,8 +525,8 @@
         cellA.prophase = null;
         cellB.prophase = null;
 
-        // S phase growth: cells growing as DNA replicates, nucleus swelling with 2n→4n
-        var growthRate = 0.4; // slightly faster — S phase cells are metabolically active
+        // Mid-S phase: nucleus swelling as DNA content passes 3n, approaching 4n
+        var growthRate = 0.5; // faster growth — massive DNA synthesis underway
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
@@ -1277,6 +1292,32 @@
                 }
             }
 
+            // PCNA sliding clamps: bright ring pixels at replication fork sites
+            var pcnaPixels = {};
+            if (cell.pcnaClamps && cell.separated) {
+                var tPCNA = (t * 8000 / 4500) % 1.0;
+                var allChrPCNA = cell.chromatin.concat(cell.sisterChromatin || []);
+                for (var pci = 0; pci < cell.pcnaClamps.length; pci++) {
+                    var pcna = cell.pcnaClamps[pci];
+                    var pcIdx = pcna.chrIdx % allChrPCNA.length;
+                    var pcAngle = pcIdx * 2 * Math.PI / allChrPCNA.length + tChromatin * 0.05;
+                    var pcR = 0.6 + Math.sin(tChromatin * 0.3 + pcIdx * 1.2) * 0.3;
+                    var pcX = cell.cx + Math.cos(pcAngle) * pcR;
+                    var pcY = cell.cy + Math.sin(pcAngle) * pcR;
+                    // PCNA ring: 3 pixels in a small ring around the fork site
+                    var pcRingPhase = tPCNA * 2 * Math.PI + pcna.orbitPhase * 6;
+                    for (var pri = 0; pri < 3; pri++) {
+                        var prAngle = pcRingPhase + pri * 2 * Math.PI / 3;
+                        var prX = Math.round(pcX + Math.cos(prAngle) * 0.6);
+                        var prY = Math.round(pcY + Math.sin(prAngle) * 0.6);
+                        if (prX >= 0 && prX < size && prY >= 0 && prY < size) {
+                            var pcnaPulse = Math.sin(tPCNA * 2 * Math.PI * 2 + pci * 1.3 + pri);
+                            pcnaPixels[prX + ',' + prY] = pcnaPulse > 0 ? pcna.color : '#66dd88';
+                        }
+                    }
+                }
+            }
+
             // Genome readout: nucleotide bases flash in sequence as replication reads the code
             var genomePixels = {};
             if (cell.replicationForks && cell.separated) {
@@ -1601,7 +1642,8 @@
                 sacPixels: sacPixels,
                 e2fPixels: e2fPixels,
                 cycEPixels: cycEPixels,
-                cycAPixels: cycAPixels
+                cycAPixels: cycAPixels,
+                pcnaPixels: pcnaPixels
             };
         }
 
@@ -1904,6 +1946,8 @@
                                 color = dd.porePixels[key];
                             } else if (dd.envPixels[key]) {
                                 color = dd.envPixels[key];
+                            } else if (dd.pcnaPixels && dd.pcnaPixels[key]) {
+                                color = dd.pcnaPixels[key];
                             } else if (dd.replPixels && dd.replPixels[key]) {
                                 color = dd.replPixels[key];
                             } else if (dd.sacPixels && dd.sacPixels[key]) {
