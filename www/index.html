@@ -250,6 +250,15 @@
             // Small mitochondrion inherited during division
             gn.mitoAngle = gbi * 1.57 + 0.4;
             gn.mitoSpeed = (gbi % 2 === 0 ? 0.6 : -0.5);
+            // Rough ER stubs: first cisternae budding from nuclear envelope
+            // Each granddaughter grows 2 short ER segments radiating outward
+            gn.erStubs = [
+                { angle: gn.cajalAngle + 1.0, length: 1.5 },
+                { angle: gn.cajalAngle + 3.5, length: 1.2 },
+            ];
+            // Golgi ministacks: small trans-Golgi cisternae assembling near ER exit sites
+            gn.golgiAngle = gn.cajalAngle + 2.3;
+            gn.golgiDist = gn.bodyRadius * 0.55;
         }
 
         // Calcium waves: tissue-level signaling between granddaughter nuclei
@@ -2331,6 +2340,46 @@
                                     if (x === cbX && y === cbY) {
                                         var cbPulse = Math.sin(tNucReasm * 2 * Math.PI * 2.5 + gni * 1.9);
                                         color = cbPulse > 0 ? '#cc88ff' : '#aa66dd';
+                                        drawn = true;
+                                    }
+                                }
+                                // Rough ER stubs: short cisternae radiating from nuclear envelope
+                                if (!drawn && gn.erStubs) {
+                                    var tER = (Date.now() % 7000) / 7000;
+                                    for (var eri = 0; eri < gn.erStubs.length && !drawn; eri++) {
+                                        var erStub = gn.erStubs[eri];
+                                        var erStartR = gnEnvR + 0.3;
+                                        var erEndR = erStartR + erStub.length;
+                                        // Check if pixel lies on the ER segment
+                                        for (var erl = 0; erl <= Math.ceil(erStub.length * 2); erl++) {
+                                            var erR = erStartR + erl * 0.5;
+                                            if (erR > erEndR) break;
+                                            var erPx = Math.round(gn.x + Math.cos(erStub.angle) * erR);
+                                            var erPy = Math.round(gn.y + Math.sin(erStub.angle) * erR);
+                                            if (x === erPx && y === erPy) {
+                                                var erPulse = Math.sin(tER * 2 * Math.PI + eri * 2.5 + erl * 0.8);
+                                                color = erPulse > 0 ? '#996644' : '#884422';
+                                                drawn = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                // Golgi ministack: 2-pixel cisterna near ER exit site
+                                if (!drawn) {
+                                    var golgX = Math.round(gn.x + Math.cos(gn.golgiAngle) * gn.golgiDist);
+                                    var golgY = Math.round(gn.y + Math.sin(gn.golgiAngle) * gn.golgiDist);
+                                    if (x === golgX && y === golgY) {
+                                        var tGolg = (Date.now() % 8000) / 8000;
+                                        var golgPulse = Math.sin(tGolg * 2 * Math.PI * 1.5 + gni * 2.0);
+                                        color = golgPulse > 0 ? '#ddaa55' : '#cc9944';
+                                        drawn = true;
+                                    }
+                                    // Second cisterna pixel offset perpendicular
+                                    var golg2X = Math.round(gn.x + Math.cos(gn.golgiAngle + 0.5) * (gn.golgiDist + 0.4));
+                                    var golg2Y = Math.round(gn.y + Math.sin(gn.golgiAngle + 0.5) * (gn.golgiDist + 0.4));
+                                    if (!drawn && x === golg2X && y === golg2Y) {
+                                        color = '#ccaa55';
                                         drawn = true;
                                     }
                                 }
