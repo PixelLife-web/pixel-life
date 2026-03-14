@@ -12,5 +12,5 @@ while true; do
         [ $F -ge 10 ] && sleep 600 && F=0 && continue
         [ $B -eq 0 ] && B=30 || B=$((B*2)); [ $B -gt 300 ] && B=300; sleep $B; continue
     fi
-    R=$((30-($(date +%s)-S))); [ $R -gt 0 ] && sleep $R
+    
 done

@@ -452,16 +452,38 @@
             { orbitR: 3.4, baseAngle: 5.1, speed: 0.48, color: '#ccaa55' },
         ];
 
-        // G1 RESTRICTION POINT: Rb protein guards the checkpoint, preventing premature S entry
-        // Rb orbits inside nucleus as a sentinel — glows red when active (blocking)
-        // Cyclin D-CDK4/6 must phosphorylate Rb to pass the restriction point
+        // RESTRICTION POINT PASSED: Cyclin D-CDK4/6 has phosphorylated Rb
+        // Rb is now inactive (dim, greenish) — E2F released to activate S-phase genes
         cellA.checkpointKinases = [
-            { scanSpeed: 0.3, phase: 0, color: '#ff5544' },
-            { scanSpeed: -0.25, phase: 0.5, color: '#ee4433' },
+            { scanSpeed: 0.15, phase: 0, color: '#558855' },
+            { scanSpeed: -0.12, phase: 0.5, color: '#447744' },
         ];
         cellB.checkpointKinases = [
-            { scanSpeed: 0.28, phase: 0.2, color: '#ff5544' },
-            { scanSpeed: -0.27, phase: 0.7, color: '#ee4433' },
+            { scanSpeed: 0.14, phase: 0.2, color: '#558855' },
+            { scanSpeed: -0.13, phase: 0.7, color: '#447744' },
+        ];
+
+        // E2F transcription factors: released from phospho-Rb, activate cyclin E and S-phase genes
+        // Bright cyan particles orbit inside nucleus, triggering gene transcription
+        cellA.e2fFactors = [
+            { orbitR: 0.8, baseAngle: 0.4, speed: 1.1, color: '#44eeff' },
+            { orbitR: 0.6, baseAngle: 2.8, speed: -0.9, color: '#33ddee' },
+            { orbitR: 0.9, baseAngle: 5.0, speed: 0.7, color: '#44eeff' },
+        ];
+        cellB.e2fFactors = [
+            { orbitR: 0.7, baseAngle: 1.2, speed: -1.0, color: '#44eeff' },
+            { orbitR: 0.8, baseAngle: 3.9, speed: 0.85, color: '#33ddee' },
+            { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
+        ];
+
+        // Cyclin E-CDK2: accumulating in response to E2F activation, drives S-phase entry
+        cellA.cyclinE = [
+            { orbitR: 2.8, baseAngle: 0.6, speed: 0.7, color: '#66ddcc' },
+            { orbitR: 3.2, baseAngle: 3.5, speed: -0.6, color: '#55ccbb' },
+        ];
+        cellB.cyclinE = [
+            { orbitR: 2.8, baseAngle: 2.2, speed: -0.65, color: '#66ddcc' },
+            { orbitR: 3.2, baseAngle: 5.3, speed: 0.55, color: '#55ccbb' },
         ];
 
         // G1 PHASE: mitotic machinery fully dismantled, cells return to interphase
@@ -1333,34 +1355,25 @@
                 }
             }
 
-            // G2 checkpoint kinases: scan chromatin inside the nucleus
+            // Phospho-Rb: inactivated, drifts slowly inside nucleus (dim green)
             var checkPixels = {};
             if (cell.checkpointKinases && cell.separated) {
                 var tCheck = (t * 8000 / 4500) % 1.0;
                 var unifiedNucR3 = nucR + 0.9;
                 for (var cki = 0; cki < cell.checkpointKinases.length; cki++) {
                     var ck = cell.checkpointKinases[cki];
-                    // Kinase orbits inside nucleus, scanning chromatin
+                    // Phospho-Rb drifts slowly — no longer actively scanning
                     var ckAngle = tCheck * 2 * Math.PI * ck.scanSpeed + ck.phase * 6;
-                    var ckR = unifiedNucR3 * 0.5 + Math.sin(tCheck * 2 * Math.PI + cki * 2) * 0.3;
+                    var ckR = unifiedNucR3 * 0.4 + Math.sin(tCheck * 2 * Math.PI + cki * 2) * 0.2;
                     var ckX = Math.round(cell.cx + Math.cos(ckAngle) * ckR);
                     var ckY = Math.round(cell.cy + Math.sin(ckAngle) * ckR);
                     if (ckX >= 0 && ckX < size && ckY >= 0 && ckY < size) {
-                        // Rb protein glows red when active — blocking S phase entry
-                        var samplePulse = Math.sin(tCheck * 2 * Math.PI * 3 + cki * 1.5);
-                        checkPixels[ckX + ',' + ckY] = samplePulse > 0.2 ? '#ff6655' : ck.color;
-                    }
-                    // Rb sentinel pulse: brief flash showing E2F suppression
-                    if (samplePulse > 0.7) {
-                        var verAngle = ckAngle + Math.PI;
-                        var vx = Math.round(cell.cx + Math.cos(verAngle) * (unifiedNucR3 * 0.3));
-                        var vy = Math.round(cell.cy + Math.sin(verAngle) * (unifiedNucR3 * 0.3));
-                        if (vx >= 0 && vx < size && vy >= 0 && vy < size) {
-                            checkPixels[vx + ',' + vy] = '#ffaa88';
-                        }
+                        // Phosphorylated Rb: dim greenish (inactivated)
+                        var samplePulse = Math.sin(tCheck * 2 * Math.PI * 1.5 + cki * 1.5);
+                        checkPixels[ckX + ',' + ckY] = samplePulse > 0.3 ? '#669966' : ck.color;
                     }
                 }
-                // Restriction point barrier: red-orange pulse on nuclear envelope = "S phase blocked"
+                // Restriction point passed: green glow on nuclear envelope = "S phase committed"
                 var alignPulse = Math.sin(tCheck * 2 * Math.PI * 0.5);
                 if (alignPulse > 0.6) {
                     for (var cpe = 0; cpe < 4; cpe++) {
@@ -1368,7 +1381,45 @@
                         var cpx = Math.round(cell.cx + Math.cos(cpAngle) * unifiedNucR3);
                         var cpy = Math.round(cell.cy + Math.sin(cpAngle) * unifiedNucR3);
                         if (cpx >= 0 && cpx < size && cpy >= 0 && cpy < size) {
-                            checkPixels[cpx + ',' + cpy] = '#ff8866';
+                            checkPixels[cpx + ',' + cpy] = '#88cc88';
+                        }
+                    }
+                }
+            }
+
+            // E2F transcription factors: bright cyan particles inside nucleus
+            var e2fPixels = {};
+            if (cell.e2fFactors && cell.separated) {
+                var tE2F = (t * 8000 / 3500) % 1.0;
+                for (var efi = 0; efi < cell.e2fFactors.length; efi++) {
+                    var ef = cell.e2fFactors[efi];
+                    var efAngle = ef.baseAngle + ef.speed * tOrbit;
+                    var efX = Math.round(cell.cx + Math.cos(efAngle) * ef.orbitR);
+                    var efY = Math.round(cell.cy + Math.sin(efAngle) * ef.orbitR);
+                    if (efX >= 0 && efX < size && efY >= 0 && efY < size) {
+                        // E2F pulses brightly as it activates target gene promoters
+                        var efPulse = Math.sin(tE2F * 2 * Math.PI * 2 + efi * 1.8);
+                        e2fPixels[efX + ',' + efY] = efPulse > 0.2 ? '#66ffff' : ef.color;
+                    }
+                }
+            }
+
+            // Cyclin E-CDK2: accumulating in cytoplasm, driven by E2F transcription
+            var cycEPixels = {};
+            if (cell.cyclinE && cell.separated) {
+                var tCycE = (t * 8000 / 5800) % 1.0;
+                for (var cei = 0; cei < cell.cyclinE.length; cei++) {
+                    var cye = cell.cyclinE[cei];
+                    var cyeAngle = cye.baseAngle + cye.speed * tOrbit;
+                    var cex = Math.round(cell.cx + Math.cos(cyeAngle) * cye.orbitR);
+                    var cey = Math.round(cell.cy + Math.sin(cyeAngle) * cye.orbitR);
+                    var cePulse = Math.sin(tCycE * 2 * Math.PI + cei * 1.6);
+                    var cdx4 = cex - cell.cx;
+                    var cdy4 = cey - cell.cy;
+                    var ceDist = Math.sqrt(cdx4 * cdx4 + cdy4 * cdy4);
+                    if (ceDist < maxR - 1.0 && ceDist > nucR + 1.0) {
+                        if (cex >= 0 && cex < size && cey >= 0 && cey < size) {
+                            cycEPixels[cex + ',' + cey] = cePulse > 0.3 ? '#77eedd' : cye.color;
                         }
                     }
                 }
@@ -1501,7 +1552,9 @@
                 genomePixels: genomePixels, cyclinPixels: cyclinPixels,
                 cycBPixels: cycBPixels,
                 checkPixels: checkPixels,
-                sacPixels: sacPixels
+                sacPixels: sacPixels,
+                e2fPixels: e2fPixels,
+                cycEPixels: cycEPixels
             };
         }
 
@@ -1790,6 +1843,8 @@
                                 color = dd.peroxPixels[key];
                             } else if (dd.cyclinPixels && dd.cyclinPixels[key]) {
                                 color = dd.cyclinPixels[key];
+                            } else if (dd.cycEPixels && dd.cycEPixels[key]) {
+                                color = dd.cycEPixels[key];
                             } else if (dd.cycBPixels && dd.cycBPixels[key]) {
                                 color = dd.cycBPixels[key];
                             } else if (dd.mitoPixels[key]) {
@@ -1804,6 +1859,8 @@
                                 color = dd.replPixels[key];
                             } else if (dd.sacPixels && dd.sacPixels[key]) {
                                 color = dd.sacPixels[key];
+                            } else if (dd.e2fPixels && dd.e2fPixels[key]) {
+                                color = dd.e2fPixels[key];
                             } else if (dd.checkPixels && dd.checkPixels[key]) {
                                 color = dd.checkPixels[key];
                             } else if (dd.genomePixels && dd.genomePixels[key]) {
