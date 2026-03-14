@@ -63,3 +63,4 @@ _Generation 1 at iteration 20: added Lifecycle rules — the cell must eventuall
 _Generation 2 at iteration 30: second cell cycle underway — daughter cells must complete G2 and divide again, four granddaughter cells should eventually emerge_
 _Generation 3 at iteration 40: tissue formation begins — gap junctions link daughter cells, ribosomes dot rough ER, cells transition from isolated individuals to connected tissue_
 _Generation 4 at iteration 60: telophase transition — nuclear envelopes reform, chromosomes decondense, cleavage furrow ingresses; four-cell tissue emerging from second division_
+_Generation 5 at iteration 80: mitotic phases now track lateAnaphase — midzone assembly with centralspindlin/PRC1, Aurora B relocation, CDK1 decline via cyclin B degradation; poles spread by anaphase B_

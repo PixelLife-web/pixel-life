@@ -431,21 +431,15 @@
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
 
-        // PROPHASE: cyclin B-CDK1 now fully nuclear — drives condensation + NEB
-        // Most particles at small orbits (inside nucleus), 1 remains in cytoplasm
+        // LATE ANAPHASE: APC/C degrading cyclin B — CDK1 activity declining
+        // Only 2 particles remain per cell (3 destroyed by proteasome)
         cellA.cyclinB = [
-            { orbitR: 0.8, baseAngle: 0.8, speed: 0.9, color: '#ffcc44' },
-            { orbitR: 0.9, baseAngle: 2.5, speed: -0.85, color: '#ffbb44' },
-            { orbitR: 1.0, baseAngle: 4.2, speed: 0.75, color: '#ffcc44' },
-            { orbitR: 1.1, baseAngle: 5.8, speed: -0.7, color: '#ffdd55' },
-            { orbitR: 2.4, baseAngle: 1.5, speed: 0.5, color: '#dd9944' },
+            { orbitR: 1.0, baseAngle: 4.2, speed: 0.75, color: '#ddbb44' },
+            { orbitR: 2.4, baseAngle: 1.5, speed: 0.5, color: '#cc8833' },
         ];
         cellB.cyclinB = [
-            { orbitR: 0.8, baseAngle: 2.0, speed: -0.88, color: '#ffcc44' },
-            { orbitR: 0.9, baseAngle: 4.5, speed: 0.82, color: '#ffbb44' },
-            { orbitR: 1.0, baseAngle: 0.5, speed: -0.72, color: '#ffcc44' },
-            { orbitR: 1.1, baseAngle: 3.0, speed: 0.68, color: '#ffdd55' },
-            { orbitR: 2.4, baseAngle: 5.2, speed: -0.48, color: '#dd9944' },
+            { orbitR: 1.0, baseAngle: 0.5, speed: -0.72, color: '#ddbb44' },
+            { orbitR: 2.4, baseAngle: 5.2, speed: -0.48, color: '#cc8833' },
         ];
 
         // METAPHASE: checkpoint kinases silenced, SAC satisfied
@@ -513,33 +507,36 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // ANAPHASE ONSET: securin fully degraded by proteasome, separase liberated
-        // Separase cleaves cohesin rings at chromosome centromeres
-        // Sister chromatids separate — pulled poleward by kinetochore fiber depolymerization (anaphase A)
-        // Interpolar microtubules slide apart, elongating the spindle (anaphase B begins)
+        // LATE ANAPHASE: sisters nearly at poles, central spindle midzone assembles
+        // Anaphase A (kinetochore fiber shortening) nearly complete
+        // Anaphase B (interpolar MT sliding) pushes poles further apart
+        // Aurora B + MKLP1/CYK-4 relocate to midzone → centralspindlin complex forms
+        // APC/C continues: cyclin B degradation accelerates, CDK1 activity declining
         cellA.prophase = {
-            condensation: 1.0, // chromosomes still condensed during anaphase
-            pole1Target: { x: 19, y: 7 },  // upper pole
-            pole2Target: { x: 23, y: 11 }, // lower pole
-            prometaphase: true, // rendering flag retained
-            metaphase: true, // passed through metaphase
-            anaphase: true, // ANAPHASE — sisters separating
-            spindleForming: true, // spindle elongating via anaphase B
-            asterCount: 12, // asters maximal
-            laminPhospho: 1.0, // lamina dissolved
-            npcDisassembly: 1.0, // NPCs gone
-            envelopeVesicles: true, // envelope fragments in ER
-            congressProgress: 1.0, // alignment irrelevant now — sisters freed
-            sacSatisfaction: 1.0, // SAC silenced
-            auroraBActive: false, // Aurora B relocating to spindle midzone
+            condensation: 1.0, // chromosomes still condensed
+            pole1Target: { x: 18, y: 6 },  // poles pushed further apart by anaphase B
+            pole2Target: { x: 24, y: 12 }, // expanded from 19,7/23,11
+            prometaphase: true,
+            metaphase: true,
+            anaphase: true,
+            lateAnaphase: true, // sisters near poles, midzone forming
+            spindleForming: true,
+            asterCount: 12,
+            laminPhospho: 1.0,
+            npcDisassembly: 1.0,
+            envelopeVesicles: true,
+            congressProgress: 1.0,
+            sacSatisfaction: 1.0,
+            auroraBActive: false, // Aurora B now at midzone, not kinetochores
         };
         cellB.prophase = {
             condensation: 1.0,
-            pole1Target: { x: 9, y: 21 },  // upper pole
-            pole2Target: { x: 13, y: 25 }, // lower pole
+            pole1Target: { x: 8, y: 20 },  // poles pushed further apart
+            pole2Target: { x: 14, y: 26 }, // expanded from 9,21/13,25
             prometaphase: true,
             metaphase: true,
-            anaphase: true, // ANAPHASE
+            anaphase: true,
+            lateAnaphase: true,
             spindleForming: true,
             asterCount: 12,
             laminPhospho: 1.0,
@@ -565,24 +562,20 @@
             { baseAngle: 6.0, speed: 0.11, color: '#dd7744' },
         ];
 
-        // ANAPHASE: securin fully degraded by 26S proteasome — separase now free
-        // Separase cleaves Scc1/Rad21 subunit of cohesin rings at centromeres
-        // Cohesin fragments drift away as sisters are released
+        // LATE ANAPHASE: securin gone, separase fading (cohesin fully cleaved)
+        // Separase being inactivated by cyclin B-CDK1 decline
         cellA.securin = [];
         cellB.securin = [];
 
-        // Separase: active enzyme, released from securin inhibition
-        // Bright particles at the metaphase plate region where cohesin was cleaved
+        // Separase: fading — only 1 dim particle per cell, job done
         cellA.separase = [
-            { orbitR: 0.5, baseAngle: 0.8, speed: 0.9, color: '#ff4444' },
-            { orbitR: 0.7, baseAngle: 3.5, speed: -0.8, color: '#ee3333' },
+            { orbitR: 0.7, baseAngle: 3.5, speed: -0.8, color: '#aa4444' },
         ];
         cellB.separase = [
-            { orbitR: 0.5, baseAngle: 2.2, speed: -0.85, color: '#ff4444' },
-            { orbitR: 0.7, baseAngle: 5.0, speed: 0.75, color: '#ee3333' },
+            { orbitR: 0.7, baseAngle: 5.0, speed: 0.75, color: '#aa4444' },
         ];
 
-        // Anaphase: sisters separating, spindle elongating, CDK1 active
+        // Late anaphase: sisters near poles, midzone forming, CDK1 declining
         var growthRate = 0.8;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -759,12 +752,13 @@
                         driftX = Math.round(targetPole.x + Math.cos(deconAngle) * deconR);
                         driftY = Math.round(targetPole.y + Math.sin(deconAngle) * deconR);
                     } else if (isAnaphase) {
-                        // ANAPHASE: sister chromatids separate and move toward poles
+                        // LATE ANAPHASE: sister chromatids nearly at poles
                         var halfLen = Math.floor(allChromatin.length / 2);
                         var goesToPole1 = chi < halfLen;
                         var targetPole = goesToPole1 ? cell.prophase.pole1Target : cell.prophase.pole2Target;
-                        // Poleward movement oscillation — chromatids pulled by shortening kinetochore fibers
-                        var anaProgress = 0.5 + Math.sin(tChromatin * 0.06 + chi * 0.3) * 0.15;
+                        // Late anaphase: sisters 85% to poles, slight oscillation as they decelerate
+                        var anaBase = cell.prophase.lateAnaphase ? 0.85 : 0.5;
+                        var anaProgress = anaBase + Math.sin(tChromatin * 0.06 + chi * 0.3) * 0.08;
                         var spindleAngle = Math.atan2(
                             cell.prophase.pole2Target.y - cell.prophase.pole1Target.y,
                             cell.prophase.pole2Target.x - cell.prophase.pole1Target.x
@@ -1852,8 +1846,48 @@
                             }
                         }
                     }
+                } else if (cell.prophase.lateAnaphase) {
+                    // LATE ANAPHASE: central spindle midzone assembles between separating masses
+                    // Centralspindlin (MKLP1 + CYK-4) + PRC1 bundles antiparallel MTs
+                    var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                    var perpAngle = spindleAngle + Math.PI / 2;
+                    // Midzone: bundle of overlapping MTs at the cell equator
+                    for (var mzI = -1; mzI <= 1; mzI++) {
+                        var mzPerpOff = mzI * 0.7;
+                        for (var mzL = -1; mzL <= 1; mzL++) {
+                            var mzX = Math.round(sacMidX + Math.cos(spindleAngle) * mzL * 0.6 + Math.cos(perpAngle) * mzPerpOff);
+                            var mzY = Math.round(sacMidY + Math.sin(spindleAngle) * mzL * 0.6 + Math.sin(perpAngle) * mzPerpOff);
+                            if (mzX >= 0 && mzX < size && mzY >= 0 && mzY < size) {
+                                var mzPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + mzI * 1.2 + mzL * 0.8);
+                                // PRC1 bundles glow green-blue; centralspindlin pulses
+                                sacPixels[mzX + ',' + mzY] = mzPulse > 0 ? '#66ccbb' : '#55aa99';
+                            }
+                        }
+                    }
+                    // Aurora B kinase: relocated from kinetochores to midzone
+                    var abMzPulse = Math.sin(tSAC * 2 * Math.PI * 2.5);
+                    if (abMzPulse > -0.3) {
+                        var abMzX = Math.round(sacMidX);
+                        var abMzY = Math.round(sacMidY);
+                        if (abMzX >= 0 && abMzX < size && abMzY >= 0 && abMzY < size) {
+                            sacPixels[abMzX + ',' + abMzY] = abMzPulse > 0.5 ? '#ff66ff' : '#dd55dd'; // Aurora B magenta
+                        }
+                    }
+                    // APC/C: continues degrading cyclin B — dim ring expanding outward
+                    var apcPulse = Math.sin(tSAC * 2 * Math.PI * 0.5 + 1.0);
+                    if (apcPulse > 0.3) {
+                        for (var apcI = 0; apcI < 3; apcI++) {
+                            var apcAngle = apcI * 2 * Math.PI / 3 + tSAC * 0.6;
+                            var apcR = 2.0 + apcPulse * 0.5;
+                            var apcX = Math.round(sacMidX + Math.cos(apcAngle) * apcR);
+                            var apcY = Math.round(sacMidY + Math.sin(apcAngle) * apcR);
+                            if (apcX >= 0 && apcX < size && apcY >= 0 && apcY < size) {
+                                sacPixels[apcX + ',' + apcY] = '#bb7799'; // dimmer APC/C
+                            }
+                        }
+                    }
                 } else {
-                    // Separase flashes
+                    // Early anaphase: separase flashes (kept for backward compat)
                     var sepPulse = Math.sin(tSAC * 2 * Math.PI * 1.2);
                     if (sepPulse > 0.2) {
                         var sepAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x) + Math.PI / 2;
