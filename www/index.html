@@ -262,69 +262,20 @@
             // Golgi ministacks: small trans-Golgi cisternae assembling near ER exit sites
             gn.golgiAngle = gn.cajalAngle + 2.3;
             gn.golgiDist = gn.bodyRadius * 0.55;
-            // Free ribosomes (polyribosomes): clusters in cytoplasm for cap-dependent translation
-            // 3 polyribosome clusters per granddaughter, positioned between ER and membrane
-            gn.freeRibosomes = [
-                { angle: gn.cajalAngle + 0.5, dist: gn.bodyRadius * 0.45, phase: gbi * 0.7 },
-                { angle: gn.cajalAngle + 2.0, dist: gn.bodyRadius * 0.55, phase: gbi * 0.7 + 1.2 },
-                { angle: gn.cajalAngle + 4.5, dist: gn.bodyRadius * 0.40, phase: gbi * 0.7 + 2.4 },
-            ];
-            // Peroxisome: single small organelle budding from ER, catalase/oxidase activity
-            gn.peroxAngle = gn.cajalAngle + 3.0;
-            gn.peroxDist = gn.bodyRadius * 0.50;
-            gn.peroxSpeed = (gbi % 2 === 0 ? 0.4 : -0.35);
-            // Lysosome: acidic digestive organelle, degrades endocytosed material
-            gn.lysoAngle = gn.cajalAngle + 4.8;
-            gn.lysoDist = gn.bodyRadius * 0.48;
-            gn.lysoSpeed = (gbi % 2 === 0 ? -0.3 : 0.35);
-            // Centrosome: single centriole pair establishing MTOC for cytoskeletal organization
-            gn.centrosomeAngle = gn.cajalAngle + 5.5;
-            gn.centrosomeDist = 1.0 + gn.nucleolusSize * 0.3;
-            // Primary cilium: single non-motile sensory antenna extending from mother centriole
-            // Grows during G1 — detects extracellular signals (Hedgehog, Wnt, PDGF)
-            // Axoneme extends 2-3 pixels outward from centrosome through membrane into ECM
-            gn.ciliumAngle = gn.centrosomeAngle + 0.15; // nearly aligned with centrosome
-            gn.ciliumLength = 2.5 + gn.nucleolusSize * 0.5; // grows with cell maturity
-            gn.ciliumPhase = gbi * 1.3; // slight sway phase offset per cell
-            // Early endosomes: clathrin-coated pits internalize ECM nutrients
-            // Small vesicles pinch from membrane and traffic inward toward lysosomes
-            // Each granddaughter has 2 endocytic vesicles at different cycle phases
-            gn.endosomes = [
-                { memAngle: gn.cajalAngle + 1.5, speed: 0.32, phase: gbi * 0.6, color: '#aa55cc' },
-                { memAngle: gn.cajalAngle + 4.0, speed: 0.28, phase: gbi * 0.6 + 0.5, color: '#9944bb' },
-            ];
-            // Multivesicular body (MVB): late endosome compartment containing intraluminal vesicles
-            // MVBs orbit between endosomes and membrane; when they fuse with PM, exosomes are released
-            gn.mvbAngle = gn.lysoAngle + 1.2;
-            gn.mvbDist = gn.bodyRadius * 0.42;
-            gn.mvbSpeed = (gbi % 2 === 0 ? 0.25 : -0.22);
-            // Exosome release: 2 exosomes per granddaughter, ejected from MVB fusion with membrane
-            // Tiny vesicles (~0.1µm) carrying proteins/RNA, drift toward neighboring cells
-            gn.exosomes = [
-                { releaseAngle: gn.mvbAngle + 0.5, driftAngle: gbi * 1.57 + 0.3, speed: 0.18, phase: gbi * 0.4, color: '#cc88dd' },
-                { releaseAngle: gn.mvbAngle + 2.8, driftAngle: gbi * 1.57 + 2.5, speed: 0.15, phase: gbi * 0.4 + 0.5, color: '#bb77cc' },
-            ];
-            // Autophagosome: double-membrane vesicle engulfing cytoplasmic material for lysosomal degradation
-            // Phagophore nucleates from ER-mitochondria contact site, seals, then fuses with lysosome
-            // Each granddaughter has 2 autophagosomes at different maturation stages
-            gn.autophagosomes = [
-                { angle: gn.lysoAngle + 2.0, dist: gn.bodyRadius * 0.50, speed: (gbi % 2 === 0 ? 0.20 : -0.18), phase: gbi * 0.5, color: '#668844', matureColor: '#887744' },
-                { angle: gn.lysoAngle + 4.5, dist: gn.bodyRadius * 0.38, speed: (gbi % 2 === 0 ? -0.16 : 0.22), phase: gbi * 0.5 + 0.5, color: '#557733', matureColor: '#776633' },
-            ];
-            // Proteasome: 26S barrel-shaped complex for ubiquitin-dependent protein degradation
-            // Complements autophagy — short-lived regulatory proteins (cyclins, p53, IκB) are tagged
-            // with polyubiquitin chains and fed into the proteasome's catalytic core
-            gn.proteasomes = [
-                { angle: gn.cajalAngle + 1.8, dist: gn.bodyRadius * 0.52, speed: (gbi % 2 === 0 ? 0.30 : -0.27), phase: gbi * 0.6, color: '#6688aa', activeColor: '#88bbdd' },
-                { angle: gn.cajalAngle + 4.2, dist: gn.bodyRadius * 0.44, speed: (gbi % 2 === 0 ? -0.25 : 0.32), phase: gbi * 0.6 + 0.5, color: '#557799', activeColor: '#77aacc' },
-            ];
-            // Lipid droplets: neutral lipid storage organelles budding from smooth ER
-            // Monolayer phospholipid shell surrounding triacylglycerol/cholesterol ester core
-            // Pulse with hormone-sensitive lipase activity — energy reserves for the growing cell
-            gn.lipidDroplets = [
-                { angle: gn.cajalAngle + 0.8, dist: gn.bodyRadius * 0.58, speed: (gbi % 2 === 0 ? 0.15 : -0.13), phase: gbi * 0.3, coreColor: '#ddcc44', shellColor: '#bbaa33' },
-                { angle: gn.cajalAngle + 3.6, dist: gn.bodyRadius * 0.46, speed: (gbi % 2 === 0 ? -0.12 : 0.17), phase: gbi * 0.3 + 0.5, coreColor: '#ccbb33', shellColor: '#aaaa22' },
-            ];
+            // Organelle properties (consolidated): ribosomes, peroxisome, lysosome, centrosome, cilium, endosomes, MVB
+            gn.freeRibosomes = [{angle:gn.cajalAngle+0.5,dist:gn.bodyRadius*0.45,phase:gbi*0.7},{angle:gn.cajalAngle+2.0,dist:gn.bodyRadius*0.55,phase:gbi*0.7+1.2},{angle:gn.cajalAngle+4.5,dist:gn.bodyRadius*0.40,phase:gbi*0.7+2.4}];
+            var ev = gbi % 2 === 0;
+            gn.peroxAngle=gn.cajalAngle+3.0; gn.peroxDist=gn.bodyRadius*0.50; gn.peroxSpeed=ev?0.4:-0.35;
+            gn.lysoAngle=gn.cajalAngle+4.8; gn.lysoDist=gn.bodyRadius*0.48; gn.lysoSpeed=ev?-0.3:0.35;
+            gn.centrosomeAngle=gn.cajalAngle+5.5; gn.centrosomeDist=1.0+gn.nucleolusSize*0.3;
+            gn.ciliumAngle=gn.centrosomeAngle+0.15; gn.ciliumLength=2.5+gn.nucleolusSize*0.5; gn.ciliumPhase=gbi*1.3;
+            gn.endosomes=[{memAngle:gn.cajalAngle+1.5,speed:0.32,phase:gbi*0.6,color:'#aa55cc'},{memAngle:gn.cajalAngle+4.0,speed:0.28,phase:gbi*0.6+0.5,color:'#9944bb'}];
+            gn.mvbAngle=gn.lysoAngle+1.2; gn.mvbDist=gn.bodyRadius*0.42;
+            gn.mvbSpeed=ev?0.25:-0.22;
+            gn.exosomes=[{releaseAngle:gn.mvbAngle+0.5,driftAngle:gbi*1.57+0.3,speed:0.18,phase:gbi*0.4,color:'#cc88dd'},{releaseAngle:gn.mvbAngle+2.8,driftAngle:gbi*1.57+2.5,speed:0.15,phase:gbi*0.4+0.5,color:'#bb77cc'}];
+            gn.autophagosomes=[{angle:gn.lysoAngle+2.0,dist:gn.bodyRadius*0.50,speed:ev?0.20:-0.18,phase:gbi*0.5,color:'#668844',matureColor:'#887744'},{angle:gn.lysoAngle+4.5,dist:gn.bodyRadius*0.38,speed:ev?-0.16:0.22,phase:gbi*0.5+0.5,color:'#557733',matureColor:'#776633'}];
+            gn.proteasomes=[{angle:gn.cajalAngle+1.8,dist:gn.bodyRadius*0.52,speed:ev?0.30:-0.27,phase:gbi*0.6,color:'#6688aa',activeColor:'#88bbdd'},{angle:gn.cajalAngle+4.2,dist:gn.bodyRadius*0.44,speed:ev?-0.25:0.32,phase:gbi*0.6+0.5,color:'#557799',activeColor:'#77aacc'}];
+            gn.lipidDroplets=[{angle:gn.cajalAngle+0.8,dist:gn.bodyRadius*0.58,speed:ev?0.15:-0.13,phase:gbi*0.3,coreColor:'#ddcc44',shellColor:'#bbaa33'},{angle:gn.cajalAngle+3.6,dist:gn.bodyRadius*0.46,speed:ev?-0.12:0.17,phase:gbi*0.3+0.5,coreColor:'#ccbb33',shellColor:'#aaaa22'}];
             // Cell type-specific organelles
             if (gn.cellType === 'goblet') {
                 // Mucin granules: MUC2 secretory vesicles in apical cytoplasm
@@ -2140,6 +2091,43 @@
                     var drR=1.3+Math.sin(ph*0.6)*0.3;
                     s(Math.round(it.x+Math.cos(drA)*drR),Math.round(it.y+Math.sin(drA)*drR),'#aaddaa');
                     if(p>0.6){s(Math.round(it.x+Math.cos(drA)*(drR+1.0)),Math.round(it.y+Math.sin(drA)*(drR+1.0)),'#88bb88');}}
+                }},
+                // Goblet cells: MUC2 mucin-secreting epithelial cells
+                // Theca (apical cup) filled with mucin granules; compound exocytosis releases MUC2
+                // MUC2 hydrates and expands ~1000x to form inner dense + outer loose mucus layers
+                // Inner layer is sterile, adherent; outer layer is habitat for commensal bacteria
+                {period:27000, phaseStep:2.09, items:[
+                    {x:10,y:12,color:'#aaddee',dimColor:'#77aabb'},{x:18,y:15,color:'#99ccdd',dimColor:'#6699aa'},
+                    {x:14,y:13,color:'#aaddee',dimColor:'#77aabb'},{x:22,y:17,color:'#99ccdd',dimColor:'#6699aa'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // Theca: apical mucin granule storage (pale translucent dome)
+                    var lumA5=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    var thP=Math.sin(ph*1.4+idx*1.1);
+                    var thX=Math.round(it.x+Math.cos(lumA5)*1.0),thY=Math.round(it.y+Math.sin(lumA5)*1.0);
+                    if(inB(thX,thY))s(thX,thY,thP>0?'#cceeee':'#aadddd');
+                    // Mucin granule exocytosis burst: compound exocytosis releases MUC2 toward lumen
+                    var exoPh=(t*2.0+idx*0.25)%1.0;
+                    if(exoPh<0.4){
+                        for(var mg=1;mg<=3;mg++){
+                            var mgA=lumA5+(mg-2)*0.25;
+                            var mgR=1.2+exoPh*3.5*mg/3;
+                            var mgX=Math.round(it.x+Math.cos(mgA)*mgR),mgY=Math.round(it.y+Math.sin(mgA)*mgR);
+                            if(inB(mgX,mgY))s(mgX,mgY,exoPh<0.2?'#ddeeff':'#bbddee');
+                        }
+                    }
+                    // Inner mucus layer: dense, adherent, sterile (close to epithelium)
+                    if(thP>-0.3){
+                        var imR=2.0+Math.sin(ph*0.6+idx*1.7)*0.3;
+                        var imX=Math.round(it.x+Math.cos(lumA5)*imR),imY=Math.round(it.y+Math.sin(lumA5)*imR);
+                        if(inB(imX,imY))s(imX,imY,Math.sin(ph*2.3+idx*0.9)>0?'#ddeedd':'#ccddcc');
+                    }
+                    // Outer mucus layer: loose, expanded, colonized (further from epithelium)
+                    if(p>0.1){
+                        var omR=3.2+Math.sin(ph*0.4+idx*2.3)*0.4;
+                        var omA=lumA5+Math.sin(ph*0.8+idx*1.4)*0.15;
+                        var omX=Math.round(it.x+Math.cos(omA)*omR),omY=Math.round(it.y+Math.sin(omA)*omR);
+                        if(inB(omX,omY))s(omX,omY,Math.sin(ph*1.7+idx*1.2)>0?'#eeeedd':'#ddddcc');
+                    }
                 }},
             ]);
             // Flumizole — COX-2 inhibition in lamina propria
