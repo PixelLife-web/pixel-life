@@ -1858,257 +1858,154 @@
                 var apY = Math.round(gang.y + axDy * apFrac);
                 set(apX, apY, '#eeccff');
             }
-            // Muscularis mucosae: thin smooth muscle layer beneath submucosa
-            // Rhythmic contraction waves driven by ACh from Meissner's plexus neurons
-            // Smooth muscle cells oriented parallel to epithelium, myosin-driven shortening
-            var tMM = (now % 18000) / 18000;
-            var mmPath = [
-                {x:31,y:8},{x:30,y:12},{x:29,y:16},{x:27,y:20},
-                {x:24,y:24},{x:20,y:27},{x:15,y:29},{x:10,y:28},
-                {x:6,y:25},{x:3,y:21},
-            ];
-            // Peristaltic contraction wave: propagates along the muscle layer
-            var mmWavePos = (tMM * 2.5) % 1.0;
-            for (var mmi = 0; mmi < mmPath.length; mmi++) {
-                var mm = mmPath[mmi];
-                var mmFrac = mmi / (mmPath.length - 1);
-                // Contraction strength: peaks near wave position, decays with distance
-                var mmDist = Math.abs(mmFrac - mmWavePos);
-                if (mmDist > 0.5) mmDist = 1.0 - mmDist; // wrap around
-                var mmContract = Math.max(0, 1.0 - mmDist * 4.0);
-                // Contracted muscle is brighter (active myosin crossbridges)
-                var mmPulse = Math.sin(tMM * 2 * Math.PI * 1.5 + mmi * 0.8);
-                var mmActive = mmContract > 0.3;
-                set(mm.x, mm.y, mmActive ? '#cc7766' : (mmPulse > 0 ? '#aa6655' : '#885544'));
-                // Interpolate between muscle path points
-                if (mmi < mmPath.length - 1) {
-                    var mmN = mmPath[mmi + 1];
-                    var mmdx = mmN.x - mm.x, mmdy = mmN.y - mm.y;
-                    var mmSt = Math.max(Math.abs(mmdx), Math.abs(mmdy));
-                    for (var mms = 1; mms < mmSt; mms++) {
-                        var mmsFrac = mmi / (mmPath.length - 1) + (1.0 / (mmPath.length - 1)) * (mms / mmSt);
-                        var mmsDist = Math.abs(mmsFrac - mmWavePos);
-                        if (mmsDist > 0.5) mmsDist = 1.0 - mmsDist;
-                        var mmsContract = Math.max(0, 1.0 - mmsDist * 4.0);
-                        var mmsP = Math.sin(tMM * 2 * Math.PI * 1.8 + mmi * 0.9 + mms * 0.5);
-                        var mmsActive = mmsContract > 0.3;
-                        set(Math.round(mm.x+mmdx*mms/mmSt), Math.round(mm.y+mmdy*mms/mmSt),
-                            mmsActive ? '#dd8877' : (mmsP > 0 ? '#996655' : '#774433'));
+            // Generic tissue layer renderer: consolidates muscularis mucosae, circular/longitudinal muscle, serosa
+            // Renders a wave-contracted path with interpolation and optional spark effects
+            function renderLayer(path, tNorm, waveSpd, waveWidth, thresh, colors, sparkOpts) {
+                var wavePos = (tNorm * waveSpd) % 1.0;
+                for (var li = 0; li < path.length; li++) {
+                    var lp = path[li];
+                    var frac = li / (path.length - 1);
+                    var dist = Math.abs(frac - wavePos);
+                    if (dist > 0.5) dist = 1.0 - dist;
+                    var contract = Math.max(0, 1.0 - dist * waveWidth);
+                    var pulse = Math.sin(tNorm * 2 * Math.PI * 1.2 + li * 0.7);
+                    var active = contract > thresh;
+                    set(lp.x, lp.y, active ? colors[0] : (pulse > 0 ? colors[1] : colors[2]));
+                    if (li < path.length - 1) {
+                        var ln = path[li + 1];
+                        var ldx = ln.x - lp.x, ldy = ln.y - lp.y;
+                        var lSt = Math.max(Math.abs(ldx), Math.abs(ldy));
+                        for (var ls = 1; ls < lSt; ls++) {
+                            var lsFrac = li / (path.length - 1) + (1.0 / (path.length - 1)) * (ls / lSt);
+                            var lsDist = Math.abs(lsFrac - wavePos);
+                            if (lsDist > 0.5) lsDist = 1.0 - lsDist;
+                            var lsContract = Math.max(0, 1.0 - lsDist * waveWidth);
+                            var lsP = Math.sin(tNorm * 2 * Math.PI * 1.5 + li * 0.8 + ls * 0.4);
+                            var lsActive = lsContract > thresh;
+                            set(Math.round(lp.x+ldx*ls/lSt), Math.round(lp.y+ldy*ls/lSt),
+                                lsActive ? colors[3]||colors[0] : (lsP > 0 ? colors[4]||colors[1] : colors[5]||colors[2]));
+                        }
                     }
-                }
-                // Calcium sparks at contraction wavefront — SR calcium release triggers myosin
-                if (mmContract > 0.6) {
-                    var sparkP = Math.sin(tMM * 2 * Math.PI * 5.0 + mmi * 2.3);
-                    if (sparkP > 0.4) {
-                        var sparkOff = Math.round(Math.sin(tMM * 2 * Math.PI * 3 + mmi) * 0.8);
-                        set(mm.x + sparkOff, mm.y + sparkOff, '#ffdd88');
+                    // Spark effects at contraction wavefront
+                    if (sparkOpts && contract > sparkOpts.thresh) {
+                        var skP = Math.sin(tNorm * 2 * Math.PI * sparkOpts.rate + li * sparkOpts.spread);
+                        if (skP > sparkOpts.gate) {
+                            var skOff = Math.round(Math.sin(tNorm * 2 * Math.PI * 3 + li * 1.3) * 0.7);
+                            var skX = sparkOpts.dx ? lp.x + skOff : lp.x + skOff;
+                            var skY = sparkOpts.dy ? lp.y - skOff : lp.y + skOff;
+                            if (skX >= 0 && skX < size && skY >= 0 && skY < size) set(skX, skY, sparkOpts.color);
+                        }
                     }
                 }
             }
-            // Auerbach's (myenteric) plexus: nerve network between circular and longitudinal muscle
-            // Coordinates peristaltic rhythm — ICC (interstitial cells of Cajal) pace slow waves
-            // Ganglia are larger than Meissner's; dense axonal meshwork with serotonin/substance P
+            // Muscularis mucosae
+            renderLayer([{x:31,y:8},{x:30,y:12},{x:29,y:16},{x:27,y:20},{x:24,y:24},{x:20,y:27},{x:15,y:29},{x:10,y:28},{x:6,y:25},{x:3,y:21}],
+                (now%18000)/18000, 2.5, 4.0, 0.3,
+                ['#cc7766','#aa6655','#885544','#dd8877','#996655','#774433'],
+                {thresh:0.6,rate:5.0,spread:2.3,gate:0.4,color:'#ffdd88',dy:false});
+            // Auerbach's (myenteric) plexus: ICC pacemakers + interneuron axons
             var tAP = (now % 20000) / 20000;
             var auerbachGanglia = [
-                {x:31,y:7, color:'#9977bb', peerIdx:1},
-                {x:29,y:15, color:'#8866aa', peerIdx:2},
-                {x:26,y:22, color:'#9977bb', peerIdx:3},
-                {x:18,y:28, color:'#8866aa', peerIdx:0},
+                {x:31,y:7, color:'#9977bb', peerIdx:1},{x:29,y:15, color:'#8866aa', peerIdx:2},
+                {x:26,y:22, color:'#9977bb', peerIdx:3},{x:18,y:28, color:'#8866aa', peerIdx:0},
             ];
             for (var agi = 0; agi < auerbachGanglia.length; agi++) {
                 var ag = auerbachGanglia[agi];
                 var agP = Math.sin(tAP * 2 * Math.PI * 1.8 + agi * 2.5);
-                // Ganglion cell body: bright neuron soma
                 set(ag.x, ag.y, agP > 0 ? '#bbaadd' : ag.color);
-                // ICC pacemaker cell adjacent to ganglion — generates slow wave depolarization
                 var iccX = ag.x + (agi % 2 === 0 ? -1 : 0);
                 var iccY = ag.y + (agi % 2 === 0 ? 0 : -1);
                 var iccP = Math.sin(tAP * 2 * Math.PI * 3.0 + agi * 1.7);
-                // Slow wave: ICC brightens rhythmically, driving muscle contraction timing
                 set(iccX, iccY, iccP > 0.3 ? '#eebb55' : (iccP > -0.3 ? '#ccaa44' : '#aa8833'));
-                // Interneuron axon connecting to next ganglion in the plexus
                 var peer = auerbachGanglia[ag.peerIdx];
                 var axdx = peer.x - ag.x, axdy = peer.y - ag.y;
-                var axLen = Math.sqrt(axdx*axdx + axdy*axdy);
-                var axSteps = Math.ceil(axLen);
+                var axSteps = Math.ceil(Math.sqrt(axdx*axdx + axdy*axdy));
                 for (var axi2 = 1; axi2 < axSteps; axi2++) {
                     var axF = axi2 / axSteps;
-                    var axX2 = Math.round(ag.x + axdx * axF);
-                    var axY2 = Math.round(ag.y + axdy * axF);
+                    var axX2 = Math.round(ag.x + axdx * axF), axY2 = Math.round(ag.y + axdy * axF);
                     var isVar = (axi2 % 4 === 0);
                     var axP2 = Math.sin(tAP * 2 * Math.PI * 1.3 + agi * 1.8 + axi2 * 0.5);
-                    if (isVar) {
-                        // Substance P (red-orange) or serotonin (blue) at varicosities
-                        var ntC = axi2 % 8 === 0 ? '#dd8855' : '#6699cc';
-                        set(axX2, axY2, axP2 > 0 ? ntC : '#887799');
-                    } else {
-                        set(axX2, axY2, axP2 > 0.4 ? '#776699' : '#665588');
-                    }
+                    if (isVar) { set(axX2, axY2, axP2 > 0 ? (axi2 % 8 === 0 ? '#dd8855' : '#6699cc') : '#887799'); }
+                    else { set(axX2, axY2, axP2 > 0.4 ? '#776699' : '#665588'); }
                 }
-                // Slow wave propagation pulse along the inter-ganglion path
                 var swFrac = (tAP * 2.5 + agi * 0.25) % 1.0;
-                var swX = Math.round(ag.x + axdx * swFrac);
-                var swY = Math.round(ag.y + axdy * swFrac);
-                set(swX, swY, '#ffddaa');
+                set(Math.round(ag.x + axdx * swFrac), Math.round(ag.y + axdy * swFrac), '#ffddaa');
             }
-            // Muscularis externa — circular muscle layer: thick smooth muscle ring outside Auerbach's plexus
-            // Inner circular fibers run perpendicular to longitudinal axis; ICC slow waves drive contraction
-            // Dense α-actin/myosin-II filaments with gap junctions coupling adjacent smooth muscle cells
-            var tCM = (now % 22000) / 22000;
-            var circMusclePath = [
-                {x:31,y:6},{x:31,y:10},{x:31,y:14},{x:30,y:18},
-                {x:28,y:21},{x:25,y:25},{x:21,y:28},{x:17,y:30},
-                {x:12,y:30},{x:8,y:28},{x:5,y:25},{x:2,y:21},
-            ];
-            // Slow-wave contraction: propagates from ICC pacemaker cells in Auerbach's plexus
-            var cmWavePos = (tCM * 2.0) % 1.0;
-            for (var cmi = 0; cmi < circMusclePath.length; cmi++) {
-                var cmP = circMusclePath[cmi];
-                var cmFrac = cmi / (circMusclePath.length - 1);
-                // Contraction wave from ICC — phase-locked to Auerbach's slow wave timing
-                var cmDist = Math.abs(cmFrac - cmWavePos);
-                if (cmDist > 0.5) cmDist = 1.0 - cmDist;
-                var cmContract = Math.max(0, 1.0 - cmDist * 3.5);
-                var cmPulse = Math.sin(tCM * 2 * Math.PI * 1.2 + cmi * 0.7);
-                var cmActive = cmContract > 0.25;
-                // Contracted fibers: bright red-brown (active crossbridges); relaxed: dark maroon
-                set(cmP.x, cmP.y, cmActive ? '#bb5544' : (cmPulse > 0 ? '#884433' : '#663322'));
-                // Interpolate between path points for continuous muscle band
-                if (cmi < circMusclePath.length - 1) {
-                    var cmN = circMusclePath[cmi + 1];
-                    var cmdx = cmN.x - cmP.x, cmdy = cmN.y - cmP.y;
-                    var cmSt = Math.max(Math.abs(cmdx), Math.abs(cmdy));
-                    for (var cms = 1; cms < cmSt; cms++) {
-                        var cmsFrac = cmi / (circMusclePath.length - 1) + (1.0 / (circMusclePath.length - 1)) * (cms / cmSt);
-                        var cmsDist = Math.abs(cmsFrac - cmWavePos);
-                        if (cmsDist > 0.5) cmsDist = 1.0 - cmsDist;
-                        var cmsContract = Math.max(0, 1.0 - cmsDist * 3.5);
-                        var cmsP = Math.sin(tCM * 2 * Math.PI * 1.5 + cmi * 0.8 + cms * 0.4);
-                        var cmsActive = cmsContract > 0.25;
-                        set(Math.round(cmP.x+cmdx*cms/cmSt), Math.round(cmP.y+cmdy*cms/cmSt),
-                            cmsActive ? '#cc6655' : (cmsP > 0 ? '#774433' : '#553322'));
-                    }
-                }
-                // Dense body anchors: α-actinin plaques where actin filaments attach (visible during contraction)
-                if (cmContract > 0.5 && cmi % 2 === 0) {
-                    var dbP = Math.sin(tCM * 2 * Math.PI * 4.0 + cmi * 1.9);
-                    if (dbP > 0.2) {
-                        var dbOff = Math.round(Math.sin(tCM * 2 * Math.PI * 2.5 + cmi * 1.3) * 0.7);
-                        set(cmP.x + dbOff, cmP.y - dbOff, '#ddaa77');
-                    }
-                }
-            }
-            // Muscularis externa — longitudinal muscle layer: outermost smooth muscle coat
-            // Fibers run parallel to the gut's long axis (perpendicular to circular muscle)
-            // Contraction shortens the gut segment; relaxation lengthens it — coordinated with circular layer
-            // Serosa-facing surface; sparse ICC network couples longitudinal to Auerbach's pacemaker rhythm
-            var tLM = (now % 25000) / 25000;
-            var longMusclePath = [
-                {x:31,y:4},{x:31,y:8},{x:31,y:12},{x:31,y:16},
-                {x:30,y:20},{x:28,y:23},{x:26,y:26},{x:22,y:29},
-                {x:17,y:31},{x:12,y:31},{x:7,y:29},{x:4,y:26},{x:1,y:22},
-            ];
-            // Peristaltic wave: phase-offset from circular muscle — longitudinal relaxes where circular contracts
-            // This creates the "receive-and-push" pattern: lumen opens (long contracts) then squeezes (circ contracts)
-            var lmWavePos = (tLM * 1.8 + 0.25) % 1.0; // quarter-phase offset from circular
-            for (var lmi = 0; lmi < longMusclePath.length; lmi++) {
-                var lmP = longMusclePath[lmi];
-                var lmFrac = lmi / (longMusclePath.length - 1);
-                var lmDist = Math.abs(lmFrac - lmWavePos);
-                if (lmDist > 0.5) lmDist = 1.0 - lmDist;
-                var lmContract = Math.max(0, 1.0 - lmDist * 3.0);
-                var lmPulse = Math.sin(tLM * 2 * Math.PI * 1.0 + lmi * 0.6);
-                var lmActive = lmContract > 0.3;
-                // Longitudinal fibers: darker purple-brown tones (distinct from circular's red-brown)
-                set(lmP.x, lmP.y, lmActive ? '#995566' : (lmPulse > 0 ? '#774455' : '#553344'));
-                // Interpolate between path points
-                if (lmi < longMusclePath.length - 1) {
-                    var lmN = longMusclePath[lmi + 1];
-                    var lmdx = lmN.x - lmP.x, lmdy = lmN.y - lmP.y;
-                    var lmSt = Math.max(Math.abs(lmdx), Math.abs(lmdy));
-                    for (var lms = 1; lms < lmSt; lms++) {
-                        var lmsFrac = lmi / (longMusclePath.length - 1) + (1.0 / (longMusclePath.length - 1)) * (lms / lmSt);
-                        var lmsDist = Math.abs(lmsFrac - lmWavePos);
-                        if (lmsDist > 0.5) lmsDist = 1.0 - lmsDist;
-                        var lmsContract = Math.max(0, 1.0 - lmsDist * 3.0);
-                        var lmsP = Math.sin(tLM * 2 * Math.PI * 1.3 + lmi * 0.7 + lms * 0.4);
-                        var lmsActive = lmsContract > 0.3;
-                        set(Math.round(lmP.x+lmdx*lms/lmSt), Math.round(lmP.y+lmdy*lms/lmSt),
-                            lmsActive ? '#aa6677' : (lmsP > 0 ? '#664455' : '#443344'));
-                    }
-                }
-                // Myosin-II power strokes visible during peak contraction — brief bright flashes
-                if (lmContract > 0.6) {
-                    var myoP = Math.sin(tLM * 2 * Math.PI * 6.0 + lmi * 2.1);
-                    if (myoP > 0.5) {
-                        var myoOff = Math.round(Math.sin(tLM * 2 * Math.PI * 3.5 + lmi * 1.5) * 0.6);
-                        set(lmP.x + myoOff, lmP.y + myoOff, '#ddbbcc');
-                    }
-                }
-            }
-            // Serosa: outermost gut wall layer — thin mesothelial membrane + subserosal connective tissue
-            // Simple squamous mesothelial cells secrete serous fluid (lubricant) into peritoneal cavity
-            // Subserosal layer contains loose connective tissue, adipocytes, and blood vessels
-            // Completes the gut wall: mucosa → submucosa → muscularis externa → serosa
-            var tSer = (now % 30000) / 30000;
+            // Circular muscle layer
+            renderLayer([{x:31,y:6},{x:31,y:10},{x:31,y:14},{x:30,y:18},{x:28,y:21},{x:25,y:25},{x:21,y:28},{x:17,y:30},{x:12,y:30},{x:8,y:28},{x:5,y:25},{x:2,y:21}],
+                (now%22000)/22000, 2.0, 3.5, 0.25,
+                ['#bb5544','#884433','#663322','#cc6655','#774433','#553322'],
+                {thresh:0.5,rate:4.0,spread:1.9,gate:0.2,color:'#ddaa77',dy:true});
+            // Longitudinal muscle layer (quarter-phase offset from circular)
+            renderLayer([{x:31,y:4},{x:31,y:8},{x:31,y:12},{x:31,y:16},{x:30,y:20},{x:28,y:23},{x:26,y:26},{x:22,y:29},{x:17,y:31},{x:12,y:31},{x:7,y:29},{x:4,y:26},{x:1,y:22}],
+                ((now%25000)/25000 + 0.139) % 1.0, 1.8, 3.0, 0.3,
+                ['#995566','#774455','#553344','#aa6677','#664455','#443344'],
+                {thresh:0.6,rate:6.0,spread:2.1,gate:0.5,color:'#ddbbcc',dy:false});
+            // Serosa — mesothelial membrane with serous fluid secretion and subserosal adipocytes
             var serosalPath = [
                 {x:31,y:2},{x:31,y:6},{x:31,y:10},{x:31,y:14},{x:31,y:18},
                 {x:30,y:22},{x:28,y:25},{x:26,y:28},{x:22,y:30},
                 {x:17,y:31},{x:12,y:31},{x:7,y:31},{x:3,y:28},{x:1,y:24},{x:0,y:20},
             ];
-            // Mesothelial cells: flat squamous cells forming a smooth peritoneal surface
-            // Serous fluid secretion: rhythmic exocytosis of lubricating glycoproteins
+            var tSer = (now % 30000) / 30000;
+            renderLayer(serosalPath, tSer, 1.5, 4.0, 0.3,
+                ['#bbccdd','#99aabb','#8899aa','#ccddee','#8899aa','#778899'], null);
+            // Serous fluid droplets + subserosal adipocytes
             var serWave = (tSer * 1.5) % 1.0;
             for (var sri = 0; sri < serosalPath.length; sri++) {
                 var srP = serosalPath[sri];
                 var srFrac = sri / (serosalPath.length - 1);
-                // Slow mesothelial renewal wave — cells shed and replace in a traveling front
-                var srDist = Math.abs(srFrac - serWave);
-                if (srDist > 0.5) srDist = 1.0 - srDist;
+                var srDist = Math.abs(srFrac - serWave); if (srDist > 0.5) srDist = 1.0 - srDist;
                 var srRenewal = Math.max(0, 1.0 - srDist * 4.0);
-                var srPulse = Math.sin(tSer * 2 * Math.PI * 0.8 + sri * 0.5);
-                // Mesothelium: pale silvery-blue tones; renewing cells flash brighter
-                var srActive = srRenewal > 0.3;
-                set(srP.x, srP.y, srActive ? '#bbccdd' : (srPulse > 0 ? '#99aabb' : '#8899aa'));
-                // Interpolate between path points for continuous serosal coat
-                if (sri < serosalPath.length - 1) {
-                    var srN = serosalPath[sri + 1];
-                    var srdx = srN.x - srP.x, srdy = srN.y - srP.y;
-                    var srSt = Math.max(Math.abs(srdx), Math.abs(srdy));
-                    for (var srs = 1; srs < srSt; srs++) {
-                        var srsFrac = sri / (serosalPath.length - 1) + (1.0 / (serosalPath.length - 1)) * (srs / srSt);
-                        var srsDist = Math.abs(srsFrac - serWave);
-                        if (srsDist > 0.5) srsDist = 1.0 - srsDist;
-                        var srsRenewal = Math.max(0, 1.0 - srsDist * 4.0);
-                        var srsP = Math.sin(tSer * 2 * Math.PI * 1.2 + sri * 0.6 + srs * 0.3);
-                        var srsActive = srsRenewal > 0.3;
-                        set(Math.round(srP.x+srdx*srs/srSt), Math.round(srP.y+srdy*srs/srSt),
-                            srsActive ? '#ccddee' : (srsP > 0 ? '#8899aa' : '#778899'));
-                    }
-                }
-                // Serous fluid droplets: tiny glycoprotein vesicles released from mesothelial surface
-                // Visible as brief sparkles at the peritoneal interface during active secretion
                 if (srRenewal > 0.5 && sri % 3 === 0) {
                     var sfP = Math.sin(tSer * 2 * Math.PI * 5.0 + sri * 2.3);
                     if (sfP > 0.3) {
-                        // Droplet appears just outside the serosal surface
                         var sfAngle = Math.atan2(srP.y - 16, srP.x - 16);
                         var sfx = Math.round(srP.x + Math.cos(sfAngle) * 0.8);
                         var sfy = Math.round(srP.y + Math.sin(sfAngle) * 0.8);
-                        if (sfx >= 0 && sfx < size && sfy >= 0 && sfy < size) {
-                            set(sfx, sfy, '#ddeeff');
-                        }
+                        if (sfx >= 0 && sfx < size && sfy >= 0 && sfy < size) set(sfx, sfy, '#ddeeff');
                     }
                 }
-                // Subserosal adipocytes: scattered fat cells in loose connective tissue
-                // Small lipid-filled cells beneath mesothelium — energy storage for outer wall
                 if (sri % 4 === 1) {
                     var adP = Math.sin(tSer * 2 * Math.PI * 0.5 + sri * 1.7);
                     var adAngle = Math.atan2(16 - srP.y, 16 - srP.x);
                     var adx = Math.round(srP.x + Math.cos(adAngle) * 1.0);
                     var ady = Math.round(srP.y + Math.sin(adAngle) * 1.0);
-                    if (adx >= 0 && adx < size && ady >= 0 && ady < size) {
-                        set(adx, ady, adP > 0 ? '#eedd99' : '#ddcc88');
+                    if (adx >= 0 && adx < size && ady >= 0 && ady < size) set(adx, ady, adP > 0 ? '#eedd99' : '#ddcc88');
+                }
+            }
+            // Enteroendocrine cells (EECs): scattered neuroendocrine sensors in the epithelium
+            // Detect luminal nutrients via apical chemosensors, secrete peptide hormones basolaterally
+            // Serotonin (5-HT) → activates vagal afferents; CCK → stimulates pancreatic secretion
+            var tEEC = (now % 24000) / 24000;
+            var eecCells = [
+                {x:15, y:14, hormone:'5HT', color:'#dd55aa', dimColor:'#aa3388', secretColor:'#ff88cc', senseColor:'#ee77bb'},
+                {x:20, y:18, hormone:'CCK', color:'#55aadd', dimColor:'#3388aa', secretColor:'#88ccff', senseColor:'#77bbee'},
+                {x:12, y:19, hormone:'GIP', color:'#aadd55', dimColor:'#88aa33', secretColor:'#ccff88', senseColor:'#bbee77'},
+            ];
+            for (var eeci = 0; eeci < eecCells.length; eeci++) {
+                var eec = eecCells[eeci];
+                var eecPhase = tEEC * 2 * Math.PI + eeci * 2.09;
+                var eecPulse = Math.sin(eecPhase);
+                // Cell body: flask-shaped neuroendocrine cell wedged between epithelial cells
+                if (inB(eec.x, eec.y)) set(eec.x, eec.y, eecPulse > 0 ? eec.color : eec.dimColor);
+                // Apical chemosensor: narrow neck reaches toward lumen to taste nutrients
+                var senseAngle = Math.atan2(eec.y - 16, eec.x - 16) + Math.PI; // toward lumen
+                var senseX = Math.round(eec.x + Math.cos(senseAngle) * 1.0);
+                var senseY = Math.round(eec.y + Math.sin(senseAngle) * 1.0);
+                var sensePulse = Math.sin(eecPhase * 1.5 + eeci * 0.9);
+                if (inB(senseX, senseY)) set(senseX, senseY, sensePulse > 0.2 ? eec.senseColor : eec.dimColor);
+                // Basolateral secretion: hormone granules released toward lamina propria
+                if (eecPulse > 0.4) {
+                    var secAngle = Math.atan2(eec.y - 16, eec.x - 16); // toward basal/tissue
+                    var secX = Math.round(eec.x + Math.cos(secAngle) * 1.2);
+                    var secY = Math.round(eec.y + Math.sin(secAngle) * 1.2);
+                    if (inB(secX, secY)) set(secX, secY, eec.secretColor);
+                    // Hormone diffusion: second pixel further into lamina propria
+                    if (eecPulse > 0.7) {
+                        var difX = Math.round(eec.x + Math.cos(secAngle) * 2.0);
+                        var difY = Math.round(eec.y + Math.sin(secAngle) * 2.0);
+                        if (inB(difX, difY)) set(difX, difY, eec.dimColor);
                     }
                 }
             }
