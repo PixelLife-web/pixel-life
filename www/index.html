@@ -53,14 +53,14 @@
             chromatin: [
                 { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
             ],
-            // G2: all sister chromatids now fully replicated
+            // Prophase: sister chromatids condense into thick chromosomes
             sisterChromatin: [
                 { x: 21, y: 9 }, { x: 21, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 9 },
             ],
-            // G2: centrosome has duplicated, two centrosomes sit near the nucleus
+            // Prophase: centrosomes migrating to opposite poles
             centrosomes: [
-                { x: 22, y: 9 },
-                { x: 18, y: 11 },
+                { x: 23, y: 8 },
+                { x: 17, y: 12 },
             ],
             cilia: [],
             receptors: [
@@ -95,14 +95,14 @@
             chromatin: [
                 { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
             ],
-            // G2: all sister chromatids now fully replicated
+            // Prophase: sister chromatids condense into thick chromosomes
             sisterChromatin: [
                 { x: 13, y: 21 }, { x: 13, y: 23 }, { x: 11, y: 23 }, { x: 11, y: 21 },
             ],
-            // G2: centrosome has duplicated
+            // Prophase: centrosomes migrating to opposite poles
             centrosomes: [
-                { x: 14, y: 21 },
-                { x: 10, y: 23 },
+                { x: 15, y: 20 },
+                { x: 9, y: 24 },
             ],
             cilia: [],
             receptors: [
@@ -183,8 +183,8 @@
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            // G2: nucleus is swollen with doubled DNA content
-            var nucSwell = 0.3;
+            // Prophase: nucleus still swollen, envelope starting to weaken
+            var nucSwell = 0.4;
             var nucR = cell.nucleusRadius + nucleusPulse * 0.2 + nucSwell;
 
             // Compute mitochondria
@@ -214,45 +214,70 @@
             var envR = nucR + envPulse;
             for (var ea = 0; ea < 20; ea++) {
                 var eAngle = ea * 2 * Math.PI / 20;
+                // Prophase: nuclear envelope starts to flicker/weaken at some points
+                var envFlicker = Math.sin(tChromatin * 3 + ea * 1.2);
+                if (envFlicker < -0.6) continue; // gaps forming in the envelope
                 var ex = Math.round(cell.nucleusCx + Math.cos(eAngle) * envR);
                 var ey = Math.round(cell.nucleusCy + Math.sin(eAngle) * envR);
                 if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
-                    envPixels[ex + ',' + ey] = cell.nucleusEdge;
+                    envPixels[ex + ',' + ey] = envFlicker > 0.3 ? cell.nucleusEdge : '#cc9933';
                 }
             }
             // Nucleolus
             nucPixels[cell.nucleusCx + ',' + cell.nucleusCy] = cell.nucleolusColor;
 
-            // Chromatin inside nucleus — G2 phase, all DNA fully replicated
+            // Chromatin inside nucleus — Prophase: condensing into thick chromosomes
             var chrPixels = {};
             for (var chi = 0; chi < cell.chromatin.length; chi++) {
                 var ch = cell.chromatin[chi];
+                // Prophase: chromosomes glow brighter as they condense
                 var cPulse = Math.sin(tChromatin + chi * 0.8);
-                chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#bb6644' : '#aa5533';
+                chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#ee7744' : '#dd6633';
             }
-            // Sister chromatids: all visible now, paired with originals
+            // Sister chromatids: condensed and paired tightly with originals
             if (cell.sisterChromatin) {
                 for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
                     var rc = cell.sisterChromatin[rci];
                     var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
-                    chrPixels[rc.x + ',' + rc.y] = rcPulse > 0 ? '#cc7755' : '#bb6644';
+                    chrPixels[rc.x + ',' + rc.y] = rcPulse > 0 ? '#ee8855' : '#dd7744';
                 }
             }
 
-            // Centrosomes: duplicated, pulsing as they prepare spindle microtubules
+            // Centrosomes: prophase — migrating to poles, asters grow, early spindle forms
             var centPixels = {};
             if (cell.centrosomes) {
                 var tCent = (t * 8000 / 3000) % 1.0;
                 for (var csi = 0; csi < cell.centrosomes.length; csi++) {
                     var cs = cell.centrosomes[csi];
                     var centPulse = Math.sin(tCent * 2 * Math.PI + csi * Math.PI);
-                    centPixels[cs.x + ',' + cs.y] = centPulse > 0 ? '#eedd55' : '#ccbb33';
-                    // Short microtubule aster radiating from each centrosome
-                    var asterAngle = tCent * 2 * Math.PI + csi * 1.5;
-                    var astX = Math.round(cs.x + Math.cos(asterAngle) * 1);
-                    var astY = Math.round(cs.y + Math.sin(asterAngle) * 1);
-                    if (astX >= 0 && astX < size && astY >= 0 && astY < size) {
-                        centPixels[astX + ',' + astY] = '#ddcc44';
+                    centPixels[cs.x + ',' + cs.y] = centPulse > 0 ? '#ffee66' : '#eedd44';
+                    // Longer aster microtubules radiating outward (2 rays per centrosome)
+                    for (var ai = 0; ai < 3; ai++) {
+                        var asterAngle = tCent * 2 * Math.PI + csi * 1.5 + ai * 2.1;
+                        for (var al = 1; al <= 2; al++) {
+                            var astX = Math.round(cs.x + Math.cos(asterAngle) * al);
+                            var astY = Math.round(cs.y + Math.sin(asterAngle) * al);
+                            if (astX >= 0 && astX < size && astY >= 0 && astY < size) {
+                                centPixels[astX + ',' + astY] = al === 1 ? '#ddcc44' : '#ccbb33';
+                            }
+                        }
+                    }
+                }
+                // Early spindle fibers: a faint line between the two centrosomes
+                if (cell.centrosomes.length >= 2) {
+                    var c0 = cell.centrosomes[0];
+                    var c1 = cell.centrosomes[1];
+                    var spindleSteps = Math.max(Math.abs(c1.x - c0.x), Math.abs(c1.y - c0.y));
+                    var spindlePulse = Math.sin(tCent * 2 * Math.PI * 2);
+                    if (spindlePulse > -0.3) { // spindle flickers as it forms
+                        for (var spi = 1; spi < spindleSteps; spi++) {
+                            var spFrac = spi / spindleSteps;
+                            var spX = Math.round(c0.x + (c1.x - c0.x) * spFrac);
+                            var spY = Math.round(c0.y + (c1.y - c0.y) * spFrac);
+                            if (spX >= 0 && spX < size && spY >= 0 && spY < size) {
+                                centPixels[spX + ',' + spY] = '#bbaa33';
+                            }
+                        }
                     }
                 }
             }
