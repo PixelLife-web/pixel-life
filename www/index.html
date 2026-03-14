@@ -515,17 +515,22 @@
         // Cyclin B-CDK1 floods nucleus, phosphorylates condensins → chromatin condensation begins
         // Centrosomes begin separating along nuclear envelope, pushed by Eg5 kinesin
         cellA.prophase = {
-            condensation: 0.35, // condensation advancing — chromosome territories resolving into distinct fibers
-            laminPhospho: 0.15, // CDK1 begins phosphorylating lamin A/C — envelope weakening
-            asterCount: 8,      // gamma-TuRC accumulating — more astral MTs nucleated
-            // Centrosome pole targets: Eg5 kinesin pushes them apart along nuclear envelope
+            condensation: 0.5, // condensation deepening — individual chromosomes becoming visible
+            laminPhospho: 0.35, // CDK1 phosphorylation spreading — lamina meshwork dissolving
+            npcDisassembly: 0.15, // Nup98/Nup153 released first — nuclear transport slowing
+            envelopeVesicles: true, // membrane fragments beginning to bud off
+            asterCount: 10, // gamma-TuRC saturating centrosomes — asters lengthening
+            spindleForming: true, // early interpolar MTs probing between separating centrosomes
             pole1Target: { x: 19, y: 7 },
             pole2Target: { x: 23, y: 11 },
         };
         cellB.prophase = {
-            condensation: 0.35,
-            laminPhospho: 0.15,
-            asterCount: 8,
+            condensation: 0.5,
+            laminPhospho: 0.35,
+            npcDisassembly: 0.15,
+            envelopeVesicles: true,
+            asterCount: 10,
+            spindleForming: true,
             pole1Target: { x: 9, y: 21 },
             pole2Target: { x: 13, y: 25 },
         };
@@ -607,8 +612,8 @@
         cellA.wee1 = [];
         cellB.wee1 = [];
 
-        // PROPHASE ADVANCING: condensation intensifies, CDK1 phosphorylates lamins
-        // Aurora A matures centrosomes, asters grow, nuclear envelope begins to weaken
+        // LATE PROPHASE: chromosomes individualize, lamina dissolving, NPCs releasing
+        // Asters lengthen, early spindle MTs probe, envelope vesiculating
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -2034,12 +2039,8 @@
                 endoPixels: endoPixels, cyclinPixels: cyclinPixels,
                 checkPixels: checkPixels,
                 sacPixels: sacPixels,
-                e2fPixels: e2fPixels,
-                forkPixels: forkPixels,
-                histonePixels: histonePixels,
                 cycAPixels: cycAPixels,
                 cdc25Pixels: cdc25Pixels,
-                cycEPixels: cycEPixels,
                 cycDPixels: cycDPixels,
                 phosphPixels: phosphPixels,
                 gfPixels: gfPixels,
@@ -2339,8 +2340,6 @@
                                 color = dd.cyclinPixels[key];
                             } else if (dd.cycAPixels && dd.cycAPixels[key]) {
                                 color = dd.cycAPixels[key];
-                            } else if (dd.cycEPixels && dd.cycEPixels[key]) {
-                                color = dd.cycEPixels[key];
                             } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
                                 color = dd.cdc25Pixels[key];
                             } else if (dd.cycBPixels && dd.cycBPixels[key]) {
@@ -2365,16 +2364,10 @@
                                 color = dd.envPixels[key];
                             } else if (dd.sacPixels && dd.sacPixels[key]) {
                                 color = dd.sacPixels[key];
-                            } else if (dd.forkPixels && dd.forkPixels[key]) {
-                                color = dd.forkPixels[key];
-                            } else if (dd.histonePixels && dd.histonePixels[key]) {
-                                color = dd.histonePixels[key];
                             } else if (dd.cohesinPixels && dd.cohesinPixels[key]) {
                                 color = dd.cohesinPixels[key];
                             } else if (dd.topoPixels && dd.topoPixels[key]) {
                                 color = dd.topoPixels[key];
-                            } else if (dd.e2fPixels && dd.e2fPixels[key]) {
-                                color = dd.e2fPixels[key];
                             } else if (dd.checkPixels && dd.checkPixels[key]) {
                                 color = dd.checkPixels[key];
                             } else if (dd.chrPixels[key]) {
