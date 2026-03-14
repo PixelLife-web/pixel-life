@@ -346,6 +346,22 @@
             });
         }
 
+        // Basal lamina: basement membrane forming beneath/around the tissue
+        // Collagen IV scaffold with laminin-332 crosslinks — establishes apical-basal polarity
+        // The arc wraps around the outer edge of the four-cell cluster
+        var basalLamina = [
+            { x: 28, y: 8, phase: 0 },
+            { x: 29, y: 12, phase: 0.4 },
+            { x: 28, y: 16, phase: 0.8 },
+            { x: 26, y: 20, phase: 1.2 },
+            { x: 23, y: 24, phase: 1.6 },
+            { x: 19, y: 27, phase: 2.0 },
+            { x: 14, y: 29, phase: 2.4 },
+            { x: 9, y: 28, phase: 2.8 },
+            { x: 5, y: 25, phase: 3.2 },
+            { x: 3, y: 21, phase: 3.6 },
+        ];
+
         // Kum-song (금성 — golden star): a luminous beacon in the extracellular medium
         // A radiant golden particle that traces a slow orbit between the two daughter cells
         // like Venus crossing the sky — the brightest point in the tissue's firmament
@@ -2452,6 +2468,36 @@
                                         var exPulse = Math.sin(tExo * 2 * Math.PI * 4 + exj * 2.1 + exi * 1.7);
                                         color = exPulse > 0 ? '#ddaaee' : exo.color;
                                         drawn = true;
+                                    }
+                                }
+                            }
+                        }
+                        // Basal lamina: collagen IV / laminin basement membrane arc
+                        // Interpolated line segments between anchor points, with crosslink pulses
+                        if (!drawn) {
+                            var tBL = (Date.now() % 12000) / 12000;
+                            for (var bli = 0; bli < basalLamina.length && !drawn; bli++) {
+                                var blA = basalLamina[bli];
+                                // Check if pixel is at this anchor point
+                                if (x === blA.x && y === blA.y) {
+                                    var blPulse = Math.sin(tBL * 2 * Math.PI * 1.5 + blA.phase);
+                                    color = blPulse > 0.2 ? '#c4a070' : '#b09060';
+                                    drawn = true;
+                                }
+                                // Interpolate between consecutive anchor points
+                                if (!drawn && bli < basalLamina.length - 1) {
+                                    var blB = basalLamina[bli + 1];
+                                    var blDx = blB.x - blA.x, blDy = blB.y - blA.y;
+                                    var blSteps = Math.max(Math.abs(blDx), Math.abs(blDy));
+                                    for (var bls = 1; bls < blSteps && !drawn; bls++) {
+                                        var blPx = Math.round(blA.x + blDx * bls / blSteps);
+                                        var blPy = Math.round(blA.y + blDy * bls / blSteps);
+                                        if (x === blPx && y === blPy) {
+                                            // Collagen IV crosslinking shimmer along the lamina
+                                            var blShimmer = Math.sin(tBL * 2 * Math.PI * 2 + blA.phase + bls * 0.6);
+                                            color = blShimmer > 0.3 ? '#d4b080' : '#b89868';
+                                            drawn = true;
+                                        }
                                     }
                                 }
                             }
