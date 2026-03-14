@@ -322,6 +322,22 @@
                 { angle: gn.cajalAngle + 0.8, dist: gn.bodyRadius * 0.58, speed: (gbi % 2 === 0 ? 0.15 : -0.13), phase: gbi * 0.3, coreColor: '#ddcc44', shellColor: '#bbaa33' },
                 { angle: gn.cajalAngle + 3.6, dist: gn.bodyRadius * 0.46, speed: (gbi % 2 === 0 ? -0.12 : 0.17), phase: gbi * 0.3 + 0.5, coreColor: '#ccbb33', shellColor: '#aaaa22' },
             ];
+            // Apical microvilli: actin-cored finger-like projections on the free surface
+            // Opposite the basal lamina — increases absorptive surface area
+            // Each granddaughter sprouts 3-4 microvilli pointing away from basal lamina center
+            // Basal lamina center is roughly at (16, 22) — apical direction points away from it
+            var blCenter = { x: 16, y: 22 };
+            var apicalAngle = Math.atan2(gn.y - blCenter.y, gn.x - blCenter.x);
+            gn.microvilli = [];
+            var mvCount = 3 + (gbi % 2); // 3 or 4 microvilli per cell
+            for (var mvi = 0; mvi < mvCount; mvi++) {
+                var mvSpread = (mvi - (mvCount - 1) / 2) * 0.35;
+                gn.microvilli.push({
+                    angle: apicalAngle + mvSpread,
+                    length: 1.5 + gn.nucleolusSize * 0.8,
+                    phase: gbi * 0.9 + mvi * 1.1,
+                });
+            }
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -1658,6 +1674,276 @@
             };
         }
 
+        // Precompute all granddaughter + extracellular feature pixels into a map
+        function buildGDPixels(now) {
+            var px = {};
+            var tR = (now % 12000) / 12000, tN = (now % 9000) / 9000;
+            var tO = (now % 11000) / 11000 * 2 * Math.PI;
+            var tER = (now % 7000) / 7000, tGo = (now % 8000) / 8000;
+            var tRF = (now % 5000) / 5000, tEn = (now % 9000) / 9000;
+            var tMV = (now % 14000) / 14000 * 2 * Math.PI;
+            var tAu = (now % 15000) / 15000 * 2 * Math.PI;
+            var tPr = (now % 11000) / 11000 * 2 * Math.PI;
+            var tLi = (now % 17000) / 17000 * 2 * Math.PI;
+            var tCe = (now % 9000) / 9000, tCi = (now % 6000) / 6000 * 2 * Math.PI;
+            var tLy = (now % 13000) / 13000 * 2 * Math.PI;
+            var tPx = (now % 11000) / 11000 * 2 * Math.PI;
+            function set(x, y, c) { if (inB(x, y) && !px[x+','+y]) px[x+','+y] = c; }
+            function setR(x, y, c, cx, cy, mr) {
+                if (inB(x,y) && !px[x+','+y]) {
+                    var d = Math.sqrt((x-cx)*(x-cx)+(y-cy)*(y-cy));
+                    if (d < mr - 0.3) px[x+','+y] = c;
+                }
+            }
+            for (var i = 0; i < granddaughterNuclei.length; i++) {
+                var g = granddaughterNuclei[i];
+                var bb = Math.sin(tN * 2 * Math.PI * 0.7 + i * 1.1) * 0.15;
+                var bR = g.bodyRadius + bb;
+                var eR = 1.3 + g.nucleolusSize * 0.5;
+                // Transcription aura (outermost)
+                var auraR = bR + 0.5 + g.reactivation * 1.5;
+                var aP = Math.sin(tR * 2 * Math.PI * 1.5 + i * 1.57);
+                if (aP > 0) {
+                    for (var aa = 0; aa < 16; aa++) {
+                        var aAng = aa * Math.PI / 8;
+                        var ax = Math.round(g.x + Math.cos(aAng) * auraR);
+                        var ay = Math.round(g.y + Math.sin(aAng) * auraR);
+                        set(ax, ay, aP > 0.5 ? '#ffdd88' : '#eebb66');
+                    }
+                }
+                // Primary cilium
+                var cilSway = Math.sin(tCi + g.ciliumPhase) * 0.12;
+                var cilBA = g.ciliumAngle + cilSway;
+                var cbx = g.x + Math.cos(g.centrosomeAngle) * g.centrosomeDist;
+                var cby = g.y + Math.sin(g.centrosomeAngle) * g.centrosomeDist;
+                for (var cl = 0; cl <= Math.ceil(g.ciliumLength * 2); cl++) {
+                    var cR = cl * 0.5; if (cR > g.ciliumLength) break;
+                    var cx = Math.round(cbx + Math.cos(cilBA) * cR);
+                    var cy = Math.round(cby + Math.sin(cilBA) * cR);
+                    var isTip = cR > g.ciliumLength - 0.6;
+                    var cP = Math.sin(tCi * 1.5 + i * 2.0 + cR * 1.2);
+                    set(cx, cy, isTip ? (cP > 0 ? '#eedd88' : '#ddcc66') : (cP > 0.3 ? '#bbaa77' : '#aa9966'));
+                }
+                // Cell body: membrane + cytoplasm fill + internal organelles
+                for (var by2 = Math.floor(g.y - bR - 1); by2 <= Math.ceil(g.y + bR + 1); by2++) {
+                    for (var bx2 = Math.floor(g.x - bR - 1); bx2 <= Math.ceil(g.x + bR + 1); bx2++) {
+                        if (!inB(bx2, by2)) continue;
+                        var dx = bx2 - g.x, dy = by2 - g.y;
+                        var d = Math.sqrt(dx*dx + dy*dy);
+                        if (d <= bR) {
+                            var k = bx2 + ',' + by2;
+                            if (px[k]) continue;
+                            if (d > bR - 0.7) { px[k] = g.membraneColor; continue; }
+                            // Nuclear envelope
+                            if (Math.abs(d - eR) < 0.6) {
+                                var ep = Math.sin(tN * 2 * Math.PI * 2 + i * 1.4 + Math.atan2(dy, dx) * 3);
+                                px[k] = ep > 0 ? '#eebb55' : '#ddaa44'; continue;
+                            }
+                            // Nucleolus
+                            if (d < g.nucleolusSize + 0.3) {
+                                var np = Math.sin(tN * 2 * Math.PI * 1.8 + i * 2.3);
+                                px[k] = np > 0.2 ? '#ff9933' : '#dd7722'; continue;
+                            }
+                            // Cytoplasm fill (will be overwritten by organelles below)
+                            px[k] = g.cytoColor;
+                        }
+                    }
+                }
+                // Single-pixel organelles: compute position and set directly
+                // Mitochondrion
+                var mA = g.mitoAngle + g.mitoSpeed * tO, mR = bR * 0.65;
+                setR(Math.round(g.x+Math.cos(mA)*mR), Math.round(g.y+Math.sin(mA)*mR), '#44aa66', g.x, g.y, bR);
+                // Peroxisome
+                var pA = g.peroxAngle + g.peroxSpeed * tPx;
+                var pp = Math.sin(tPx * 1.5 + i * 2.0);
+                setR(Math.round(g.x+Math.cos(pA)*g.peroxDist), Math.round(g.y+Math.sin(pA)*g.peroxDist), pp>0?'#77bb88':'#55aa77', g.x, g.y, bR);
+                // Lysosome
+                var lA = g.lysoAngle + g.lysoSpeed * tLy;
+                var lp = Math.sin(tLy * 1.3 + i * 1.8);
+                setR(Math.round(g.x+Math.cos(lA)*g.lysoDist), Math.round(g.y+Math.sin(lA)*g.lysoDist), lp>0?'#9966bb':'#8855aa', g.x, g.y, bR);
+                // MVB
+                var mvA = g.mvbAngle + g.mvbSpeed * tMV;
+                var mp = Math.sin(tMV * 1.5 + i * 2.3);
+                setR(Math.round(g.x+Math.cos(mvA)*g.mvbDist), Math.round(g.y+Math.sin(mvA)*g.mvbDist), mp>0?'#9955bb':'#7744aa', g.x, g.y, bR);
+                // Centrosome + MT rays
+                var ceX = Math.round(g.x+Math.cos(g.centrosomeAngle)*g.centrosomeDist);
+                var ceY = Math.round(g.y+Math.sin(g.centrosomeAngle)*g.centrosomeDist);
+                var cp = Math.sin(tCe * 2 * Math.PI * 1.5 + i * 2.2);
+                set(ceX, ceY, cp > 0 ? '#eedd55' : '#ddcc44');
+                for (var mt = 0; mt < 2; mt++) {
+                    var mtA = g.centrosomeAngle + (mt === 0 ? 0.8 : -0.8);
+                    setR(Math.round(ceX+Math.cos(mtA)), Math.round(ceY+Math.sin(mtA)), '#556677', g.x, g.y, bR);
+                }
+                // Golgi ministack
+                var goP = Math.sin(tGo * 2 * Math.PI * 1.5 + i * 2.0);
+                set(Math.round(g.x+Math.cos(g.golgiAngle)*g.golgiDist), Math.round(g.y+Math.sin(g.golgiAngle)*g.golgiDist), goP>0?'#ddaa55':'#cc9944');
+                set(Math.round(g.x+Math.cos(g.golgiAngle+0.5)*(g.golgiDist+0.4)), Math.round(g.y+Math.sin(g.golgiAngle+0.5)*(g.golgiDist+0.4)), '#ccaa55');
+                // Nuclear speckles
+                for (var si = 0; si < g.speckles.length; si++) {
+                    var sp = g.speckles[si], spP = Math.sin(tN * 2 * Math.PI * 1.4 + i * 2.1 + si * 3.0);
+                    set(Math.round(g.x+Math.cos(sp.angle)*sp.dist), Math.round(g.y+Math.sin(sp.angle)*sp.dist), spP>0?'#99eebb':sp.color);
+                }
+                // Cajal body
+                var cbP = Math.sin(tN * 2 * Math.PI * 2.5 + i * 1.9);
+                set(g.x+Math.round(Math.cos(g.cajalAngle)*0.8), g.y+Math.round(Math.sin(g.cajalAngle)*0.8), cbP>0?'#cc88ff':'#aa66dd');
+                // ER stubs
+                for (var ei = 0; ei < g.erStubs.length; ei++) {
+                    var es = g.erStubs[ei], esR0 = eR + 0.3;
+                    for (var el = 0; el <= Math.ceil(es.length * 2); el++) {
+                        var er = esR0 + el * 0.5; if (er > esR0 + es.length) break;
+                        var ep = Math.sin(tER * 2 * Math.PI + ei * 2.5 + el * 0.8);
+                        set(Math.round(g.x+Math.cos(es.angle)*er), Math.round(g.y+Math.sin(es.angle)*er), ep>0?'#996644':'#884422');
+                    }
+                }
+                // Free ribosomes
+                for (var fi = 0; fi < g.freeRibosomes.length; fi++) {
+                    var fr = g.freeRibosomes[fi], fp = Math.sin(tRF * 2 * Math.PI * 1.8 + fr.phase);
+                    set(Math.round(g.x+Math.cos(fr.angle)*fr.dist), Math.round(g.y+Math.sin(fr.angle)*fr.dist), fp>0.2?'#776644':'#553322');
+                }
+                // Endosomes
+                for (var edi = 0; edi < g.endosomes.length; edi++) {
+                    var en = g.endosomes[edi];
+                    var eP = (tEn * en.speed + en.phase) % 1.0;
+                    var eOR = bR - 0.3, eIR = g.lysoDist * 0.8;
+                    var edR = eOR - eP * (eOR - eIR);
+                    var edA = en.memAngle + eP * 0.3;
+                    var edC = eP < 0.2 ? '#7733aa' : en.color;
+                    set(Math.round(g.x+Math.cos(edA)*edR), Math.round(g.y+Math.sin(edA)*edR), edC);
+                    if (eP < 0.12) set(Math.round(g.x+Math.cos(en.memAngle)*bR), Math.round(g.y+Math.sin(en.memAngle)*bR), '#cc88ee');
+                }
+                // Array orbiters: autophagosomes, proteasomes, lipid droplets
+                var orbArrays = [
+                    [g.autophagosomes, tAu, 1.4, function(o,p,fi2) {
+                        var lyCA = g.lysoAngle + g.lysoSpeed * tLy;
+                        var lx = g.x+Math.cos(lyCA)*g.lysoDist, ly = g.y+Math.sin(lyCA)*g.lysoDist;
+                        var ox = g.x+Math.cos(o.angle+o.speed*tAu)*o.dist, oy = g.y+Math.sin(o.angle+o.speed*tAu)*o.dist;
+                        return Math.sqrt((ox-lx)*(ox-lx)+(oy-ly)*(oy-ly)) < 1.5 ? '#ddbb44' : (p>0?o.matureColor:o.color);
+                    }],
+                    [g.proteasomes, tPr, 1.8, function(o,p) { return p>0.3?o.activeColor:o.color; }],
+                    [g.lipidDroplets, tLi, 1.6, function(o,p) { return p>0.2?o.coreColor:o.shellColor; }],
+                ];
+                for (var oi = 0; oi < orbArrays.length; oi++) {
+                    var arr = orbArrays[oi][0], tV = orbArrays[oi][1], pM = orbArrays[oi][2], cFn = orbArrays[oi][3];
+                    if (!arr) continue;
+                    for (var oj = 0; oj < arr.length; oj++) {
+                        var o = arr[oj], oA = o.angle + o.speed * tV;
+                        var ox = Math.round(g.x+Math.cos(oA)*o.dist), oy = Math.round(g.y+Math.sin(oA)*o.dist);
+                        var oP = Math.sin(tV * pM + i * 2.1 + oj * 3.0);
+                        setR(ox, oy, cFn(o, oP, oj), g.x, g.y, bR);
+                    }
+                }
+                // Exosomes: drift outward from cell body
+                var tExo = (now % 16000) / 16000;
+                if (g.exosomes) {
+                    for (var exi = 0; exi < g.exosomes.length; exi++) {
+                        var exo = g.exosomes[exi];
+                        var exP = (tExo * exo.speed + exo.phase) % 1.0;
+                        var exDR = g.bodyRadius + 0.5 + exP * 3.5;
+                        var exA = exo.releaseAngle + exP * (exo.driftAngle - exo.releaseAngle) * 0.3;
+                        var exPulse = Math.sin(tExo * 2 * Math.PI * 4 + exi * 2.1 + i * 1.7);
+                        set(Math.round(g.x+Math.cos(exA)*exDR), Math.round(g.y+Math.sin(exA)*exDR), exPulse>0?'#ddaaee':exo.color);
+                    }
+                }
+                // Apical microvilli: actin-cored projections on the free surface
+                // Sway gently with a slow sinusoidal oscillation
+                var tMV2 = (now % 8000) / 8000 * 2 * Math.PI;
+                if (g.microvilli) {
+                    for (var mvi2 = 0; mvi2 < g.microvilli.length; mvi2++) {
+                        var mv = g.microvilli[mvi2];
+                        var mvSway = Math.sin(tMV2 + mv.phase) * 0.08;
+                        var mvBaseA = mv.angle + mvSway;
+                        var mvBaseX = g.x + Math.cos(mvBaseA) * bR;
+                        var mvBaseY = g.y + Math.sin(mvBaseA) * bR;
+                        for (var ml = 0; ml <= Math.ceil(mv.length * 2); ml++) {
+                            var mr = ml * 0.5; if (mr > mv.length) break;
+                            var mx = Math.round(mvBaseX + Math.cos(mvBaseA) * mr);
+                            var my = Math.round(mvBaseY + Math.sin(mvBaseA) * mr);
+                            var isTip2 = mr > mv.length - 0.5;
+                            var mPulse = Math.sin(tMV2 * 1.3 + i * 1.7 + mvi2 * 2.0 + mr * 1.5);
+                            set(mx, my, isTip2 ? (mPulse > 0 ? '#ddbb88' : '#ccaa77') : (mPulse > 0.3 ? '#bb9966' : '#aa8855'));
+                        }
+                    }
+                }
+            }
+            // Tunneling nanotubes
+            var tTNT = (now % 10000) / 10000;
+            for (var ti = 0; ti < tunnelingNanotubes.length; ti++) {
+                var tnt = tunnelingNanotubes[ti];
+                var gF = granddaughterNuclei[tnt.from], gT = granddaughterNuclei[tnt.to];
+                var tdx = gT.x - gF.x, tdy = gT.y - gF.y;
+                var tLen = Math.sqrt(tdx*tdx + tdy*tdy), tSt = Math.ceil(tLen);
+                var cargo = ((tTNT + tnt.phase) % 1.0);
+                cargo = cargo < 0.5 ? cargo * 2 : (1.0 - cargo) * 2;
+                for (var ts = 0; ts <= tSt; ts++) {
+                    var tf = ts / tSt;
+                    var tx = Math.round(gF.x + tdx * tf), ty = Math.round(gF.y + tdy * tf);
+                    var dF = Math.sqrt((tx-gF.x)*(tx-gF.x)+(ty-gF.y)*(ty-gF.y));
+                    var dT = Math.sqrt((tx-gT.x)*(tx-gT.x)+(ty-gT.y)*(ty-gT.y));
+                    if (dF >= gF.bodyRadius && dT >= gT.bodyRadius) {
+                        set(tx, ty, Math.abs(tf - cargo) < 0.12 ? tnt.cargoColor : tnt.tubeColor);
+                    }
+                }
+            }
+            // Calcium waves
+            var tCa = (now % 14000) / 14000;
+            for (var ci = 0; ci < calciumWaves.length; ci++) {
+                var cw = calciumWaves[ci], caP = (tCa + cw.phase) % 1.0;
+                var cx2 = Math.round(cw.from.x + (cw.to.x - cw.from.x) * caP);
+                var cy2 = Math.round(cw.from.y + (cw.to.y - cw.from.y) * caP);
+                var cPulse = Math.sin(tCa * 2 * Math.PI * 3 + ci * 1.5);
+                set(cx2, cy2, cPulse > 0 ? cw.color : cw.dimColor);
+            }
+            // Basal lamina with interpolation
+            var tBL = (now % 12000) / 12000;
+            for (var bi = 0; bi < basalLamina.length; bi++) {
+                var bA = basalLamina[bi];
+                var bP = Math.sin(tBL * 2 * Math.PI * 1.5 + bA.phase);
+                set(bA.x, bA.y, bP > 0.2 ? '#c4a070' : '#b09060');
+                if (bi < basalLamina.length - 1) {
+                    var bB = basalLamina[bi + 1];
+                    var bdx = bB.x - bA.x, bdy = bB.y - bA.y;
+                    var bSt = Math.max(Math.abs(bdx), Math.abs(bdy));
+                    for (var bs = 1; bs < bSt; bs++) {
+                        var bSh = Math.sin(tBL * 2 * Math.PI * 2 + bA.phase + bs * 0.6);
+                        set(Math.round(bA.x+bdx*bs/bSt), Math.round(bA.y+bdy*bs/bSt), bSh>0.3?'#d4b080':'#b89868');
+                    }
+                }
+            }
+            // Hemidesmosomes: integrin α6β4 anchors connecting nearest granddaughter to basal lamina
+            // Thin filament bridges from cell membrane to ECM — completes tissue-substrate adhesion
+            var tHD = (now % 10000) / 10000;
+            for (var hi = 0; hi < granddaughterNuclei.length; hi++) {
+                var hg = granddaughterNuclei[hi];
+                // Find nearest basal lamina point
+                var minD = 999, nearBL = null;
+                for (var hbi = 0; hbi < basalLamina.length; hbi++) {
+                    var hd = Math.sqrt((hg.x-basalLamina[hbi].x)*(hg.x-basalLamina[hbi].x)+(hg.y-basalLamina[hbi].y)*(hg.y-basalLamina[hbi].y));
+                    if (hd < minD) { minD = hd; nearBL = basalLamina[hbi]; }
+                }
+                if (nearBL && minD < 12) {
+                    // Draw integrin filament from cell body edge toward lamina
+                    var hAngle = Math.atan2(nearBL.y - hg.y, nearBL.x - hg.x);
+                    var hStartR = hg.bodyRadius + 0.3;
+                    var hLen = Math.min(minD - hg.bodyRadius - 1, 3);
+                    if (hLen > 0) {
+                        for (var hl = 0; hl <= Math.ceil(hLen); hl++) {
+                            var hr = hStartR + hl;
+                            var hx = Math.round(hg.x + Math.cos(hAngle) * hr);
+                            var hy = Math.round(hg.y + Math.sin(hAngle) * hr);
+                            var hP = Math.sin(tHD * 2 * Math.PI * 1.8 + hi * 1.5 + hl * 0.9);
+                            set(hx, hy, hP > 0.2 ? '#c4a882' : '#a89070');
+                        }
+                        // Integrin plaque: bright dot at cell membrane attachment site
+                        var ipx = Math.round(hg.x + Math.cos(hAngle) * hStartR);
+                        var ipy = Math.round(hg.y + Math.sin(hAngle) * hStartR);
+                        var ipP = Math.sin(tHD * 2 * Math.PI * 2.5 + hi * 2.0);
+                        set(ipx, ipy, ipP > 0 ? '#eebb66' : '#ccaa55');
+                    }
+                }
+            }
+            return px;
+        }
+
         function draw() {
             ctx.clearRect(0, 0, size, size);
 
@@ -1670,6 +1956,9 @@
 
             var dA = drawCell(cellA, t, tOrbit, tCilia, tChromatin, tGrowth);
             var dB = drawCell(cellB, t, tOrbit, tCilia, tChromatin, tGrowth + 0.5);
+
+            // Precomputed granddaughter + extracellular feature pixels
+            var gdPx = buildGDPixels(Date.now());
 
             // Nutrient positions — nutrients drift but are attracted toward nearby cells
             var nutrientPx = {};
@@ -2060,447 +2349,10 @@
                                 }
                             }
                         }
-                        // Granddaughter cells: cell bodies forming around nuclei
-                        if (!drawn) {
-                            var tReact = (Date.now() % 12000) / 12000;
-                            var tNucReasm = (Date.now() % 9000) / 9000;
-                            var tGDOrbit = (Date.now() % 11000) / 11000 * 2 * Math.PI;
-                            for (var gni = 0; gni < granddaughterNuclei.length && !drawn; gni++) {
-                                var gn = granddaughterNuclei[gni];
-                                var gnDx = x - gn.x;
-                                var gnDy = y - gn.y;
-                                var gnDist = Math.sqrt(gnDx * gnDx + gnDy * gnDy);
-                                // Cell body membrane: thin shell forming around each granddaughter
-                                var bodyR = gn.bodyRadius;
-                                var bodyBreath = Math.sin(tNucReasm * 2 * Math.PI * 0.7 + gni * 1.1) * 0.15;
-                                var effBodyR = bodyR + bodyBreath;
-                                if (gnDist <= effBodyR) {
-                                    // Membrane shell
-                                    if (gnDist > effBodyR - 0.7) {
-                                        color = gn.membraneColor;
-                                        drawn = true;
-                                    }
-                                    // Inherited mitochondrion orbiting in thin cytoplasm
-                                    if (!drawn) {
-                                        var mitoA = gn.mitoAngle + gn.mitoSpeed * tGDOrbit;
-                                        var mitoR = effBodyR * 0.65;
-                                        var mitoX = Math.round(gn.x + Math.cos(mitoA) * mitoR);
-                                        var mitoY = Math.round(gn.y + Math.sin(mitoA) * mitoR);
-                                        if (x === mitoX && y === mitoY) {
-                                            color = '#44aa66';
-                                            drawn = true;
-                                        }
-                                    }
-                                }
-                                // Nuclear envelope: small ring around each granddaughter nucleus
-                                var gnEnvR = 1.3 + gn.nucleolusSize * 0.5;
-                                var envWidth = 0.6;
-                                if (!drawn && Math.abs(gnDist - gnEnvR) < envWidth) {
-                                    var envPulse = Math.sin(tNucReasm * 2 * Math.PI * 2 + gni * 1.4 + Math.atan2(gnDy, gnDx) * 3);
-                                    color = envPulse > 0 ? '#eebb55' : '#ddaa44';
-                                    drawn = true;
-                                }
-                                // Nucleolus: dense rDNA transcription center at nucleus core
-                                if (!drawn && gnDist < gn.nucleolusSize + 0.3) {
-                                    var nuclPulse = Math.sin(tNucReasm * 2 * Math.PI * 1.8 + gni * 2.3);
-                                    color = nuclPulse > 0.2 ? '#ff9933' : '#dd7722';
-                                    drawn = true;
-                                }
-                                // Nuclear speckles: SC35 splicing factor domains
-                                if (!drawn) {
-                                    for (var spi = 0; spi < gn.speckles.length && !drawn; spi++) {
-                                        var sp = gn.speckles[spi];
-                                        var spX = Math.round(gn.x + Math.cos(sp.angle) * sp.dist);
-                                        var spY = Math.round(gn.y + Math.sin(sp.angle) * sp.dist);
-                                        if (x === spX && y === spY) {
-                                            var spPulse = Math.sin(tNucReasm * 2 * Math.PI * 1.4 + gni * 2.1 + spi * 3.0);
-                                            color = spPulse > 0 ? '#99eebb' : sp.color;
-                                            drawn = true;
-                                        }
-                                    }
-                                }
-                                // Cajal body: small nuclear body for snRNP maturation
-                                if (!drawn) {
-                                    var cbR = 0.8;
-                                    var cbX = gn.x + Math.round(Math.cos(gn.cajalAngle) * cbR);
-                                    var cbY = gn.y + Math.round(Math.sin(gn.cajalAngle) * cbR);
-                                    if (x === cbX && y === cbY) {
-                                        var cbPulse = Math.sin(tNucReasm * 2 * Math.PI * 2.5 + gni * 1.9);
-                                        color = cbPulse > 0 ? '#cc88ff' : '#aa66dd';
-                                        drawn = true;
-                                    }
-                                }
-                                // Rough ER stubs: short cisternae radiating from nuclear envelope
-                                if (!drawn && gn.erStubs) {
-                                    var tER = (Date.now() % 7000) / 7000;
-                                    for (var eri = 0; eri < gn.erStubs.length && !drawn; eri++) {
-                                        var erStub = gn.erStubs[eri];
-                                        var erStartR = gnEnvR + 0.3;
-                                        var erEndR = erStartR + erStub.length;
-                                        // Check if pixel lies on the ER segment
-                                        for (var erl = 0; erl <= Math.ceil(erStub.length * 2); erl++) {
-                                            var erR = erStartR + erl * 0.5;
-                                            if (erR > erEndR) break;
-                                            var erPx = Math.round(gn.x + Math.cos(erStub.angle) * erR);
-                                            var erPy = Math.round(gn.y + Math.sin(erStub.angle) * erR);
-                                            if (x === erPx && y === erPy) {
-                                                var erPulse = Math.sin(tER * 2 * Math.PI + eri * 2.5 + erl * 0.8);
-                                                color = erPulse > 0 ? '#996644' : '#884422';
-                                                drawn = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                // Golgi ministack: 2-pixel cisterna near ER exit site
-                                if (!drawn) {
-                                    var golgX = Math.round(gn.x + Math.cos(gn.golgiAngle) * gn.golgiDist);
-                                    var golgY = Math.round(gn.y + Math.sin(gn.golgiAngle) * gn.golgiDist);
-                                    if (x === golgX && y === golgY) {
-                                        var tGolg = (Date.now() % 8000) / 8000;
-                                        var golgPulse = Math.sin(tGolg * 2 * Math.PI * 1.5 + gni * 2.0);
-                                        color = golgPulse > 0 ? '#ddaa55' : '#cc9944';
-                                        drawn = true;
-                                    }
-                                    // Second cisterna pixel offset perpendicular
-                                    var golg2X = Math.round(gn.x + Math.cos(gn.golgiAngle + 0.5) * (gn.golgiDist + 0.4));
-                                    var golg2Y = Math.round(gn.y + Math.sin(gn.golgiAngle + 0.5) * (gn.golgiDist + 0.4));
-                                    if (!drawn && x === golg2X && y === golg2Y) {
-                                        color = '#ccaa55';
-                                        drawn = true;
-                                    }
-                                }
-                                // Free ribosomes (polyribosomes): small dots pulsing with translation
-                                if (!drawn && gn.freeRibosomes) {
-                                    var tRiboFree = (Date.now() % 5000) / 5000;
-                                    for (var fri = 0; fri < gn.freeRibosomes.length && !drawn; fri++) {
-                                        var fr = gn.freeRibosomes[fri];
-                                        var frX = Math.round(gn.x + Math.cos(fr.angle) * fr.dist);
-                                        var frY = Math.round(gn.y + Math.sin(fr.angle) * fr.dist);
-                                        if (x === frX && y === frY) {
-                                            var frPulse = Math.sin(tRiboFree * 2 * Math.PI * 1.8 + fr.phase);
-                                            // Brightens during active translation, dims between rounds
-                                            color = frPulse > 0.2 ? '#776644' : '#553322';
-                                            drawn = true;
-                                        }
-                                    }
-                                }
-                                // Peroxisome: orbits slowly in cytoplasm, catalase flicker
-                                if (!drawn) {
-                                    var tPeroxGD = (Date.now() % 11000) / 11000 * 2 * Math.PI;
-                                    var pxAngle = gn.peroxAngle + gn.peroxSpeed * tPeroxGD;
-                                    var pxX = Math.round(gn.x + Math.cos(pxAngle) * gn.peroxDist);
-                                    var pxY = Math.round(gn.y + Math.sin(pxAngle) * gn.peroxDist);
-                                    if (x === pxX && y === pxY) {
-                                        var pxPulse = Math.sin(tPeroxGD * 1.5 + gni * 2.0);
-                                        color = pxPulse > 0 ? '#77bb88' : '#55aa77';
-                                        drawn = true;
-                                    }
-                                }
-                                // Lysosome: acidic vesicle orbiting in cytoplasm, purple glow
-                                if (!drawn) {
-                                    var tLysoGD = (Date.now() % 13000) / 13000 * 2 * Math.PI;
-                                    var lyAngle = gn.lysoAngle + gn.lysoSpeed * tLysoGD;
-                                    var lyX = Math.round(gn.x + Math.cos(lyAngle) * gn.lysoDist);
-                                    var lyY = Math.round(gn.y + Math.sin(lyAngle) * gn.lysoDist);
-                                    if (x === lyX && y === lyY) {
-                                        var lyPulse = Math.sin(tLysoGD * 1.3 + gni * 1.8);
-                                        color = lyPulse > 0 ? '#9966bb' : '#8855aa';
-                                        drawn = true;
-                                    }
-                                }
-                                // Early endosomes: vesicles pinch from membrane, traffic inward toward lysosomes
-                                if (!drawn && gn.endosomes) {
-                                    var tEndoGD = (Date.now() % 9000) / 9000;
-                                    for (var edi = 0; edi < gn.endosomes.length && !drawn; edi++) {
-                                        var endo = gn.endosomes[edi];
-                                        // Progress: 0=at membrane (coated pit), 1=near lysosome (matured)
-                                        var edProgress = (tEndoGD * endo.speed + endo.phase) % 1.0;
-                                        // Vesicle travels from membrane inward toward cell center
-                                        var edOutR = effBodyR - 0.3; // starts at membrane
-                                        var edInR = gn.lysoDist * 0.8; // ends near lysosome orbit
-                                        var edR = edOutR - edProgress * (edOutR - edInR);
-                                        // Angle curves slightly as vesicle is sorted along microtubules
-                                        var edAngle = endo.memAngle + edProgress * 0.3;
-                                        var edX = Math.round(gn.x + Math.cos(edAngle) * edR);
-                                        var edY = Math.round(gn.y + Math.sin(edAngle) * edR);
-                                        if (x === edX && y === edY) {
-                                            // Coated pit at membrane is darker, brightens as early endosome matures
-                                            var edPulse = Math.sin(tEndoGD * 2 * Math.PI + edi * 2.0 + gni * 1.5);
-                                            color = edProgress < 0.2 ? '#7733aa' : (edPulse > 0 ? '#bb66dd' : endo.color);
-                                            drawn = true;
-                                        }
-                                        // Clathrin coat flash at membrane when pit forms
-                                        if (!drawn && edProgress < 0.12) {
-                                            var pitGDX = Math.round(gn.x + Math.cos(endo.memAngle) * effBodyR);
-                                            var pitGDY = Math.round(gn.y + Math.sin(endo.memAngle) * effBodyR);
-                                            if (x === pitGDX && y === pitGDY) {
-                                                color = '#cc88ee';
-                                                drawn = true;
-                                            }
-                                        }
-                                    }
-                                }
-                                // Multivesicular body (MVB): late endosome with intraluminal vesicles
-                                // Dark purple body with brighter internal vesicle dots
-                                if (!drawn) {
-                                    var tMVB = (Date.now() % 14000) / 14000 * 2 * Math.PI;
-                                    var mvbA = gn.mvbAngle + gn.mvbSpeed * tMVB;
-                                    var mvbX = Math.round(gn.x + Math.cos(mvbA) * gn.mvbDist);
-                                    var mvbY = Math.round(gn.y + Math.sin(mvbA) * gn.mvbDist);
-                                    if (x === mvbX && y === mvbY) {
-                                        // MVB body pulses as intraluminal vesicles accumulate
-                                        var mvbPulse = Math.sin(tMVB * 1.5 + gni * 2.3);
-                                        color = mvbPulse > 0 ? '#9955bb' : '#7744aa';
-                                        drawn = true;
-                                    }
-                                }
-                                // Autophagosome: double-membrane vesicle orbiting between ER and lysosome
-                                // Green-brown body pulses as it engulfs cargo, brightens near lysosome fusion
-                                if (!drawn && gn.autophagosomes) {
-                                    var tAutoGD = (Date.now() % 15000) / 15000 * 2 * Math.PI;
-                                    for (var api = 0; api < gn.autophagosomes.length && !drawn; api++) {
-                                        var aph = gn.autophagosomes[api];
-                                        var aphAngle = aph.angle + aph.speed * tAutoGD;
-                                        var aphX = Math.round(gn.x + Math.cos(aphAngle) * aph.dist);
-                                        var aphY = Math.round(gn.y + Math.sin(aphAngle) * aph.dist);
-                                        if (x === aphX && y === aphY) {
-                                            // Maturation pulse: brightens as autophagosome approaches lysosome orbit
-                                            var aphPulse = Math.sin(tAutoGD * 1.4 + gni * 2.1 + api * 3.0);
-                                            // Check proximity to lysosome for fusion flash
-                                            var tLysoCheck = (Date.now() % 13000) / 13000 * 2 * Math.PI;
-                                            var lyCheckAngle = gn.lysoAngle + gn.lysoSpeed * tLysoCheck;
-                                            var lyCheckX = gn.x + Math.cos(lyCheckAngle) * gn.lysoDist;
-                                            var lyCheckY = gn.y + Math.sin(lyCheckAngle) * gn.lysoDist;
-                                            var fusionDist = Math.sqrt((aphX - lyCheckX) * (aphX - lyCheckX) + (aphY - lyCheckY) * (aphY - lyCheckY));
-                                            if (fusionDist < 1.5) {
-                                                // Autophagolysosome fusion: bright amber flash
-                                                color = '#ddbb44';
-                                            } else {
-                                                color = aphPulse > 0 ? aph.matureColor : aph.color;
-                                            }
-                                            drawn = true;
-                                        }
-                                    }
-                                }
-                                // Proteasome: 26S complex orbits in cytoplasm, flashes when degrading substrates
-                                // Ubiquitinated proteins glow briefly as they're unfolded and threaded into the barrel
-                                if (!drawn && gn.proteasomes) {
-                                    var tProteaGD = (Date.now() % 11000) / 11000 * 2 * Math.PI;
-                                    for (var prti = 0; prti < gn.proteasomes.length && !drawn; prti++) {
-                                        var prt = gn.proteasomes[prti];
-                                        var prtAngle = prt.angle + prt.speed * tProteaGD;
-                                        var prtX = Math.round(gn.x + Math.cos(prtAngle) * prt.dist);
-                                        var prtY = Math.round(gn.y + Math.sin(prtAngle) * prt.dist);
-                                        if (x === prtX && y === prtY) {
-                                            var prtDist = Math.sqrt((prtX - gn.x) * (prtX - gn.x) + (prtY - gn.y) * (prtY - gn.y));
-                                            if (prtDist < effBodyR - 0.3) {
-                                                // Pulse: active degradation flashes — substrate being unfolded
-                                                var prtPulse = Math.sin(tProteaGD * 1.8 + gni * 2.4 + prti * 3.2);
-                                                color = prtPulse > 0.3 ? prt.activeColor : prt.color;
-                                                drawn = true;
-                                            }
-                                        }
-                                    }
-                                }
-                                // Lipid droplets: golden energy stores orbiting in cytoplasm
-                                // Monolayer shell flickers as lipases mobilize fatty acids for beta-oxidation
-                                if (!drawn && gn.lipidDroplets) {
-                                    var tLipidGD = (Date.now() % 17000) / 17000 * 2 * Math.PI;
-                                    for (var ldi = 0; ldi < gn.lipidDroplets.length && !drawn; ldi++) {
-                                        var ld = gn.lipidDroplets[ldi];
-                                        var ldAngle = ld.angle + ld.speed * tLipidGD;
-                                        var ldX = Math.round(gn.x + Math.cos(ldAngle) * ld.dist);
-                                        var ldY = Math.round(gn.y + Math.sin(ldAngle) * ld.dist);
-                                        if (x === ldX && y === ldY) {
-                                            var ldDist = Math.sqrt((ldX - gn.x) * (ldX - gn.x) + (ldY - gn.y) * (ldY - gn.y));
-                                            if (ldDist < effBodyR - 0.3) {
-                                                // Lipase activity pulse: bright when mobilizing fatty acids
-                                                var ldPulse = Math.sin(tLipidGD * 1.6 + gni * 2.5 + ldi * 2.8);
-                                                color = ldPulse > 0.2 ? ld.coreColor : ld.shellColor;
-                                                drawn = true;
-                                            }
-                                        }
-                                    }
-                                }
-                                // Centrosome: single centriole pair near nucleus, bright yellow dot
-                                // Establishes MTOC — 2 short microtubule rays radiate outward
-                                if (!drawn) {
-                                    var centX = Math.round(gn.x + Math.cos(gn.centrosomeAngle) * gn.centrosomeDist);
-                                    var centY = Math.round(gn.y + Math.sin(gn.centrosomeAngle) * gn.centrosomeDist);
-                                    if (x === centX && y === centY) {
-                                        var tCentGD = (Date.now() % 9000) / 9000;
-                                        var centPulse = Math.sin(tCentGD * 2 * Math.PI * 1.5 + gni * 2.2);
-                                        color = centPulse > 0 ? '#eedd55' : '#ddcc44';
-                                        drawn = true;
-                                    }
-                                    // Two short microtubule rays from centrosome
-                                    if (!drawn) {
-                                        for (var mtri = 0; mtri < 2 && !drawn; mtri++) {
-                                            var mtrAngle = gn.centrosomeAngle + (mtri === 0 ? 0.8 : -0.8);
-                                            var mtrX = Math.round(centX + Math.cos(mtrAngle) * 1.0);
-                                            var mtrY = Math.round(centY + Math.sin(mtrAngle) * 1.0);
-                                            if (x === mtrX && y === mtrY) {
-                                                var mtrDist = Math.sqrt((mtrX - gn.x) * (mtrX - gn.x) + (mtrY - gn.y) * (mtrY - gn.y));
-                                                if (mtrDist < effBodyR - 0.3) {
-                                                    color = '#556677';
-                                                    drawn = true;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                // Primary cilium: single sensory antenna extending from centrosome outward
-                                // 9+0 axoneme (non-motile), sways gently in extracellular medium
-                                if (!drawn && gn.ciliumLength) {
-                                    var tCilGD = (Date.now() % 6000) / 6000 * 2 * Math.PI;
-                                    var cilSway = Math.sin(tCilGD + gn.ciliumPhase) * 0.12;
-                                    var cilBaseAngle = gn.ciliumAngle + cilSway;
-                                    // Cilium extends from centrosome position outward through membrane
-                                    var cilBaseX = gn.x + Math.cos(gn.centrosomeAngle) * gn.centrosomeDist;
-                                    var cilBaseY = gn.y + Math.sin(gn.centrosomeAngle) * gn.centrosomeDist;
-                                    for (var cil = 0; cil <= Math.ceil(gn.ciliumLength * 2); cil++) {
-                                        var cilR = cil * 0.5;
-                                        if (cilR > gn.ciliumLength) break;
-                                        var cilPx = Math.round(cilBaseX + Math.cos(cilBaseAngle) * cilR);
-                                        var cilPy = Math.round(cilBaseY + Math.sin(cilBaseAngle) * cilR);
-                                        if (x === cilPx && y === cilPy) {
-                                            // Tip bulges with signaling receptors (IFT particles)
-                                            var isTip = cilR > gn.ciliumLength - 0.6;
-                                            var cilPulse = Math.sin(tCilGD * 1.5 + gni * 2.0 + cilR * 1.2);
-                                            if (isTip) {
-                                                // Ciliary tip: IFT particles accumulate, brighter
-                                                color = cilPulse > 0 ? '#eedd88' : '#ddcc66';
-                                            } else {
-                                                // Axoneme shaft: tubulin doublets
-                                                color = cilPulse > 0.3 ? '#bbaa77' : '#aa9966';
-                                            }
-                                            drawn = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                // Cytoplasm fill within body
-                                if (!drawn && gnDist <= effBodyR) {
-                                    color = gn.cytoColor;
-                                    drawn = true;
-                                }
-                                // Transcription aura: mRNA radiating outward from cell body
-                                if (!drawn) {
-                                    var auraR = effBodyR + 0.5 + gn.reactivation * 1.5;
-                                    var auraPulse = Math.sin(tReact * 2 * Math.PI * 1.5 + gni * 1.57);
-                                    var auraWidth = 0.7;
-                                    if (Math.abs(gnDist - auraR) < auraWidth && auraPulse > 0) {
-                                        color = auraPulse > 0.5 ? '#ffdd88' : '#eebb66';
-                                        drawn = true;
-                                    }
-                                }
-                            }
-                        }
-                        // Tunneling nanotubes: thin bridges between adjacent granddaughter cells
-                        if (!drawn) {
-                            var tTNT = (Date.now() % 10000) / 10000;
-                            for (var tntI = 0; tntI < tunnelingNanotubes.length && !drawn; tntI++) {
-                                var tnt = tunnelingNanotubes[tntI];
-                                var gnFrom = granddaughterNuclei[tnt.from];
-                                var gnTo = granddaughterNuclei[tnt.to];
-                                // Tube path: line of pixels between the two granddaughter cell bodies
-                                var tntDx = gnTo.x - gnFrom.x, tntDy = gnTo.y - gnFrom.y;
-                                var tntLen = Math.sqrt(tntDx * tntDx + tntDy * tntDy);
-                                var tntSteps = Math.ceil(tntLen);
-                                for (var tntS = 0; tntS <= tntSteps; tntS++) {
-                                    var tntFrac = tntS / tntSteps;
-                                    var tntPx = Math.round(gnFrom.x + tntDx * tntFrac);
-                                    var tntPy = Math.round(gnFrom.y + tntDy * tntFrac);
-                                    if (x === tntPx && y === tntPy) {
-                                        // Skip pixels inside cell bodies
-                                        var insideFrom = Math.sqrt((tntPx-gnFrom.x)*(tntPx-gnFrom.x)+(tntPy-gnFrom.y)*(tntPy-gnFrom.y)) < gnFrom.bodyRadius;
-                                        var insideTo = Math.sqrt((tntPx-gnTo.x)*(tntPx-gnTo.x)+(tntPy-gnTo.y)*(tntPy-gnTo.y)) < gnTo.bodyRadius;
-                                        if (!insideFrom && !insideTo) {
-                                            // Cargo vesicle shuttling along the tube
-                                            var cargoFrac = (tTNT + tnt.phase) % 1.0;
-                                            var cargoPos = cargoFrac < 0.5 ? cargoFrac * 2 : (1.0 - cargoFrac) * 2;
-                                            var isCargo = Math.abs(tntFrac - cargoPos) < 0.12;
-                                            color = isCargo ? tnt.cargoColor : tnt.tubeColor;
-                                            drawn = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        // Calcium waves: IP3-mediated Ca2+ pulses ripple between granddaughter nuclei
-                        if (!drawn) {
-                            var tCa = (Date.now() % 14000) / 14000;
-                            for (var cwi = 0; cwi < calciumWaves.length && !drawn; cwi++) {
-                                var cw = calciumWaves[cwi];
-                                var caProgress = (tCa + cw.phase) % 1.0;
-                                // Ca2+ wavefront position along the path
-                                var caX = cw.from.x + (cw.to.x - cw.from.x) * caProgress;
-                                var caY = cw.from.y + (cw.to.y - cw.from.y) * caProgress;
-                                var caDx = x - caX, caDy = y - caY;
-                                var caDist = Math.sqrt(caDx * caDx + caDy * caDy);
-                                if (caDist < 0.8) {
-                                    var caPulse = Math.sin(tCa * 2 * Math.PI * 3 + cwi * 1.5);
-                                    color = caPulse > 0 ? cw.color : cw.dimColor;
-                                    drawn = true;
-                                }
-                            }
-                        }
-                        // Exosomes: tiny extracellular vesicles released from MVB-membrane fusion
-                        // Drift outward from granddaughter cells, carrying cargo to neighbors
-                        if (!drawn) {
-                            var tExo = (Date.now() % 16000) / 16000;
-                            for (var exi = 0; exi < granddaughterNuclei.length && !drawn; exi++) {
-                                var exGn = granddaughterNuclei[exi];
-                                if (!exGn.exosomes) continue;
-                                for (var exj = 0; exj < exGn.exosomes.length && !drawn; exj++) {
-                                    var exo = exGn.exosomes[exj];
-                                    // Exosome progress: 0=just released from membrane, 1=reaching neighbor
-                                    var exProgress = (tExo * exo.speed + exo.phase) % 1.0;
-                                    // Start at cell body surface, drift outward along release angle
-                                    var exStartR = exGn.bodyRadius + 0.5;
-                                    var exDriftR = exStartR + exProgress * 3.5;
-                                    var exAngle = exo.releaseAngle + exProgress * (exo.driftAngle - exo.releaseAngle) * 0.3;
-                                    var exX = Math.round(exGn.x + Math.cos(exAngle) * exDriftR);
-                                    var exY = Math.round(exGn.y + Math.sin(exAngle) * exDriftR);
-                                    if (x === exX && y === exY) {
-                                        // Exosome flickers as it carries its cargo through the medium
-                                        var exPulse = Math.sin(tExo * 2 * Math.PI * 4 + exj * 2.1 + exi * 1.7);
-                                        color = exPulse > 0 ? '#ddaaee' : exo.color;
-                                        drawn = true;
-                                    }
-                                }
-                            }
-                        }
-                        // Basal lamina: collagen IV / laminin basement membrane arc
-                        // Interpolated line segments between anchor points, with crosslink pulses
-                        if (!drawn) {
-                            var tBL = (Date.now() % 12000) / 12000;
-                            for (var bli = 0; bli < basalLamina.length && !drawn; bli++) {
-                                var blA = basalLamina[bli];
-                                // Check if pixel is at this anchor point
-                                if (x === blA.x && y === blA.y) {
-                                    var blPulse = Math.sin(tBL * 2 * Math.PI * 1.5 + blA.phase);
-                                    color = blPulse > 0.2 ? '#c4a070' : '#b09060';
-                                    drawn = true;
-                                }
-                                // Interpolate between consecutive anchor points
-                                if (!drawn && bli < basalLamina.length - 1) {
-                                    var blB = basalLamina[bli + 1];
-                                    var blDx = blB.x - blA.x, blDy = blB.y - blA.y;
-                                    var blSteps = Math.max(Math.abs(blDx), Math.abs(blDy));
-                                    for (var bls = 1; bls < blSteps && !drawn; bls++) {
-                                        var blPx = Math.round(blA.x + blDx * bls / blSteps);
-                                        var blPy = Math.round(blA.y + blDy * bls / blSteps);
-                                        if (x === blPx && y === blPy) {
-                                            // Collagen IV crosslinking shimmer along the lamina
-                                            var blShimmer = Math.sin(tBL * 2 * Math.PI * 2 + blA.phase + bls * 0.6);
-                                            color = blShimmer > 0.3 ? '#d4b080' : '#b89868';
-                                            drawn = true;
-                                        }
-                                    }
-                                }
-                            }
+                        // Granddaughter cells + TNTs + calcium + exosomes + basal lamina + hemidesmosomes (precomputed)
+                        if (!drawn && gdPx[key]) {
+                            color = gdPx[key];
+                            drawn = true;
                         }
                         if (!drawn && kumSongPx[key]) {
                             color = kumSongPx[key];
