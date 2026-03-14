@@ -1487,36 +1487,16 @@
                 if(bcPh>0.4&&bcPh<0.6){var bcO=_s(tP*2*_P*3+i*1.3);
                 set(nd.x+_r(bcO*0.5),nd.y+_r(bcO*0.3),'#ee5555');}
             });
-            var tPeri = (now % 21000) / 21000;
-            for (var pci2 = 0; pci2 < capillaryPath.length; pci2 += 2) {
-                var pcCap = capillaryPath[pci2];
-                var periPh = tPeri * 2 * _P + pci2 * 1.3;
-                var periP = _s(periPh);
-                var periA = _a(16 - pcCap.y, 16 - pcCap.x);
-                var periX = _r(pcCap.x + _c(periA) * 1.2);
-                var periY = _r(pcCap.y + _s(periA) * 1.2);
-                if (inB(periX, periY)) set(periX, periY, periP > 0 ? '#bb7755' : '#995544');
-                for (var pw = 0; pw < 2; pw++) {
-                    var pwA = periA + _P / 2 * (pw === 0 ? 1 : -1);
-                    var pwSway = _s(periPh * 0.8 + pw * 2.5) * 0.12;
-                    var pwX = _r(pcCap.x + _c(pwA + pwSway) * 0.9);
-                    var pwY = _r(pcCap.y + _s(pwA + pwSway) * 0.9);
-                    var contractP = _s(periPh * 1.5 + pw * 1.8);
-                    if (inB(pwX, pwY)) set(pwX, pwY, contractP > 0.2 ? '#cc8866' : '#aa6644');
-                }
-                var pdgfPh = (tPeri * 2.5 + pci2 * 0.18) % 1.0;
-                if (pdgfPh < 0.4 && periP > -0.3) {
-                    var pdgfR = 0.3 + pdgfPh * 2.5;
-                    var pdgfX = _r(pcCap.x + _c(periA) * pdgfR);
-                    var pdgfY = _r(pcCap.y + _s(periA) * pdgfR);
-                    if (inB(pdgfX, pdgfY)) set(pdgfX, pdgfY, pdgfPh < 0.15 ? '#ffbb77' : '#ddaa66');
-                }
-                if (periP > 0.3) {
-                    var ang1X = _r(periX + _c(periA + _P) * 0.8);
-                    var ang1Y = _r(periY + _s(periA + _P) * 0.8);
-                    if (inB(ang1X, ang1Y)) set(ang1X, ang1Y, periP > 0.6 ? '#77ddbb' : '#55bb99');
-                }
-            }
+            var tPeri=(now%21000)/21000;
+            for(var pci2=0;pci2<capillaryPath.length;pci2+=2){var pcCap=capillaryPath[pci2],periPh=tPeri*2*_P+pci2*1.3,periP=_s(periPh),periA=_a(16-pcCap.y,16-pcCap.x);
+            var periX=_r(pcCap.x+_c(periA)*1.2),periY=_r(pcCap.y+_s(periA)*1.2);
+            if(inB(periX,periY))set(periX,periY,periP>0?'#bb7755':'#995544');
+            for(var pw=0;pw<2;pw++){var pwA=periA+_P/2*(pw===0?1:-1),pwSw=_s(periPh*0.8+pw*2.5)*0.12;
+            var pwX2=_r(pcCap.x+_c(pwA+pwSw)*0.9),pwY2=_r(pcCap.y+_s(pwA+pwSw)*0.9);
+            if(inB(pwX2,pwY2))set(pwX2,pwY2,_s(periPh*1.5+pw*1.8)>0.2?'#cc8866':'#aa6644');}
+            var pdgfPh=(tPeri*2.5+pci2*0.18)%1.0;
+            if(pdgfPh<0.4&&periP>-0.3){var pdgfR=0.3+pdgfPh*2.5,pdX=_r(pcCap.x+_c(periA)*pdgfR),pdY=_r(pcCap.y+_s(periA)*pdgfR);if(inB(pdX,pdY))set(pdX,pdY,pdgfPh<0.15?'#ffbb77':'#ddaa66');}
+            if(periP>0.3){var angX=_r(periX+_c(periA+_P)*0.8),angY=_r(periY+_s(periA+_P)*0.8);if(inB(angX,angY))set(angX,angY,periP>0.6?'#77ddbb':'#55bb99');}}
             var tNerv = (now % 15000) / 15000;
             var ganglia = [
                 {x:31,y:12, color:'#8866aa', axonEnd:{x:6,y:24}},
@@ -1588,33 +1568,17 @@
                 (now%18000)/18000, 2.5, 4.0, 0.3,
                 ['#cc7766','#aa6655','#885544','#dd8877','#996655','#774433'],
                 {thresh:0.6,rate:5.0,spread:2.3,gate:0.4,color:'#ffdd88',dy:false});
-            var tAP = (now % 20000) / 20000;
-            var auerbachGanglia = [
-                {x:31,y:7, color:'#9977bb', peerIdx:1},{x:29,y:15, color:'#8866aa', peerIdx:2},
-                {x:26,y:22, color:'#9977bb', peerIdx:3},{x:18,y:28, color:'#8866aa', peerIdx:0},
-            ];
-            for (var agi = 0; agi < auerbachGanglia.length; agi++) {
-                var ag = auerbachGanglia[agi];
-                var agP = _s(tAP * 2 * _P * 1.8 + agi * 2.5);
-                set(ag.x, ag.y, agP > 0 ? '#bbaadd' : ag.color);
-                var iccX = ag.x + (agi % 2 === 0 ? -1 : 0);
-                var iccY = ag.y + (agi % 2 === 0 ? 0 : -1);
-                var iccP = _s(tAP * 2 * _P * 3.0 + agi * 1.7);
-                set(iccX, iccY, iccP > 0.3 ? '#eebb55' : (iccP > -0.3 ? '#ccaa44' : '#aa8833'));
-                var peer = auerbachGanglia[ag.peerIdx];
-                var axdx = peer.x - ag.x, axdy = peer.y - ag.y;
-                var axSteps = _e(_q(axdx*axdx + axdy*axdy));
-                for (var axi2 = 1; axi2 < axSteps; axi2++) {
-                    var axF = axi2 / axSteps;
-                    var axX2 = _r(ag.x + axdx * axF), axY2 = _r(ag.y + axdy * axF);
-                    var isVar = (axi2 % 4 === 0);
-                    var axP2 = _s(tAP * 2 * _P * 1.3 + agi * 1.8 + axi2 * 0.5);
-                    if (isVar) { set(axX2, axY2, axP2 > 0 ? (axi2 % 8 === 0 ? '#dd8855' : '#6699cc') : '#887799'); }
-                    else { set(axX2, axY2, axP2 > 0.4 ? '#776699' : '#665588'); }
-                }
-                var swFrac = (tAP * 2.5 + agi * 0.25) % 1.0;
-                set(_r(ag.x + axdx * swFrac), _r(ag.y + axdy * swFrac), '#ffddaa');
-            }
+            var tAP=(now%20000)/20000;
+            var auerbachGanglia=[{x:31,y:7,color:'#9977bb',peerIdx:1},{x:29,y:15,color:'#8866aa',peerIdx:2},{x:26,y:22,color:'#9977bb',peerIdx:3},{x:18,y:28,color:'#8866aa',peerIdx:0}];
+            for(var agi=0;agi<auerbachGanglia.length;agi++){var ag=auerbachGanglia[agi],agP=_s(tAP*2*_P*1.8+agi*2.5);
+            set(ag.x,ag.y,agP>0?'#bbaadd':ag.color);
+            var iccX=ag.x+(agi%2===0?-1:0),iccY=ag.y+(agi%2===0?0:-1),iccP=_s(tAP*2*_P*3.0+agi*1.7);
+            set(iccX,iccY,iccP>0.3?'#eebb55':(iccP>-0.3?'#ccaa44':'#aa8833'));
+            var peer=auerbachGanglia[ag.peerIdx],axdx=peer.x-ag.x,axdy=peer.y-ag.y,axSteps=_e(_q(axdx*axdx+axdy*axdy));
+            for(var axi2=1;axi2<axSteps;axi2++){var axF=axi2/axSteps,axX2=_r(ag.x+axdx*axF),axY2=_r(ag.y+axdy*axF),isVar=(axi2%4===0),axP2=_s(tAP*2*_P*1.3+agi*1.8+axi2*0.5);
+            if(isVar)set(axX2,axY2,axP2>0?(axi2%8===0?'#dd8855':'#6699cc'):'#887799');
+            else set(axX2,axY2,axP2>0.4?'#776699':'#665588');}
+            set(_r(ag.x+axdx*((tAP*2.5+agi*0.25)%1.0)),_r(ag.y+axdy*((tAP*2.5+agi*0.25)%1.0)),'#ffddaa');}
             renderLayer([{x:31,y:6},{x:31,y:10},{x:31,y:14},{x:30,y:18},{x:28,y:21},{x:25,y:25},{x:21,y:28},{x:17,y:30},{x:12,y:30},{x:8,y:28},{x:5,y:25},{x:2,y:21}],
                 (now%22000)/22000, 2.0, 3.5, 0.25,
                 ['#bb5544','#884433','#663322','#cc6655','#774433','#553322'],
@@ -2142,6 +2106,36 @@
             if(vgP>0.4){var cgA=_a(vg.y-16,vg.x-16),cgR=1.8+vgP*0.4;
             set(_r(vg.x+_c(cgA)*cgR),_r(vg.y+_s(cgA)*cgR),vgP>0.7?'#ff9977':'#dd7755');}
             }
+            var tICC=(now%28000)/28000;
+            var iccCells=[{x:7,y:17,a:0.0,myIdx:0},{x:7,y:14,a:0.8,myIdx:1},{x:6,y:21,a:1.6,myIdx:2},{x:5,y:25,a:2.4,myIdx:3},{x:27,y:13,a:3.2,myIdx:4},{x:29,y:17,a:4.0,myIdx:5},{x:28,y:21,a:4.8,myIdx:6},{x:26,y:25,a:5.6,myIdx:7}];
+            var slowWavePhase=tICC*2*_P;
+            for(var icci=0;icci<iccCells.length;icci++){var icc=iccCells[icci],iccPh=slowWavePhase+icc.a,iccP=_s(iccPh);
+            var depol=iccP>0.3;
+            if(inB(icc.x,icc.y))set(icc.x,icc.y,depol?'#eedd33':'#aa9922');
+            for(var pri2=0;pri2<3;pri2++){var prA=pri2*2.09+iccPh*0.1+icci*0.5,prR=0.7+_s(iccPh*0.5+pri2*1.7)*0.3;
+            var prX=_r(icc.x+_c(prA)*prR),prY=_r(icc.y+_s(prA)*prR);
+            if(inB(prX,prY))set(prX,prY,depol?'#ddcc22':'#998811');}
+            if(icc.myIdx<myenteric.length){var myN=myenteric[icc.myIdx],gjA=_a(myN.y-icc.y,myN.x-icc.x),gjD=_q((myN.x-icc.x)*(myN.x-icc.x)+(myN.y-icc.y)*(myN.y-icc.y));
+            var gjPh=(tICC*2.0+icci*0.3)%1.0;if(gjPh<0.5&&depol){var gjR=gjD*gjPh/0.5;
+            set(_r(icc.x+_c(gjA)*gjR),_r(icc.y+_s(gjA)*gjR),gjPh<0.2?'#ffee66':'#ddcc44');}}
+            if(depol){var swA=_a(16-icc.y,16-icc.x),swProg=(tICC*1.5+icci*0.25)%1.0;
+            if(swProg<0.6){var swR=1.0+swProg*3.5;set(_r(icc.x+_c(swA)*swR),_r(icc.y+_s(swA)*swR),swProg<0.2?'#ffff88':swProg<0.4?'#eeee66':'#cccc44');}
+            if(iccP>0.7){var caOsc=(tICC*4.0+icci*0.2)%1.0;if(caOsc<0.3){var caR2=0.5+caOsc*2.0,caA2=iccPh*0.3+icci*1.1;
+            set(_r(icc.x+_c(caA2)*caR2),_r(icc.y+_s(caA2)*caR2),'#ffffaa');}}}}
+            var tPerist=(now%35000)/35000;
+            var periMusc=[{x:31,y:8},{x:30,y:12},{x:29,y:16},{x:27,y:20},{x:24,y:24},{x:20,y:27},{x:15,y:29},{x:10,y:28},{x:6,y:25},{x:3,y:21}];
+            var bolusPos=(tPerist*1.0)%1.0;
+            for(var mpi=0;mpi<periMusc.length;mpi++){var mp=periMusc[mpi],mpFrac=mpi/(periMusc.length-1);
+            var dTB=mpFrac-bolusPos,oralS=dTB<0&&dTB>-0.35,analS=dTB>0&&dTB<0.35;
+            var refA=_a(16-mp.y,16-mp.x);
+            if(oralS){var cStr=_x(0,1.0-_b(dTB)/0.35);
+            var cX=_r(mp.x+_c(refA)*(-0.3-cStr*0.5)),cY=_r(mp.y+_s(refA)*(-0.3-cStr*0.5));
+            if(inB(cX,cY))set(cX,cY,cStr>0.5?'#ffcc44':'#eebb33');
+            if(cStr>0.6){var spA2=refA+_P,spR2=0.8+cStr*0.4;set(_r(mp.x+_c(spA2)*spR2),_r(mp.y+_s(spA2)*spR2),'#ff9966');}}
+            if(analS){var rStr=_x(0,1.0-_b(dTB)/0.35);
+            var rX=_r(mp.x+_c(refA)*(0.3+rStr*0.5)),rY=_r(mp.y+_s(refA)*(0.3+rStr*0.5));
+            if(inB(rX,rY))set(rX,rY,rStr>0.5?'#88ddff':'#66bbdd');
+            if(rStr>0.4)set(_r(mp.x+_c(refA+0.3)*(0.6+rStr*0.3)),_r(mp.y+_s(refA+0.3)*(0.6+rStr*0.3)),'#aaeeff');}}
             var tFlum=(now%31000)/31000;var cox2Sites=[{x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9}];
             for(var ci3=0;ci3<cox2Sites.length;ci3++){var cox=cox2Sites[ci3],coxPh=tFlum*2*_P+cox.aa,coxP=_s(coxPh),flumAngle=tFlum*2*_P*1.3+ci3*1.57,flumR=1.5+_s(coxPh*0.7)*0.5,flumBound=_s(coxPh*1.5+ci3*0.8)>0.3;
             set(_r(cox.x+_c(flumAngle)*flumR),_r(cox.y+_s(flumAngle)*flumR),_s(coxPh*2.1+ci3)>0?'#33cccc':'#229999');
