@@ -401,10 +401,7 @@
             { memAngle: 5.0, targetAngle: 5.5, speed: 0.36, phase: 0.75, color: '#9944bb' },
         ];
 
-        // G2 PHASE: S phase complete, all replication forks terminated
-        // Genome fully duplicated — 4n DNA content achieved
-        cellA.replicationForks = [];
-        cellB.replicationForks = [];
+        // G2 PHASE: S phase complete, genome fully duplicated — 4n DNA content
 
         // Genome: "PETAR RAKOVI" encoded as nucleotide colors — the cell's genetic identity
         // Each letter maps to a base color; the sequence is read during S phase replication
@@ -430,10 +427,6 @@
         cellB.cyclins = [
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
         ];
-
-        // LATE TELOPHASE: cyclin B fully degraded — APC/C complete, CDK1 inactive
-        cellA.cyclinB = [];
-        cellB.cyclinB = [];
 
         // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
         // They reverse CDK1 effects on lamins, condensins, NPCs — restoring interphase state
@@ -465,10 +458,6 @@
             { orbitR: 2.4, baseAngle: 2.2, speed: -0.5, color: '#338877' },
         ];
 
-        // Wee1 kinase: fully degraded — proteasome has cleared it
-        cellA.wee1 = [];
-        cellB.wee1 = [];
-
         // E2F transcription factors: released from phospho-Rb, activate cyclin E and S-phase genes
         // Bright cyan particles orbit inside nucleus, triggering gene transcription
         cellA.e2fFactors = [
@@ -481,10 +470,6 @@
             { orbitR: 0.8, baseAngle: 3.9, speed: 0.85, color: '#33ddee' },
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
-
-        // G2: Cyclin E long gone (degraded in S phase), E2F silenced by cyclin A
-        cellA.cyclinE = [];
-        cellB.cyclinE = [];
 
         // Cyclin A-CDK2 dominant — 5 particles per cell, driving S/G2 transition
         cellA.cyclinA = [
@@ -502,45 +487,33 @@
             { orbitR: 2.0, baseAngle: 0.7, speed: 0.49, color: '#dd88aa' },
         ];
 
-        // G2: All S-phase replication machinery cleared
-        // PCNA clamps unloaded, topo II released, ligase done, chaperones dispersed
-        cellA.pcnaClamps = [];
-        cellB.pcnaClamps = [];
-        cellA.topoII = [];
-        cellB.topoII = [];
-        cellA.histoneChaperones = [];
-        cellB.histoneChaperones = [];
-        cellA.dnaLigase = [];
-        cellB.dnaLigase = [];
-
-        // LATE TELOPHASE: envelopes sealed, furrow deep, midbody forming
-        // PP1/PP2A have fully reversed CDK1 phosphorylations
-        // Lamins dephosphorylated → envelopes sealed, NPCs functional
-        // Chromosomes decondensing rapidly, approaching interphase chromatin
-        // Contractile ring constricting — cleavage furrow at ~60% ingression
-        // Midbody forming: centralspindlin + RhoA concentrate at intercellular bridge
+        // ABSCISSION: ESCRT-III spirals sever the intercellular bridge
+        // Envelopes sealed, NPCs functional, chromosomes nearly decondensed
+        // Furrow at ~85% ingression — ESCRT-III cut the membrane bridge
+        // Midbody released as Flemming body into extracellular space
         cellA.prophase = {
-            condensation: 0.35, // chromosomes decondensing rapidly toward interphase
+            condensation: 0.2, // chromosomes nearly fully decondensed
             pole1Target: { x: 18, y: 6 },
             pole2Target: { x: 24, y: 12 },
             prometaphase: true,
             metaphase: true,
             anaphase: true,
             lateAnaphase: true,
-            telophase: true, // late telophase: envelopes sealed, midbody assembling
+            telophase: true,
+            abscission: true, // ESCRT-III has severed the intercellular bridge
             spindleForming: true,
-            asterCount: 4, // asters mostly disassembled, only remnant MTs
-            laminPhospho: 0.03, // lamins fully dephosphorylated → envelopes sealed
-            npcDisassembly: 0.03, // NPCs fully reassembled and functional
+            asterCount: 3,
+            laminPhospho: 0.02, // lamins fully dephosphorylated
+            npcDisassembly: 0.02, // NPCs fully functional
             envelopeVesicles: false,
             congressProgress: 1.0,
             sacSatisfaction: 1.0,
             auroraBActive: false,
-            furrowInitiation: 0.60, // contractile ring deep — midbody forming at bridge
-            midbodyForming: true, // centralspindlin/PRC1/RhoA concentrate at cleavage site
+            furrowInitiation: 0.85, // furrow fully closed, bridge severed
+            midbodyForming: true,
         };
         cellB.prophase = {
-            condensation: 0.35,
+            condensation: 0.2,
             pole1Target: { x: 8, y: 20 },
             pole2Target: { x: 14, y: 26 },
             prometaphase: true,
@@ -548,15 +521,16 @@
             anaphase: true,
             lateAnaphase: true,
             telophase: true,
+            abscission: true,
             spindleForming: true,
-            asterCount: 4,
-            laminPhospho: 0.03,
-            npcDisassembly: 0.03,
+            asterCount: 3,
+            laminPhospho: 0.02,
+            npcDisassembly: 0.02,
             envelopeVesicles: false,
             congressProgress: 1.0,
             sacSatisfaction: 1.0,
             auroraBActive: false,
-            furrowInitiation: 0.60,
+            furrowInitiation: 0.85,
             midbodyForming: true,
         };
 
@@ -575,13 +549,7 @@
             { baseAngle: 6.0, speed: 0.11, color: '#dd7744' },
         ];
 
-        // TELOPHASE: securin and separase fully cleared — cohesin long cleaved
-        cellA.securin = [];
-        cellB.securin = [];
-        cellA.separase = [];
-        cellB.separase = [];
-
-        // Late telophase: envelopes sealed, chromosomes decondensing, midbody forming
+        // Abscission: envelopes sealed, chromosomes decondensing, midbody forming
         var growthRate = 0.8;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1449,149 +1417,7 @@
                 }
             }
 
-            // S PHASE COMPLETING: last 3 forks converging, replication nearly done
-            var replPixels = {};
-            if (cell.replicationForks && cell.separated) {
-                var tRepl = (t * 8000 / 4000) % 1.0;
-                var allChr = cell.chromatin.concat(cell.sisterChromatin || []);
-                for (var rfi = 0; rfi < cell.replicationForks.length; rfi++) {
-                    var rf = cell.replicationForks[rfi];
-                    var chrIdx = rf.chrIdx % allChr.length;
-                    var forkPulse = (tRepl * rf.speed + rf.phase) % 1.0;
-                    var forkActive = Math.sin(forkPulse * 2 * Math.PI);
-                    var chrR = 0.6 + Math.sin(tChromatin * 0.3 + chrIdx * 1.2) * 0.3;
-                    var chrAngle = chrIdx * 2 * Math.PI / allChr.length + tChromatin * 0.05;
-                    var chrX = cell.cx + Math.cos(chrAngle) * chrR;
-                    var chrY = cell.cy + Math.sin(chrAngle) * chrR;
-                    // Active forks: bright flashes as helicase unwinds and polymerase synthesizes
-                    if (forkActive > 0.0) {
-                        var forkSpread = 0.4 + forkActive * 0.3;
-                        var fPerpAngle = chrAngle + Math.PI / 2;
-                        var fx1 = Math.round(chrX + Math.cos(fPerpAngle) * forkSpread);
-                        var fy1 = Math.round(chrY + Math.sin(fPerpAngle) * forkSpread);
-                        if (fx1 >= 0 && fx1 < size && fy1 >= 0 && fy1 < size) {
-                            // Bright fork color — active replication
-                            replPixels[fx1 + ',' + fy1] = forkActive > 0.5 ? '#66eeff' : '#55ccdd';
-                        }
-                        // Second fork arm (bidirectional replication)
-                        var fx2 = Math.round(chrX - Math.cos(fPerpAngle) * forkSpread);
-                        var fy2 = Math.round(chrY - Math.sin(fPerpAngle) * forkSpread);
-                        if (fx2 >= 0 && fx2 < size && fy2 >= 0 && fy2 < size) {
-                            replPixels[fx2 + ',' + fy2] = forkActive > 0.5 ? '#55ddee' : '#44bbcc';
-                        }
-                    }
-                }
-            }
-
-            // PCNA sliding clamps: bright ring pixels at replication fork sites
-            var pcnaPixels = {};
-            if (cell.pcnaClamps && cell.separated) {
-                var tPCNA = (t * 8000 / 4500) % 1.0;
-                var allChrPCNA = cell.chromatin.concat(cell.sisterChromatin || []);
-                for (var pci = 0; pci < cell.pcnaClamps.length; pci++) {
-                    var pcna = cell.pcnaClamps[pci];
-                    var pcIdx = pcna.chrIdx % allChrPCNA.length;
-                    var pcAngle = pcIdx * 2 * Math.PI / allChrPCNA.length + tChromatin * 0.05;
-                    var pcR = 0.6 + Math.sin(tChromatin * 0.3 + pcIdx * 1.2) * 0.3;
-                    var pcX = cell.cx + Math.cos(pcAngle) * pcR;
-                    var pcY = cell.cy + Math.sin(pcAngle) * pcR;
-                    // PCNA ring: 3 pixels in a small ring around the fork site
-                    var pcRingPhase = tPCNA * 2 * Math.PI + pcna.orbitPhase * 6;
-                    for (var pri = 0; pri < 3; pri++) {
-                        var prAngle = pcRingPhase + pri * 2 * Math.PI / 3;
-                        var prX = Math.round(pcX + Math.cos(prAngle) * 0.6);
-                        var prY = Math.round(pcY + Math.sin(prAngle) * 0.6);
-                        if (prX >= 0 && prX < size && prY >= 0 && prY < size) {
-                            var pcnaPulse = Math.sin(tPCNA * 2 * Math.PI * 2 + pci * 1.3 + pri);
-                            pcnaPixels[prX + ',' + prY] = pcnaPulse > 0 ? pcna.color : '#66dd88';
-                        }
-                    }
-                }
-            }
-
-            // Topoisomerase II: bright flashes ahead of replication forks, relieving torsion
-            var topoPixels = {};
-            if (cell.topoII && cell.separated) {
-                var tTopo = (t * 8000 / 3800) % 1.0;
-                var allChrTopo = cell.chromatin.concat(cell.sisterChromatin || []);
-                for (var tpi = 0; tpi < cell.topoII.length; tpi++) {
-                    var topo = cell.topoII[tpi];
-                    var tpIdx = topo.chrIdx % allChrTopo.length;
-                    var tpAngle = tpIdx * 2 * Math.PI / allChrTopo.length + tChromatin * 0.05;
-                    var tpR = 0.6 + Math.sin(tChromatin * 0.3 + tpIdx * 1.2) * 0.3;
-                    // Topo II sits slightly ahead of the fork (larger radius offset)
-                    var tpX = Math.round(cell.cx + Math.cos(tpAngle + 0.15) * (tpR + 0.5));
-                    var tpY = Math.round(cell.cy + Math.sin(tpAngle + 0.15) * (tpR + 0.5));
-                    if (tpX >= 0 && tpX < size && tpY >= 0 && tpY < size) {
-                        var topoPulse = Math.sin(tTopo * 2 * Math.PI * 3 + topo.phase * 6);
-                        // Bright flash when cutting/re-ligating, dimmer between
-                        topoPixels[tpX + ',' + tpY] = topoPulse > 0.3 ? '#ccff55' : topo.color;
-                    }
-                }
-            }
-
-            // Histone chaperones (CAF-1): deposit nucleosomes behind replication forks
-            var histPixels = {};
-            if (cell.histoneChaperones && cell.separated) {
-                var tHist = (t * 8000 / 4200) % 1.0;
-                var allChrHist = cell.chromatin.concat(cell.sisterChromatin || []);
-                for (var hci = 0; hci < cell.histoneChaperones.length; hci++) {
-                    var hc = cell.histoneChaperones[hci];
-                    var hIdx = hc.chrIdx % allChrHist.length;
-                    var hAngle = hIdx * 2 * Math.PI / allChrHist.length + tChromatin * 0.05;
-                    var hR = 0.6 + Math.sin(tChromatin * 0.3 + hIdx * 1.2) * 0.3;
-                    // Chaperone trails behind the fork (negative angle offset)
-                    var hX = Math.round(cell.cx + Math.cos(hAngle - 0.2) * (hR - 0.3));
-                    var hY = Math.round(cell.cy + Math.sin(hAngle - 0.2) * (hR - 0.3));
-                    if (hX >= 0 && hX < size && hY >= 0 && hY < size) {
-                        var histPulse = Math.sin(tHist * 2 * Math.PI * 2 + hc.phase * 5);
-                        // Pulse as each nucleosome is deposited
-                        histPixels[hX + ',' + hY] = histPulse > 0.2 ? '#cc9966' : hc.color;
-                    }
-                }
-            }
-
-            // DNA Ligase I: seals Okazaki fragments, flashes where lagging strand gaps close
-            var ligasePixels = {};
-            if (cell.dnaLigase && cell.separated) {
-                var tLig = (t * 8000 / 3600) % 1.0;
-                var allChrLig = cell.chromatin.concat(cell.sisterChromatin || []);
-                for (var lgi = 0; lgi < cell.dnaLigase.length; lgi++) {
-                    var lig = cell.dnaLigase[lgi];
-                    var lIdx = lig.chrIdx % allChrLig.length;
-                    var lAngle = lIdx * 2 * Math.PI / allChrLig.length + tChromatin * 0.05;
-                    var lR = 0.6 + Math.sin(tChromatin * 0.3 + lIdx * 1.2) * 0.3;
-                    // Ligase works slightly behind the fork, on the lagging strand side
-                    var lX = Math.round(cell.cx + Math.cos(lAngle - 0.3) * (lR + 0.2));
-                    var lY = Math.round(cell.cy + Math.sin(lAngle - 0.3) * (lR + 0.2));
-                    if (lX >= 0 && lX < size && lY >= 0 && lY < size) {
-                        var ligPulse = Math.sin(tLig * 2 * Math.PI * 2.5 + lig.phase * 5);
-                        // Bright flash when sealing a nick, dimmer between
-                        ligasePixels[lX + ',' + lY] = ligPulse > 0.4 ? '#ccddff' : lig.color;
-                    }
-                }
-            }
-
-            // Genome readout: nucleotide bases flash in sequence as replication reads the code
-            var genomePixels = {};
-            if (cell.replicationForks && cell.separated) {
-                var tGenome = (t * 8000 / 3500) % 1.0;
-                // Current base being read — cycles through the genome
-                var readIdx = Math.floor(tGenome * genomeSequence.length) % genomeSequence.length;
-                // Show 3 consecutive bases at different radii around nucleus center
-                for (var gbi = 0; gbi < 3; gbi++) {
-                    var baseIdx = (readIdx + gbi) % genomeSequence.length;
-                    var base = genomeSequence[baseIdx];
-                    // Position bases in a small arc inside the nucleus
-                    var baseAngle = tGenome * 2 * Math.PI + gbi * 0.8;
-                    var baseR = 0.3 + gbi * 0.4;
-                    var bx = Math.round(cell.cx + Math.cos(baseAngle) * baseR);
-                    var by = Math.round(cell.cy + Math.sin(baseAngle) * baseR);
-                    if (bx >= 0 && bx < size && by >= 0 && by < size) {
-                        genomePixels[bx + ',' + by] = base.color;
-                    }
-                }
-            }
+            // (S-phase replication machinery cleared — consolidated at abscission)
 
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
@@ -1653,30 +1479,7 @@
                 }
             }
 
-            // Cyclin D-CDK4/6: G1 driver accumulating toward restriction point
-            var cycBPixels = {};
-            if (cell.cyclinB && cell.separated) {
-                var tCycB = (t * 8000 / 6000) % 1.0;
-                for (var cbi = 0; cbi < cell.cyclinB.length; cbi++) {
-                    var cyb = cell.cyclinB[cbi];
-                    var cybAngle = cyb.baseAngle + cyb.speed * tOrbit;
-                    var cbx = Math.round(cell.cx + Math.cos(cybAngle) * cyb.orbitR);
-                    var cby = Math.round(cell.cy + Math.sin(cybAngle) * cyb.orbitR);
-                    // Cyclin D pulses with warm amber glow (distinct from mitotic pink)
-                    var cybPulse = Math.sin(tCycB * 2 * Math.PI + cbi * 1.8);
-                    var cdx3 = cbx - cell.cx;
-                    var cdy3 = cby - cell.cy;
-                    var cbDist = Math.sqrt(cdx3 * cdx3 + cdy3 * cdy3);
-                    // Nuclear import: small-orbit CDK1 can enter nucleus
-                    var cbInner = cyb.orbitR < 1.6 ? 0 : nucR + 1.0;
-                    if (cbDist < maxR - 1.0 && cbDist > cbInner) {
-                        if (cbx >= 0 && cbx < size && cby >= 0 && cby < size) {
-                            // Importing CDK1 glows brighter — active, dephosphorylated
-                            cycBPixels[cbx + ',' + cby] = cyb.orbitR < 1.6 ? (cybPulse > 0.2 ? '#ffcc55' : '#ffaa33') : (cybPulse > 0.3 ? '#eeaa55' : cyb.color);
-                        }
-                    }
-                }
-            }
+            // (Cyclin B degraded — consolidated at abscission)
 
             // Phospho-Rb: inactivated, drifts slowly inside nucleus (dim green)
             var checkPixels = {};
@@ -1727,26 +1530,7 @@
                 }
             }
 
-            // Cyclin E-CDK2: accumulating in cytoplasm, driven by E2F transcription
-            var cycEPixels = {};
-            if (cell.cyclinE && cell.separated) {
-                var tCycE = (t * 8000 / 5800) % 1.0;
-                for (var cei = 0; cei < cell.cyclinE.length; cei++) {
-                    var cye = cell.cyclinE[cei];
-                    var cyeAngle = cye.baseAngle + cye.speed * tOrbit;
-                    var cex = Math.round(cell.cx + Math.cos(cyeAngle) * cye.orbitR);
-                    var cey = Math.round(cell.cy + Math.sin(cyeAngle) * cye.orbitR);
-                    var cePulse = Math.sin(tCycE * 2 * Math.PI + cei * 1.6);
-                    var cdx4 = cex - cell.cx;
-                    var cdy4 = cey - cell.cy;
-                    var ceDist = Math.sqrt(cdx4 * cdx4 + cdy4 * cdy4);
-                    if (ceDist < maxR - 1.0 && ceDist > nucR + 1.0) {
-                        if (cex >= 0 && cex < size && cey >= 0 && cey < size) {
-                            cycEPixels[cex + ',' + cey] = cePulse > 0.3 ? '#77eedd' : cye.color;
-                        }
-                    }
-                }
-            }
+            // (Cyclin E cleared — consolidated at abscission)
 
             // Cyclin A: early S phase accumulation, pink-magenta particles in cytoplasm
             var cycAPixels = {};
@@ -1791,28 +1575,7 @@
                 }
             }
 
-            // Wee1 kinase: dim, fading — being ubiquitinated and degraded
-            var wee1Pixels = {};
-            if (cell.wee1 && cell.separated) {
-                var tWee1 = (t * 8000 / 5500) % 1.0;
-                for (var wi = 0; wi < cell.wee1.length; wi++) {
-                    var w = cell.wee1[wi];
-                    var wAngle = w.baseAngle + w.speed * tOrbit;
-                    var wx = Math.round(cell.cx + Math.cos(wAngle) * w.orbitR);
-                    var wy = Math.round(cell.cy + Math.sin(wAngle) * w.orbitR);
-                    var wPulse = Math.sin(tWee1 * 2 * Math.PI + wi * 2.0);
-                    var wDx = wx - cell.cx;
-                    var wDy = wy - cell.cy;
-                    var wDist = Math.sqrt(wDx * wDx + wDy * wDy);
-                    if (wDist < maxR - 1.0 && wDist > nucR + 0.5) {
-                        if (wx >= 0 && wx < size && wy >= 0 && wy < size) {
-                            // Flicker: ubiquitin tags flash before degradation
-                            wee1Pixels[wx + ',' + wy] = wPulse > 0.5 ? '#aa7766' : (wPulse > -0.3 ? w.color : null);
-                            if (!wee1Pixels[wx + ',' + wy]) delete wee1Pixels[wx + ',' + wy];
-                        }
-                    }
-                }
-            }
+            // (Wee1 degraded — consolidated at abscission)
 
             // PP1/PP2A phosphatases: dephosphorylation wave sweeping through the cell
             var phosphPixels = {};
@@ -1978,50 +1741,7 @@
                 }
             }
 
-            // Securin/Separase: securin degraded, separase active at plate cleaving cohesin
-            var securinPixels = {};
-            if (cell.separase && cell.prophase && cell.prophase.anaphase && cell.separated) {
-                // Separase particles flash red at the former metaphase plate — cohesin cleavage
-                var tSep = (t * 8000 / 4000) % 1.0;
-                var sepPlateX = (cell.prophase.pole1Target.x + cell.prophase.pole2Target.x) / 2;
-                var sepPlateY = (cell.prophase.pole1Target.y + cell.prophase.pole2Target.y) / 2;
-                for (var sci = 0; sci < cell.separase.length; sci++) {
-                    var sep = cell.separase[sci];
-                    var sepAngle = sep.baseAngle + sep.speed * tOrbit;
-                    var sepX = Math.round(sepPlateX + Math.cos(sepAngle) * sep.orbitR);
-                    var sepY = Math.round(sepPlateY + Math.sin(sepAngle) * sep.orbitR);
-                    if (sepX >= 0 && sepX < size && sepY >= 0 && sepY < size) {
-                        // Separase flashes bright red — enzymatic cleavage of cohesin
-                        var cleavePulse = Math.sin(tSep * 2 * Math.PI * 4 + sci * 2.5);
-                        securinPixels[sepX + ',' + sepY] = cleavePulse > 0 ? '#ff6644' : sep.color;
-                    }
-                }
-                // Cohesin fragments: small debris drifting outward from plate
-                for (var cfi = 0; cfi < 4; cfi++) {
-                    var cfAngle = cfi * Math.PI / 2 + tSep * 1.5;
-                    var cfDist = 1.0 + ((tSep + cfi * 0.25) % 1.0) * 2.5;
-                    var cfX = Math.round(sepPlateX + Math.cos(cfAngle) * cfDist);
-                    var cfY = Math.round(sepPlateY + Math.sin(cfAngle) * cfDist);
-                    var cfDistFromCenter = Math.sqrt((cfX - cell.cx) * (cfX - cell.cx) + (cfY - cell.cy) * (cfY - cell.cy));
-                    if (cfDistFromCenter < maxR - 0.5 && cfX >= 0 && cfX < size && cfY >= 0 && cfY < size) {
-                        securinPixels[cfX + ',' + cfY] = '#886644'; // cohesin ring fragments
-                    }
-                }
-            } else if (cell.securin && cell.securin.length > 0 && cell.prophase && cell.prophase.metaphase && cell.separated) {
-                var tSec = (t * 8000 / 4000) % 1.0;
-                var secPlateX = (cell.prophase.pole1Target.x + cell.prophase.pole2Target.x) / 2;
-                var secPlateY = (cell.prophase.pole1Target.y + cell.prophase.pole2Target.y) / 2;
-                for (var sci = 0; sci < cell.securin.length; sci++) {
-                    var sec = cell.securin[sci];
-                    var secAngle = sec.baseAngle + sec.speed * tOrbit;
-                    var secX = Math.round(secPlateX + Math.cos(secAngle) * sec.orbitR);
-                    var secY = Math.round(secPlateY + Math.sin(secAngle) * sec.orbitR);
-                    if (secX >= 0 && secX < size && secY >= 0 && secY < size) {
-                        var ubiqPulse = Math.sin(tSec * 2 * Math.PI * 3 + sci * 2.1);
-                        securinPixels[secX + ',' + secY] = ubiqPulse > 0.3 ? sec.ubiqColor : sec.color;
-                    }
-                }
-            }
+            // (Securin/Separase cleared — consolidated at abscission)
 
             // Filopodia: extending/retracting protrusions from the membrane
             var filoPixels = {};
@@ -2055,21 +1775,12 @@
                 serPixels: serPixels, actinPixels: actinPixels,
                 mtPixels: mtPixels, ifPixels: ifPixels,
                 porePixels: porePixels, secVesPixels: secVesPixels,
-                endoPixels: endoPixels, replPixels: replPixels,
-                genomePixels: genomePixels, cyclinPixels: cyclinPixels,
-                cycBPixels: cycBPixels,
+                endoPixels: endoPixels, cyclinPixels: cyclinPixels,
                 checkPixels: checkPixels,
                 sacPixels: sacPixels,
                 e2fPixels: e2fPixels,
-                cycEPixels: cycEPixels,
                 cycAPixels: cycAPixels,
-                pcnaPixels: pcnaPixels,
-                topoPixels: topoPixels,
-                histPixels: histPixels,
-                ligasePixels: ligasePixels,
                 cdc25Pixels: cdc25Pixels,
-                wee1Pixels: wee1Pixels,
-                securinPixels: securinPixels,
                 phosphPixels: phosphPixels
             };
         }
@@ -2359,18 +2070,12 @@
                                 color = dd.peroxPixels[key];
                             } else if (dd.cyclinPixels && dd.cyclinPixels[key]) {
                                 color = dd.cyclinPixels[key];
-                            } else if (dd.cycEPixels && dd.cycEPixels[key]) {
-                                color = dd.cycEPixels[key];
                             } else if (dd.cycAPixels && dd.cycAPixels[key]) {
                                 color = dd.cycAPixels[key];
-                            } else if (dd.cycBPixels && dd.cycBPixels[key]) {
-                                color = dd.cycBPixels[key];
                             } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
                                 color = dd.cdc25Pixels[key];
                             } else if (dd.phosphPixels && dd.phosphPixels[key]) {
                                 color = dd.phosphPixels[key];
-                            } else if (dd.wee1Pixels && dd.wee1Pixels[key]) {
-                                color = dd.wee1Pixels[key];
                             } else if (dd.mitoPixels[key]) {
                                 color = dd.mitoPixels[key];
                             } else if (dd.nucPixels[key]) {
@@ -2379,26 +2084,12 @@
                                 color = dd.porePixels[key];
                             } else if (dd.envPixels[key]) {
                                 color = dd.envPixels[key];
-                            } else if (dd.topoPixels && dd.topoPixels[key]) {
-                                color = dd.topoPixels[key];
-                            } else if (dd.pcnaPixels && dd.pcnaPixels[key]) {
-                                color = dd.pcnaPixels[key];
-                            } else if (dd.replPixels && dd.replPixels[key]) {
-                                color = dd.replPixels[key];
-                            } else if (dd.histPixels && dd.histPixels[key]) {
-                                color = dd.histPixels[key];
-                            } else if (dd.ligasePixels && dd.ligasePixels[key]) {
-                                color = dd.ligasePixels[key];
                             } else if (dd.sacPixels && dd.sacPixels[key]) {
                                 color = dd.sacPixels[key];
-                            } else if (dd.securinPixels && dd.securinPixels[key]) {
-                                color = dd.securinPixels[key];
                             } else if (dd.e2fPixels && dd.e2fPixels[key]) {
                                 color = dd.e2fPixels[key];
                             } else if (dd.checkPixels && dd.checkPixels[key]) {
                                 color = dd.checkPixels[key];
-                            } else if (dd.genomePixels && dd.genomePixels[key]) {
-                                color = dd.genomePixels[key];
                             } else if (dd.chrPixels[key]) {
                                 color = dd.chrPixels[key];
                             } else if (dd.condensinPixels && dd.condensinPixels[key]) {
