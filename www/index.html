@@ -338,6 +338,23 @@
             cellB.microtubules.push({ angle: mtAngle + 0.3, length: 4.0, cargoPhase: mti * 0.5 + 0.25 });
         }
 
+        // Intermediate filaments: third cytoskeletal element, cage around nucleus
+        // anchoring to desmosome sites — completes actin + microtubule + IF triad
+        cellA.intermediateFilaments = [];
+        cellB.intermediateFilaments = [];
+        // Each IF runs from near the nucleus outward toward a desmosome anchor point
+        for (var ifi = 0; ifi < desmosomes.length; ifi++) {
+            var desmo = desmosomes[ifi];
+            cellA.intermediateFilaments.push({ targetAngle: desmo.angleA, length: 3.8, phase: ifi * 1.1 });
+            cellB.intermediateFilaments.push({ targetAngle: desmo.angleB, length: 3.8, phase: ifi * 1.1 + 0.5 });
+        }
+        // Additional IF strands forming the perinuclear cage (not anchored to desmosomes)
+        for (var ifi2 = 0; ifi2 < 4; ifi2++) {
+            var cageAngle = ifi2 * Math.PI / 2 + 0.4; // 4 cage strands at ~90 degree intervals
+            cellA.intermediateFilaments.push({ targetAngle: cageAngle, length: 2.5, phase: ifi2 * 0.8 + 2.0 });
+            cellB.intermediateFilaments.push({ targetAngle: cageAngle + 0.2, length: 2.5, phase: ifi2 * 0.8 + 2.5 });
+        }
+
         // G1 growth: cells slowly grow as they absorb nutrients
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -670,6 +687,34 @@
                 }
             }
 
+            // Intermediate filaments: cage around nucleus, anchor to desmosomes
+            var ifPixels = {};
+            if (cell.intermediateFilaments) {
+                var tIF = (t * 8000 / 11000) % 1.0;
+                for (var ifi = 0; ifi < cell.intermediateFilaments.length; ifi++) {
+                    var ifil = cell.intermediateFilaments[ifi];
+                    // Start near nucleus edge, extend outward toward target
+                    var ifStartR = nucR + 0.8;
+                    var ifEndR = ifStartR + ifil.length;
+                    if (ifEndR > maxR - 1.0) ifEndR = maxR - 1.0;
+                    // Wavy filament: slight oscillation perpendicular to path
+                    var ifWave = Math.sin(tIF * 2 * Math.PI + ifil.phase) * 0.3;
+                    for (var ifl = 0; ifl <= Math.ceil(ifil.length); ifl++) {
+                        var ifr = ifStartR + ifl;
+                        if (ifr > ifEndR) break;
+                        var perpAngle = ifil.targetAngle + Math.PI / 2;
+                        var waveMag = Math.sin(ifl * 1.2 + ifil.phase) * ifWave;
+                        var ifx = Math.round(cell.cx + Math.cos(ifil.targetAngle) * ifr + Math.cos(perpAngle) * waveMag);
+                        var ify = Math.round(cell.cy + Math.sin(ifil.targetAngle) * ifr + Math.sin(perpAngle) * waveMag);
+                        if (ifx >= 0 && ifx < size && ify >= 0 && ify < size) {
+                            // Tension shimmer along filament
+                            var ifShimmer = Math.sin(tIF * 2 * Math.PI + ifl * 0.8 + ifil.phase);
+                            ifPixels[ifx + ',' + ify] = ifShimmer > 0.3 ? '#887766' : '#776655';
+                        }
+                    }
+                }
+            }
+
             // Microtubules: radiate from centrosome outward, with motor protein cargo
             var mtPixels = {};
             if (cell.microtubules && cell.centrosomes && cell.separated) {
@@ -737,7 +782,7 @@
                 lysoPixels: lysoPixels, filoPixels: filoPixels,
                 riboPixels: riboPixels, peroxPixels: peroxPixels,
                 serPixels: serPixels, actinPixels: actinPixels,
-                mtPixels: mtPixels
+                mtPixels: mtPixels, ifPixels: ifPixels
             };
         }
 
@@ -1031,6 +1076,8 @@
                                 color = dd.actinPixels[key];
                             } else if (dd.mtPixels && dd.mtPixels[key]) {
                                 color = dd.mtPixels[key];
+                            } else if (dd.ifPixels && dd.ifPixels[key]) {
+                                color = dd.ifPixels[key];
                             } else if (dd.riboPixels && dd.riboPixels[key]) {
                                 color = dd.riboPixels[key];
                             } else if (dd.serPixels && dd.serPixels[key]) {
