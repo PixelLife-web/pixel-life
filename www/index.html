@@ -1891,6 +1891,34 @@
                     var tryR=1.8+Math.sin(ph*1.2)*0.5;
                     s(Math.round(it.x+Math.cos(tryA)*tryR),Math.round(it.y+Math.sin(tryA)*tryR),'#ddcc55');}
                 }},
+                // Lamina propria fibroblasts: spindle-shaped stromal cells
+                // Secrete procollagen → collagen fibrils; MMPs remodel ECM; TGF-β paracrine signaling
+                {period:33000, phaseStep:2.09, items:[
+                    {x:20,y:20,color:'#aa8866',dimColor:'#887755'},{x:16,y:18,color:'#997755',dimColor:'#776644'},
+                    {x:24,y:21,color:'#aa8866',dimColor:'#887755'},{x:12,y:16,color:'#997755',dimColor:'#776644'},
+                ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // Spindle-shaped extensions (two elongated poles)
+                    for(var sp=0;sp<2;sp++){var spA=ph*0.12+idx*1.57+sp*Math.PI;
+                    var spSway=Math.sin(ph*0.4+sp*2.8)*0.08;
+                    for(var sl=1;sl<=2;sl++){
+                        var spX=Math.round(it.x+Math.cos(spA+spSway)*sl),spY=Math.round(it.y+Math.sin(spA+spSway)*sl);
+                        if(inB(spX,spY))s(spX,spY,Math.sin(ph*1.2+sp*2.3+sl*1.0)>0?'#bbaa77':'#998866');}}
+                    // Procollagen secretion: vesicles bud from cell toward ECM
+                    var pcPh=(t*1.6+idx*0.3)%1.0;
+                    if(pcPh<0.5){var pcA=Math.atan2(it.y-16,it.x-16);
+                    var pcR=1.0+pcPh*3.5;
+                    var pcX=Math.round(it.x+Math.cos(pcA)*pcR),pcY=Math.round(it.y+Math.sin(pcA)*pcR);
+                    if(inB(pcX,pcY))s(pcX,pcY,pcPh<0.2?'#ddcc88':'#ccbb77');}
+                    // MMP secretion: matrix metalloproteinases for ECM remodeling (brief pulses)
+                    if(Math.sin(ph*2.5+idx*1.8)>0.5){var mmpA=Math.atan2(16-it.y,16-it.x)+0.6;
+                    var mmpR=1.3+Math.sin(ph*1.0)*0.4;
+                    s(Math.round(it.x+Math.cos(mmpA)*mmpR),Math.round(it.y+Math.sin(mmpA)*mmpR),'#55aacc');}
+                    // TGF-β paracrine signal toward epithelium (inward)
+                    if(p>0.2){var tgfA=Math.atan2(16-it.y,16-it.x);
+                    s(Math.round(it.x+Math.cos(tgfA)*1.3),Math.round(it.y+Math.sin(tgfA)*1.3),Math.sin(ph*1.8+idx*1.1)>0?'#eedd66':'#ccbb55');
+                    if(p>0.6){var tgfR2=2.2+Math.sin(ph*0.7)*0.3;
+                    s(Math.round(it.x+Math.cos(tgfA)*tgfR2),Math.round(it.y+Math.sin(tgfA)*tgfR2),'#ddcc44');}}
+                }},
                 // Enteric glial cells: GFAP+ stellate glia in lamina propria
                 // Support enteric neurons, maintain barrier via GSNO, purinergic P2Y signaling
                 {period:32000, phaseStep:2.09, items:[
