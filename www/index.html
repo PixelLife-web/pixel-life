@@ -234,6 +234,24 @@
             { x: 14, y: 26, parent: 'B', reactivation: 0.2, nucleolusSize: 0.3, cajalAngle: 5.8 },
         ];
 
+        // Granddaughter cell bodies: thin cytoplasmic shells forming around each nucleus
+        // Post-division cells establish their own membranes and minimal cytoplasm
+        for (var gbi = 0; gbi < granddaughterNuclei.length; gbi++) {
+            var gn = granddaughterNuclei[gbi];
+            gn.bodyRadius = 2.2 + gn.nucleolusSize * 0.8; // small cell body forming
+            gn.membraneColor = '#555555';
+            gn.cytoColor = '#6b2a00';
+            // Nuclear speckles: SC35/SRSF2 splicing factor storage domains
+            // Irregular interchromatin granule clusters — hallmark of mature interphase nuclei
+            gn.speckles = [
+                { angle: gn.cajalAngle + 2.1, dist: 0.6, color: '#88ddaa' },
+                { angle: gn.cajalAngle + 4.3, dist: 0.5, color: '#77cc99' },
+            ];
+            // Small mitochondrion inherited during division
+            gn.mitoAngle = gbi * 1.57 + 0.4;
+            gn.mitoSpeed = (gbi % 2 === 0 ? 0.6 : -0.5);
+        }
+
         // Calcium waves: tissue-level signaling between granddaughter nuclei
         // IP3-mediated Ca2+ release propagates sequentially through the four-cell cluster
         var calciumWaves = [];
@@ -2246,19 +2264,42 @@
                                 }
                             }
                         }
-                        // Granddaughter nuclei: nuclear envelopes, nucleoli, Cajal bodies, transcription
+                        // Granddaughter cells: cell bodies forming around nuclei
                         if (!drawn) {
                             var tReact = (Date.now() % 12000) / 12000;
                             var tNucReasm = (Date.now() % 9000) / 9000;
+                            var tGDOrbit = (Date.now() % 11000) / 11000 * 2 * Math.PI;
                             for (var gni = 0; gni < granddaughterNuclei.length && !drawn; gni++) {
                                 var gn = granddaughterNuclei[gni];
                                 var gnDx = x - gn.x;
                                 var gnDy = y - gn.y;
                                 var gnDist = Math.sqrt(gnDx * gnDx + gnDy * gnDy);
+                                // Cell body membrane: thin shell forming around each granddaughter
+                                var bodyR = gn.bodyRadius;
+                                var bodyBreath = Math.sin(tNucReasm * 2 * Math.PI * 0.7 + gni * 1.1) * 0.15;
+                                var effBodyR = bodyR + bodyBreath;
+                                if (gnDist <= effBodyR) {
+                                    // Membrane shell
+                                    if (gnDist > effBodyR - 0.7) {
+                                        color = gn.membraneColor;
+                                        drawn = true;
+                                    }
+                                    // Inherited mitochondrion orbiting in thin cytoplasm
+                                    if (!drawn) {
+                                        var mitoA = gn.mitoAngle + gn.mitoSpeed * tGDOrbit;
+                                        var mitoR = effBodyR * 0.65;
+                                        var mitoX = Math.round(gn.x + Math.cos(mitoA) * mitoR);
+                                        var mitoY = Math.round(gn.y + Math.sin(mitoA) * mitoR);
+                                        if (x === mitoX && y === mitoY) {
+                                            color = '#44aa66';
+                                            drawn = true;
+                                        }
+                                    }
+                                }
                                 // Nuclear envelope: small ring around each granddaughter nucleus
                                 var gnEnvR = 1.3 + gn.nucleolusSize * 0.5;
                                 var envWidth = 0.6;
-                                if (Math.abs(gnDist - gnEnvR) < envWidth) {
+                                if (!drawn && Math.abs(gnDist - gnEnvR) < envWidth) {
                                     var envPulse = Math.sin(tNucReasm * 2 * Math.PI * 2 + gni * 1.4 + Math.atan2(gnDy, gnDx) * 3);
                                     color = envPulse > 0 ? '#eebb55' : '#ddaa44';
                                     drawn = true;
@@ -2266,11 +2307,23 @@
                                 // Nucleolus: dense rDNA transcription center at nucleus core
                                 if (!drawn && gnDist < gn.nucleolusSize + 0.3) {
                                     var nuclPulse = Math.sin(tNucReasm * 2 * Math.PI * 1.8 + gni * 2.3);
-                                    // rRNA synthesis glow — nucleolus grows as ribosome biogenesis resumes
                                     color = nuclPulse > 0.2 ? '#ff9933' : '#dd7722';
                                     drawn = true;
                                 }
-                                // Cajal body: small nuclear body for snRNP maturation (1 per nucleus)
+                                // Nuclear speckles: SC35 splicing factor domains
+                                if (!drawn) {
+                                    for (var spi = 0; spi < gn.speckles.length && !drawn; spi++) {
+                                        var sp = gn.speckles[spi];
+                                        var spX = Math.round(gn.x + Math.cos(sp.angle) * sp.dist);
+                                        var spY = Math.round(gn.y + Math.sin(sp.angle) * sp.dist);
+                                        if (x === spX && y === spY) {
+                                            var spPulse = Math.sin(tNucReasm * 2 * Math.PI * 1.4 + gni * 2.1 + spi * 3.0);
+                                            color = spPulse > 0 ? '#99eebb' : sp.color;
+                                            drawn = true;
+                                        }
+                                    }
+                                }
+                                // Cajal body: small nuclear body for snRNP maturation
                                 if (!drawn) {
                                     var cbR = 0.8;
                                     var cbX = gn.x + Math.round(Math.cos(gn.cajalAngle) * cbR);
@@ -2281,9 +2334,14 @@
                                         drawn = true;
                                     }
                                 }
-                                // Transcription aura: mRNA radiating outward
+                                // Cytoplasm fill within body
+                                if (!drawn && gnDist <= effBodyR) {
+                                    color = gn.cytoColor;
+                                    drawn = true;
+                                }
+                                // Transcription aura: mRNA radiating outward from cell body
                                 if (!drawn) {
-                                    var auraR = 1.8 + gn.reactivation * 2.5;
+                                    var auraR = effBodyR + 0.5 + gn.reactivation * 1.5;
                                     var auraPulse = Math.sin(tReact * 2 * Math.PI * 1.5 + gni * 1.57);
                                     var auraWidth = 0.7;
                                     if (Math.abs(gnDist - auraR) < auraWidth && auraPulse > 0) {
