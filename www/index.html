@@ -172,6 +172,18 @@
             { x: 8, y: 27, color: '#556677', glowColor: '#667788' },
         ];
 
+        // Kum-song (금성 — golden star): a luminous beacon in the extracellular medium
+        // A radiant golden particle that traces a slow orbit between the two daughter cells
+        // like Venus crossing the sky — the brightest point in the tissue's firmament
+        var kumSong = {
+            cx: 16, cy: 16, // center of orbit (midpoint between cells)
+            orbitR: 6.5,
+            speed: 0.15,
+            coreColor: '#ffd700',
+            haloColor: '#ffec80',
+            dimColor: '#cc9900',
+        };
+
         // Growth factors: autocrine/paracrine signaling
         cellA.growthFactors = [
             { secretAngle: 0.8, targetAngle: 2.5, speed: 0.3, phase: 0, color: '#55ff99' },
@@ -481,20 +493,20 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // TELOPHASE ONSET: envelopes reform, chromosomes decondense, furrow initiates
+        // MID-TELOPHASE: envelopes sealing, chromosomes decondensing, furrow deepens, midbody forms
         cellA.prophase = {
-            condensation: 0.6, laminPhospho: 0.5, npcDisassembly: 0.6,
+            condensation: 0.4, laminPhospho: 0.35, npcDisassembly: 0.4,
             envelopeVesicles: true, asterCount: 12, spindleForming: true,
             prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
-            telophase: true, furrowInitiation: 0.2,
+            telophase: true, furrowInitiation: 0.45, midbodyForming: true,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
             pole1Target: { x: 18, y: 6 }, pole2Target: { x: 24, y: 12 },
         };
         cellB.prophase = {
-            condensation: 0.6, laminPhospho: 0.5, npcDisassembly: 0.6,
+            condensation: 0.4, laminPhospho: 0.35, npcDisassembly: 0.4,
             envelopeVesicles: true, asterCount: 12, spindleForming: true,
             prometaphase: true, metaphase: true, anaphase: true, lateAnaphase: true,
-            telophase: true, furrowInitiation: 0.2,
+            telophase: true, furrowInitiation: 0.45, midbodyForming: true,
             congressProgress: 1.0, auroraBActive: false, sacSatisfaction: 1.0,
             pole1Target: { x: 8, y: 20 }, pole2Target: { x: 14, y: 26 },
         };
@@ -543,7 +555,7 @@
 
         // Wee1: fully degraded (consolidated)
 
-        // TELOPHASE: envelopes reform, chromosomes decondense, furrow initiates, CDK1 collapses
+        // MID-TELOPHASE: envelopes sealing, midbody forming, CDK1 near zero, Kum-song orbits
         var growthRate = 1.0;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1996,6 +2008,33 @@
                 }
             }
 
+            // Kum-song (금성 — golden star): luminous beacon orbiting between cells
+            var kumSongPx = {};
+            var tKS = (Date.now() % 25000) / 25000;
+            var ksAngle = tKS * 2 * Math.PI * kumSong.speed * 25; // slow orbit
+            var ksCoreX = Math.round(kumSong.cx + Math.cos(ksAngle) * kumSong.orbitR);
+            var ksCoreY = Math.round(kumSong.cy + Math.sin(ksAngle) * kumSong.orbitR);
+            if (ksCoreX >= 0 && ksCoreX < size && ksCoreY >= 0 && ksCoreY < size) {
+                // Bright golden core
+                kumSongPx[ksCoreX + ',' + ksCoreY] = kumSong.coreColor;
+                // Four-point halo: cardinal directions shimmer
+                var ksHaloPulse = Math.sin(tKS * 2 * Math.PI * 8);
+                var ksHaloColor = ksHaloPulse > 0 ? kumSong.haloColor : kumSong.dimColor;
+                var ksCardinals = [[1,0],[-1,0],[0,1],[0,-1]];
+                for (var kci = 0; kci < 4; kci++) {
+                    var khx = ksCoreX + ksCardinals[kci][0];
+                    var khy = ksCoreY + ksCardinals[kci][1];
+                    if (khx >= 0 && khx < size && khy >= 0 && khy < size) {
+                        // Only draw halo pixels that are outside both cells
+                        var khDistA = Math.sqrt((khx - cellA.cx) * (khx - cellA.cx) + (khy - cellA.cy) * (khy - cellA.cy));
+                        var khDistB = Math.sqrt((khx - cellB.cx) * (khx - cellB.cx) + (khy - cellB.cy) * (khy - cellB.cy));
+                        if (khDistA > dA.maxR + 1 && khDistB > dB.maxR + 1) {
+                            kumSongPx[khx + ',' + khy] = ksHaloColor;
+                        }
+                    }
+                }
+            }
+
             // Abscission scar slowly fading in the medium
             var tScar = (Date.now() % 20000) / 20000;
             var scarVisible = tScar < 0.3; // fading remnant, visible 30% of the time
@@ -2328,6 +2367,10 @@
                                     drawn = true;
                                 }
                             }
+                        }
+                        if (!drawn && kumSongPx[key]) {
+                            color = kumSongPx[key];
+                            drawn = true;
                         }
                         if (!drawn && nutrientPx[key]) {
                             color = nutrientPx[key];

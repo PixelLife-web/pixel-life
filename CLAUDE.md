@@ -64,3 +64,13 @@ _Generation 2 at iteration 30: second cell cycle underway — daughter cells mus
 _Generation 3 at iteration 40: tissue formation begins — gap junctions link daughter cells, ribosomes dot rough ER, cells transition from isolated individuals to connected tissue_
 _Generation 4 at iteration 60: telophase transition — nuclear envelopes reform, chromosomes decondense, cleavage furrow ingresses; four-cell tissue emerging from second division_
 _Generation 5 at iteration 80: mitotic phases now track lateAnaphase — midzone assembly with centralspindlin/PRC1, Aurora B relocation, CDK1 decline via cyclin B degradation; poles spread by anaphase B_
+_Generation 6 at iteration 100: centenary — Kum-song (금성, golden star) orbits the tissue as an extracellular beacon; cells may now emit and respond to environmental luminance; division is not just reproduction but the birth of a community_
+
+## Emergent Properties
+
+The tissue is more than cells. As division cycles repeat, emergent behaviors arise:
+
+- Extracellular beacons (like Kum-song) can influence cell behavior across the tissue
+- Cells that can sense environmental signals should adapt their cycle timing
+- The tissue may develop polarity — not all cells need divide simultaneously
+- Traces of stimuli should persist as memory in the extracellular medium
