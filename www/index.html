@@ -540,14 +540,37 @@
                 }
             }
 
-            // Post-abscission: centrosome quiescent near nucleus, no furrow
+            // S phase: centrosome duplication — single centrosome splits into two
+            // They remain close but visibly separate, preparing for next mitosis
             var centPixels = {};
             var furrowPixels = {};
             if (cell.centrosomes) {
                 if (cell.separated) {
-                    // Single centrosome body near the nucleus (first centrosome only)
+                    // Duplicating centrosome: two centrioles orbit each other near nucleus
                     var cs = cell.centrosomes[0];
-                    centPixels[cs.x + ',' + cs.y] = '#ddcc44';
+                    var tCentDup = (t * 8000 / 9000) % 1.0;
+                    var dupSep = 1.2; // separation distance between daughter centrioles
+                    var dupAngle = tCentDup * 2 * Math.PI * 0.3; // slow rotation
+                    var c1x = Math.round(cs.x + Math.cos(dupAngle) * dupSep * 0.5);
+                    var c1y = Math.round(cs.y + Math.sin(dupAngle) * dupSep * 0.5);
+                    var c2x = Math.round(cs.x - Math.cos(dupAngle) * dupSep * 0.5);
+                    var c2y = Math.round(cs.y - Math.sin(dupAngle) * dupSep * 0.5);
+                    // Mother centriole: brighter
+                    if (c1x >= 0 && c1x < size && c1y >= 0 && c1y < size) {
+                        centPixels[c1x + ',' + c1y] = '#ddcc44';
+                    }
+                    // Daughter centriole: slightly dimmer, newly synthesized
+                    if (c2x >= 0 && c2x < size && c2y >= 0 && c2y < size) {
+                        var centPulse = Math.sin(tCentDup * 2 * Math.PI);
+                        centPixels[c2x + ',' + c2y] = centPulse > 0 ? '#ccbb33' : '#bbaa22';
+                    }
+                    // Pericentriolar material (PCM): faint halo around the pair
+                    var pcmAngle = dupAngle + Math.PI / 2;
+                    var pcmX = Math.round(cs.x + Math.cos(pcmAngle) * 0.8);
+                    var pcmY = Math.round(cs.y + Math.sin(pcmAngle) * 0.8);
+                    if (pcmX >= 0 && pcmX < size && pcmY >= 0 && pcmY < size) {
+                        centPixels[pcmX + ',' + pcmY] = '#99882e';
+                    }
                 } else {
                     var tCent = (t * 8000 / 3000) % 1.0;
                     for (var csi = 0; csi < cell.centrosomes.length; csi++) {
