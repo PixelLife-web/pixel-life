@@ -2081,6 +2081,35 @@
                 ], emitThresh:0.4, emitFn:function(it,p,ph,t,ix,iy,idx,s){
                     var a=Math.atan2(it.y-16,it.x-16)+Math.PI;s(Math.round(ix+Math.cos(a)*0.9),Math.round(iy+Math.sin(a)*0.9),'#77bbdd');
                 }},
+                // Tuft cells (brush cells): rare chemosensory epithelial cells with apical microvilli tufts
+                // TRPM5 taste receptors detect helminth products; activated tuft cells secrete IL-25
+                // to initiate type 2 immune response (ILC2 → IL-13 → goblet cell hyperplasia)
+                {period:25000, phaseStep:2.09, items:[
+                    {x:9,y:11,color:'#dd88dd',dimColor:'#aa55aa'},{x:19,y:13,color:'#cc77cc',dimColor:'#994499'},
+                ], emitThresh:0.0, emitFn:function(it,p,ph,t,ix,iy,idx,s){
+                    // Apical tuft: 3 long stiff microvilli projecting toward lumen
+                    var lumA=Math.atan2(it.y-16,it.x-16)+Math.PI;
+                    for(var ti=0;ti<3;ti++){
+                        var tA=lumA+(ti-1)*0.30;
+                        var tSway=Math.sin(ph*0.5+ti*1.4)*0.06;
+                        for(var tl=1;tl<=3;tl++){
+                            var tx=Math.round(it.x+Math.cos(tA+tSway)*tl),ty=Math.round(it.y+Math.sin(tA+tSway)*tl);
+                            var tPulse=Math.sin(ph*1.8+ti*2.0+tl*1.2);
+                            if(inB(tx,ty))s(tx,ty,tPulse>0?'#eebb99':'#ccaa88');
+                        }
+                    }
+                    // TRPM5 receptor flash at tuft tips when sensing
+                    if(Math.sin(ph*2.5+idx*1.7)>0.4){
+                        var rTip=Math.round(it.x+Math.cos(lumA)*3.5),rTipY=Math.round(it.y+Math.sin(lumA)*3.5);
+                        if(inB(rTip,rTipY))s(rTip,rTipY,'#ffddff');
+                    }
+                    // IL-25 basolateral secretion toward lamina propria (type 2 immune activation)
+                    if(p>0.4){
+                        var basA=Math.atan2(it.y-16,it.x-16);
+                        s(Math.round(it.x+Math.cos(basA)*1.2),Math.round(it.y+Math.sin(basA)*1.2),'#ffaaee');
+                        if(p>0.7)s(Math.round(it.x+Math.cos(basA)*2.0),Math.round(it.y+Math.sin(basA)*2.0),'#dd88cc');
+                    }
+                }},
             ]);
             // Notch lateral inhibition: Delta-Notch progenitor pairs with signal exchange
             var tNotch = (now % 22000) / 22000;
