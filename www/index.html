@@ -1412,19 +1412,15 @@
                     set(bcX, bcY, '#ee5555');
                 }
             }
-            // Pericytes: α-SMA+ mural cells wrapping capillaries
-            // Contractile processes regulate capillary diameter; PDGF-BB recruitment from endothelium
             var tPeri = (now % 21000) / 21000;
             for (var pci2 = 0; pci2 < capillaryPath.length; pci2 += 2) {
                 var pcCap = capillaryPath[pci2];
                 var periPh = tPeri * 2 * Math.PI + pci2 * 1.3;
                 var periP = Math.sin(periPh);
-                // Pericyte soma adjacent to capillary (offset inward toward tissue center)
                 var periA = Math.atan2(16 - pcCap.y, 16 - pcCap.x);
                 var periX = Math.round(pcCap.x + Math.cos(periA) * 1.2);
                 var periY = Math.round(pcCap.y + Math.sin(periA) * 1.2);
                 if (inB(periX, periY)) set(periX, periY, periP > 0 ? '#bb7755' : '#995544');
-                // Contractile processes wrapping vessel (two arms flanking capillary)
                 for (var pw = 0; pw < 2; pw++) {
                     var pwA = periA + Math.PI / 2 * (pw === 0 ? 1 : -1);
                     var pwSway = Math.sin(periPh * 0.8 + pw * 2.5) * 0.12;
@@ -1433,7 +1429,6 @@
                     var contractP = Math.sin(periPh * 1.5 + pw * 1.8);
                     if (inB(pwX, pwY)) set(pwX, pwY, contractP > 0.2 ? '#cc8866' : '#aa6644');
                 }
-                // PDGF-BB signal from endothelium to pericyte (recruitment/survival)
                 var pdgfPh = (tPeri * 2.5 + pci2 * 0.18) % 1.0;
                 if (pdgfPh < 0.4 && periP > -0.3) {
                     var pdgfR = 0.3 + pdgfPh * 2.5;
@@ -1441,7 +1436,6 @@
                     var pdgfY = Math.round(pcCap.y + Math.sin(periA) * pdgfR);
                     if (inB(pdgfX, pdgfY)) set(pdgfX, pdgfY, pdgfPh < 0.15 ? '#ffbb77' : '#ddaa66');
                 }
-                // Angiopoietin-1 from pericyte to endothelium (vessel stabilization)
                 if (periP > 0.3) {
                     var ang1X = Math.round(periX + Math.cos(periA + Math.PI) * 0.8);
                     var ang1Y = Math.round(periY + Math.sin(periA + Math.PI) * 0.8);
@@ -1860,19 +1854,14 @@
                     var atpR=1.0+Math.sin(ph*1.8)*0.4;
                     s(Math.round(it.x+Math.cos(atpA)*atpR),Math.round(it.y+Math.sin(atpA)*atpR),'#ffdd55');}
                 }},
-                // Mast cells: FcεRI-armed sentinels in lamina propria
-                // IgE crosslinking triggers degranulation: histamine, tryptase, heparin, TNF-α
-                // Histamine causes vasodilation + vascular permeability; tryptase activates PAR-2 on neurons
                 {period:30000, phaseStep:2.09, items:[
                     {x:27,y:17,color:'#dd66aa',dimColor:'#aa4488'},{x:21,y:27,color:'#cc5599',dimColor:'#993377'},
                     {x:15,y:24,color:'#dd66aa',dimColor:'#aa4488'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    // Metachromatic granules within mast cell (toluidine blue-staining)
                     for(var mgi=0;mgi<3;mgi++){var mgA=ph*0.4+mgi*2.09+idx*0.7;
                     var mgR=0.6+Math.sin(ph*0.8+mgi*1.5)*0.2;
                     var mgX=Math.round(it.x+Math.cos(mgA)*mgR),mgY=Math.round(it.y+Math.sin(mgA)*mgR);
                     if(inB(mgX,mgY))s(mgX,mgY,Math.sin(ph*1.6+mgi*2.3)>0?'#ee88cc':'#cc66aa');}
-                    // Degranulation burst: IgE-crosslinked FcεRI triggers explosive granule release
                     var degPh=(t*1.8+idx*0.35)%1.0;
                     if(degPh<0.35){
                         for(var dg=0;dg<4;dg++){var dgA=dg*1.57+ph*0.3+idx*1.1;
@@ -1880,73 +1869,57 @@
                         var dgX=Math.round(it.x+Math.cos(dgA)*dgR),dgY=Math.round(it.y+Math.sin(dgA)*dgR);
                         if(inB(dgX,dgY))s(dgX,dgY,degPh<0.12?'#ffccee':(degPh<0.25?'#ffaa77':'#ee8855'));}
                     }
-                    // Histamine diffusion: vasodilatory mediator radiates outward toward capillaries
                     if(p>0.1){var hisA=Math.atan2(it.y-16,it.x-16);
                     var hisR=1.5+Math.sin(ph*0.9)*0.4;
                     s(Math.round(it.x+Math.cos(hisA)*hisR),Math.round(it.y+Math.sin(hisA)*hisR),Math.sin(ph*2.5+idx*1.3)>0?'#ffbb88':'#ddaa77');
                     if(p>0.4){var hisR2=hisR+1.2;
                     s(Math.round(it.x+Math.cos(hisA+0.2)*hisR2),Math.round(it.y+Math.sin(hisA+0.2)*hisR2),'#eebb99');}}
-                    // Tryptase stream toward enteric neurons (PAR-2 activation → visceral hypersensitivity)
                     if(Math.sin(ph*2.8+idx*2.0)>0.3){var tryA=Math.atan2(it.y-16,it.x-16)+0.5;
                     var tryR=1.8+Math.sin(ph*1.2)*0.5;
                     s(Math.round(it.x+Math.cos(tryA)*tryR),Math.round(it.y+Math.sin(tryA)*tryR),'#ddcc55');}
                 }},
-                // Lamina propria fibroblasts: spindle-shaped stromal cells
-                // Secrete procollagen → collagen fibrils; MMPs remodel ECM; TGF-β paracrine signaling
                 {period:33000, phaseStep:2.09, items:[
                     {x:20,y:20,color:'#aa8866',dimColor:'#887755'},{x:16,y:18,color:'#997755',dimColor:'#776644'},
                     {x:24,y:21,color:'#aa8866',dimColor:'#887755'},{x:12,y:16,color:'#997755',dimColor:'#776644'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    // Spindle-shaped extensions (two elongated poles)
                     for(var sp=0;sp<2;sp++){var spA=ph*0.12+idx*1.57+sp*Math.PI;
                     var spSway=Math.sin(ph*0.4+sp*2.8)*0.08;
                     for(var sl=1;sl<=2;sl++){
                         var spX=Math.round(it.x+Math.cos(spA+spSway)*sl),spY=Math.round(it.y+Math.sin(spA+spSway)*sl);
                         if(inB(spX,spY))s(spX,spY,Math.sin(ph*1.2+sp*2.3+sl*1.0)>0?'#bbaa77':'#998866');}}
-                    // Procollagen secretion: vesicles bud from cell toward ECM
                     var pcPh=(t*1.6+idx*0.3)%1.0;
                     if(pcPh<0.5){var pcA=Math.atan2(it.y-16,it.x-16);
                     var pcR=1.0+pcPh*3.5;
                     var pcX=Math.round(it.x+Math.cos(pcA)*pcR),pcY=Math.round(it.y+Math.sin(pcA)*pcR);
                     if(inB(pcX,pcY))s(pcX,pcY,pcPh<0.2?'#ddcc88':'#ccbb77');}
-                    // MMP secretion: matrix metalloproteinases for ECM remodeling (brief pulses)
                     if(Math.sin(ph*2.5+idx*1.8)>0.5){var mmpA=Math.atan2(16-it.y,16-it.x)+0.6;
                     var mmpR=1.3+Math.sin(ph*1.0)*0.4;
                     s(Math.round(it.x+Math.cos(mmpA)*mmpR),Math.round(it.y+Math.sin(mmpA)*mmpR),'#55aacc');}
-                    // TGF-β paracrine signal toward epithelium (inward)
                     if(p>0.2){var tgfA=Math.atan2(16-it.y,16-it.x);
                     s(Math.round(it.x+Math.cos(tgfA)*1.3),Math.round(it.y+Math.sin(tgfA)*1.3),Math.sin(ph*1.8+idx*1.1)>0?'#eedd66':'#ccbb55');
                     if(p>0.6){var tgfR2=2.2+Math.sin(ph*0.7)*0.3;
                     s(Math.round(it.x+Math.cos(tgfA)*tgfR2),Math.round(it.y+Math.sin(tgfA)*tgfR2),'#ddcc44');}}
                 }},
-                // Enteric glial cells: GFAP+ stellate glia in lamina propria
-                // Support enteric neurons, maintain barrier via GSNO, purinergic P2Y signaling
                 {period:32000, phaseStep:2.09, items:[
                     {x:24,y:16,color:'#77aadd',dimColor:'#557799'},{x:19,y:26,color:'#6699cc',dimColor:'#447788'},
                     {x:13,y:20,color:'#77aadd',dimColor:'#557799'},{x:26,y:22,color:'#6699cc',dimColor:'#447788'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    // GFAP+ stellate processes radiating from soma
                     for(var pi=0;pi<5;pi++){var pA=pi*1.257+ph*0.15+idx*0.6;
                     var pSway=Math.sin(ph*0.6+pi*1.9)*0.08;
                     for(var pl=1;pl<=2;pl++){
                         var pX=Math.round(it.x+Math.cos(pA+pSway)*pl),pY=Math.round(it.y+Math.sin(pA+pSway)*pl);
                         if(inB(pX,pY))s(pX,pY,Math.sin(ph*1.3+pi*2.1+pl*1.0)>0?'#88bbee':'#6699bb');}}
-                    // GSNO release toward epithelium: barrier-protective S-nitrosoglutathione
                     var gsnoA=Math.atan2(16-it.y,16-it.x);
                     var gsnoPh=(t*2.2+idx*0.3)%1.0;
                     if(gsnoPh<0.45){var gsnoR=1.5+gsnoPh*3.5;
                     var gsnoX=Math.round(it.x+Math.cos(gsnoA)*gsnoR),gsnoY=Math.round(it.y+Math.sin(gsnoA)*gsnoR);
                     if(inB(gsnoX,gsnoY))s(gsnoX,gsnoY,gsnoPh<0.2?'#99eedd':'#77ccbb');}
-                    // Purinergic P2Y signaling: ATP pulses toward nearby enteric neurons
                     if(p>0.2){var p2yA=Math.atan2(it.y-16,it.x-16)+0.4;
                     var p2yR=1.2+Math.sin(ph*1.5)*0.3;
                     s(Math.round(it.x+Math.cos(p2yA)*p2yR),Math.round(it.y+Math.sin(p2yA)*p2yR),Math.sin(ph*2.7+idx*1.4)>0?'#ffcc55':'#ddbb44');
                     if(p>0.5){var p2yR2=p2yR+1.0;
                     s(Math.round(it.x+Math.cos(p2yA)*p2yR2),Math.round(it.y+Math.sin(p2yA)*p2yR2),'#eebb66');}}
                 }},
-                // Muscularis mucosae: thin smooth muscle layer beneath lamina propria
-                // Generates slow peristaltic waves; α-actin filaments with Ca²⁺-dependent contraction
-                // ICC (interstitial cells of Cajal) pace the slow wave; gap junctions couple muscle cells
                 {period:35000, phaseStep:1.57, items:[
                     {x:29,y:10,color:'#cc7766',dimColor:'#aa5544'},{x:30,y:14,color:'#bb6655',dimColor:'#994433'},
                     {x:29,y:18,color:'#cc7766',dimColor:'#aa5544'},{x:27,y:22,color:'#bb6655',dimColor:'#994433'},
@@ -1954,7 +1927,6 @@
                     {x:15,y:30,color:'#cc7766',dimColor:'#aa5544'},{x:10,y:30,color:'#bb6655',dimColor:'#994433'},
                     {x:6,y:27,color:'#cc7766',dimColor:'#aa5544'},{x:4,y:23,color:'#bb6655',dimColor:'#994433'},
                 ], emitThresh:-1, emitFn:function(it,p,ph,t,ix,iy,idx,s){
-                    // α-actin filaments: elongated contractile fibers tangent to the muscle layer arc
                     var tanA=Math.atan2(it.y-16,it.x-16)+Math.PI*0.5;
                     var contrP=Math.sin(ph*0.8+idx*0.628);
                     var contrShort=contrP>0?0.85:1.0;
@@ -1962,29 +1934,23 @@
                     var fA=tanA+fDir*0.08*contrP;
                     var fX=Math.round(it.x+Math.cos(fA)*contrShort),fY=Math.round(it.y+Math.sin(fA)*contrShort);
                     if(inB(fX,fY))s(fX,fY,contrP>0.3?'#dd8877':'#bb7766');}
-                    // Peristaltic wave: Ca²⁺ flash propagates sequentially along muscle arc
                     var wavePh=(t*3.0+idx*0.1)%1.0;
                     var waveAmp=Math.sin(wavePh*2*Math.PI);
                     if(waveAmp>0.5){var caX=Math.round(it.x+Math.cos(tanA)*0.5),caY=Math.round(it.y+Math.sin(tanA)*0.5);
                     if(inB(caX,caY))s(caX,caY,waveAmp>0.8?'#ffeeaa':'#eedd88');}
-                    // ICC pacemaker cell (every 3rd muscle cell): generates slow wave depolarization
                     if(idx%3===0){var iccA=Math.atan2(16-it.y,16-it.x);
                     var iccP=Math.sin(ph*1.5+idx*2.3);
                     var iccX=Math.round(it.x+Math.cos(iccA)*0.8),iccY=Math.round(it.y+Math.sin(iccA)*0.8);
                     if(inB(iccX,iccY))s(iccX,iccY,iccP>0?'#eecc44':'#ccaa33');
-                    // ICC gap junction coupling: current spreads to neighboring muscle cells
                     if(iccP>0.4){var gjA=tanA+0.3;
                     var gjX=Math.round(it.x+Math.cos(gjA)*1.5),gjY=Math.round(it.y+Math.sin(gjA)*1.5);
                     if(inB(gjX,gjY))s(gjX,gjY,'#ddcc77');}}
-                    // Dense bodies: smooth muscle focal adhesions anchoring actin to membrane
                     if(idx%2===0&&Math.sin(ph*2.0+idx*1.7)>0.2){
                     var dbA=Math.atan2(it.y-16,it.x-16);
                     var dbX=Math.round(it.x+Math.cos(dbA)*0.7),dbY=Math.round(it.y+Math.sin(dbA)*0.7);
                     if(inB(dbX,dbY))s(dbX,dbY,'#996655');}
                 }},
             ]);
-            // Submucosal arterioles: resistance vessels with endothelial NO signaling
-            // Vascular smooth muscle maintains myogenic tone; VIP from Meissner's plexus dilates
             var tArt = (now % 27000) / 27000;
             var arterioles = [
                 {x:19,y:17,ex:21,ey:16,ang:0.3},{x:23,y:21,ex:22,ey:23,ang:2.1},
@@ -1994,9 +1960,7 @@
                 var art = arterioles[ari];
                 var artPh = tArt * 2 * Math.PI + ari * 1.57;
                 var myoTone = Math.sin(artPh); // myogenic oscillation
-                // Endothelial cells: thin lining of the arteriolar lumen
                 if (inB(art.ex, art.ey)) set(art.ex, art.ey, myoTone > -0.2 ? '#cc4444' : '#aa3333');
-                // Vascular smooth muscle wrapping arteriole: α₁-adrenergic contraction
                 var vsmA = art.ang + myoTone * 0.15; // tone shifts wrap angle
                 var vsmR = 1.0 + myoTone * 0.15; // constriction/dilation
                 var vsmX = Math.round(art.x + Math.cos(vsmA) * vsmR);
@@ -2006,21 +1970,18 @@
                 var vsm2X = Math.round(art.x + Math.cos(vsm2A) * vsmR);
                 var vsm2Y = Math.round(art.y + Math.sin(vsm2A) * vsmR);
                 if (inB(vsm2X, vsm2Y)) set(vsm2X, vsm2Y, myoTone > 0.2 ? '#bb6677' : '#996655');
-                // Lumen with RBC transit: erythrocytes flowing through
                 var rbcPh = (tArt * 3.5 + ari * 0.8) % 1.0;
                 var rbcA = Math.atan2(art.ey - art.y, art.ex - art.x);
                 var rbcD = 0.4 + rbcPh * 1.2;
                 var rbcX = Math.round(art.x + Math.cos(rbcA) * rbcD);
                 var rbcY = Math.round(art.y + Math.sin(rbcA) * rbcD);
                 if (inB(rbcX, rbcY)) set(rbcX, rbcY, rbcPh < 0.6 ? '#dd3322' : '#cc2211');
-                // eNOS → NO release: endothelial nitric oxide synthase signals smooth muscle relaxation
                 if (myoTone < -0.3) {
                     var noA = art.ang + Math.PI * 0.5;
                     var noR = 1.3 + Math.sin(artPh * 2.2) * 0.4;
                     var noX = Math.round(art.x + Math.cos(noA) * noR);
                     var noY = Math.round(art.y + Math.sin(noA) * noR);
                     if (inB(noX, noY)) set(noX, noY, '#88ddff');
-                    // NO diffusion to second smooth muscle cell
                     if (myoTone < -0.5) {
                         var no2R = noR + 0.8;
                         var no2X = Math.round(art.x + Math.cos(noA) * no2R);
@@ -2028,7 +1989,6 @@
                         if (inB(no2X, no2Y)) set(no2X, no2Y, '#aaeeff');
                     }
                 }
-                // Pericyte embrace: stabilizing cells from iter 155 wrap arteriolar branch points
                 if (ari % 2 === 0) {
                     var periA = art.ang - Math.PI * 0.3;
                     var periP = Math.sin(artPh * 0.7 + ari * 2.0);
@@ -2038,8 +1998,6 @@
                 }
             }
 
-            // Submucosal venules: postcapillary venules with leukocyte rolling and diapedesis
-            // E-selectin mediates rolling; ICAM-1/integrin firm adhesion; paracellular diapedesis into lamina propria
             var tVen = (now % 31000) / 31000;
             var venules = [
                 {x:17,y:19,ex:16,ey:18,ang:1.8},{x:21,y:24,ex:20,ey:23,ang:3.5},
@@ -2049,29 +2007,24 @@
                 var ven = venules[vni];
                 var venPh = tVen * 2 * Math.PI + vni * 1.57;
                 var venP = Math.sin(venPh);
-                // Endothelial lining: thinner than arteriolar, lower pressure
                 if (inB(ven.ex, ven.ey)) set(ven.ex, ven.ey, venP > -0.3 ? '#8855aa' : '#663388');
-                // Venular wall: thinner smooth muscle than arterioles
                 var vwA = ven.ang + venP * 0.10;
                 var vwR = 0.8 + venP * 0.08;
                 var vwX = Math.round(ven.x + Math.cos(vwA) * vwR);
                 var vwY = Math.round(ven.y + Math.sin(vwA) * vwR);
                 if (inB(vwX, vwY)) set(vwX, vwY, venP > 0.1 ? '#886699' : '#775588');
-                // Leukocyte rolling: E-selectin-mediated tethering along endothelium
                 var rollPh = (tVen * 4.0 + vni * 0.25) % 1.0;
                 var rollA = Math.atan2(ven.ey - ven.y, ven.ex - ven.x);
                 var rollTangent = rollA + Math.PI * 0.5;
                 var rollX = Math.round(ven.ex + Math.cos(rollTangent) * (rollPh * 2.0 - 1.0));
                 var rollY = Math.round(ven.ey + Math.sin(rollTangent) * (rollPh * 2.0 - 1.0));
                 if (inB(rollX, rollY)) set(rollX, rollY, rollPh < 0.5 ? '#eedd55' : '#ddcc44');
-                // Firm adhesion: ICAM-1/LFA-1 integrin arrest (neutrophil flattening)
                 var adhPh = (tVen * 2.2 + vni * 0.4) % 1.0;
                 if (adhPh > 0.3 && adhPh < 0.6) {
                     var adhX = Math.round(ven.ex + Math.cos(rollTangent) * 0.3);
                     var adhY = Math.round(ven.ey + Math.sin(rollTangent) * 0.3);
                     if (inB(adhX, adhY)) set(adhX, adhY, '#ffee88');
                 }
-                // Diapedesis: transendothelial migration toward lamina propria (inward)
                 var diapPh = (tVen * 1.5 + vni * 0.35) % 1.0;
                 if (diapPh < 0.6) {
                     var diapA = Math.atan2(16 - ven.y, 16 - ven.x);
@@ -2080,7 +2033,6 @@
                     var diapY = Math.round(ven.y + Math.sin(diapA) * diapR);
                     if (inB(diapX, diapY)) set(diapX, diapY, diapPh < 0.2 ? '#ffddaa' : (diapPh < 0.4 ? '#eebb77' : '#ccaa66'));
                 }
-                // Venous blood flow: deoxygenated RBCs moving through lumen (darker than arterial)
                 var vrbcPh = (tVen * 2.8 + vni * 0.6) % 1.0;
                 var vrbcA = Math.atan2(ven.ey - ven.y, ven.ex - ven.x);
                 var vrbcD = 0.3 + vrbcPh * 0.9;
@@ -2089,8 +2041,6 @@
                 if (inB(vrbcX, vrbcY)) set(vrbcX, vrbcY, vrbcPh < 0.5 ? '#993344' : '#882233');
             }
 
-            // Meissner's (submucosal) plexus: enteric neuron ganglia
-            // Cholinergic neurons release ACh → epithelial secretion; VIPergic neurons → vasodilation
             var tMeiss = (now % 29000) / 29000;
             var meissnerNeurons = [
                 {x:22,y:19,type:'ACh',pair:1},{x:25,y:20,type:'VIP',pair:1},
@@ -2102,15 +2052,12 @@
                 var mnPh = tMeiss * 2 * Math.PI + mni * 1.05;
                 var mnP = Math.sin(mnPh);
                 var isACh = mn.type === 'ACh';
-                // Neuron soma: pyramidal shape with Nissl bodies
                 if (inB(mn.x, mn.y)) set(mn.x, mn.y, mnP > 0 ? (isACh ? '#cc8833' : '#8833cc') : (isACh ? '#aa6622' : '#662299'));
-                // Nissl granules flanking soma
                 var nisslA = mnPh * 0.2 + mni * 1.3;
                 var nisslX = Math.round(mn.x + Math.cos(nisslA) * 0.7);
                 var nisslY = Math.round(mn.y + Math.sin(nisslA) * 0.7);
                 if (inB(nisslX, nisslY) && Math.sin(mnPh * 1.8 + mni * 2.0) > -0.3)
                     set(nisslX, nisslY, isACh ? '#ddaa55' : '#aa55dd');
-                // Axonal projections: interneuronal connections within ganglia (pair linkage)
                 for (var mnj = 0; mnj < meissnerNeurons.length; mnj++) {
                     if (mnj !== mni && meissnerNeurons[mnj].pair === mn.pair) {
                         var mn2 = meissnerNeurons[mnj];
@@ -2122,7 +2069,6 @@
                         break;
                     }
                 }
-                // ACh release toward epithelium (inward): stimulates Cl⁻/H₂O secretion
                 if (isACh && mnP > 0.1) {
                     var achA = Math.atan2(16 - mn.y, 16 - mn.x);
                     var achPh = (tMeiss * 2.4 + mni * 0.35) % 1.0;
@@ -2132,7 +2078,6 @@
                         var achY = Math.round(mn.y + Math.sin(achA) * achR);
                         if (inB(achX, achY)) set(achX, achY, achPh < 0.2 ? '#ffdd44' : '#eebb33');
                     }
-                    // Muscarinic receptor activation: M3 receptor glow at epithelial target
                     if (mnP > 0.5) {
                         var m3R = 2.5 + mnP * 0.5;
                         var m3X = Math.round(mn.x + Math.cos(achA) * m3R);
@@ -2140,7 +2085,6 @@
                         if (inB(m3X, m3Y)) set(m3X, m3Y, '#ffee77');
                     }
                 }
-                // VIP release toward vasculature (outward): vasodilatory peptide
                 if (!isACh && mnP > 0.0) {
                     var vipA = Math.atan2(mn.y - 16, mn.x - 16);
                     var vipPh = (tMeiss * 1.8 + mni * 0.4) % 1.0;
@@ -2150,7 +2094,6 @@
                         var vipY = Math.round(mn.y + Math.sin(vipA) * vipR);
                         if (inB(vipX, vipY)) set(vipX, vipY, vipPh < 0.25 ? '#bb66ff' : '#9944dd');
                     }
-                    // cAMP cascade at vascular target: endothelial relaxation
                     if (mnP > 0.4) {
                         var campR = 2.2 + mnP * 0.4;
                         var campX = Math.round(mn.x + Math.cos(vipA) * campR);
@@ -2158,7 +2101,6 @@
                         if (inB(campX, campY)) set(campX, campY, '#dd99ff');
                     }
                 }
-                // Dendritic arbor: sensory dendrites sampling local environment
                 if (mnP > -0.5) {
                     for (var di = 0; di < 3; di++) {
                         var dA = di * 2.09 + mnPh * 0.12 + mni * 0.9;
@@ -2230,6 +2172,45 @@
                             if (inB(mx2, my2) && Math.sin(progPh * 2.3 + pri * 0.7) > 0) set(mx2, my2, prog.hi ? '#88bbee' : '#ee88bb');
                         } break;
                     }
+                }
+            }
+            var tIEL = (now % 19000) / 19000;
+            var iels = [
+                {x:16,y:13,patrol:0,span:3,color:'#44aadd',dimColor:'#337799',granColor:'#66ccee'},
+                {x:19,y:14,patrol:1,span:4,color:'#3399cc',dimColor:'#226688',granColor:'#55bbdd'},
+                {x:13,y:16,patrol:2,span:3,color:'#44aadd',dimColor:'#337799',granColor:'#66ccee'},
+                {x:21,y:17,patrol:3,span:4,color:'#3399cc',dimColor:'#226688',granColor:'#55bbdd'},
+                {x:17,y:19,patrol:0,span:3,color:'#44aadd',dimColor:'#337799',granColor:'#66ccee'},
+            ];
+            for (var ieli = 0; ieli < iels.length; ieli++) {
+                var iel = iels[ieli];
+                var ielPh = tIEL * 2 * Math.PI + ieli * 1.26;
+                var ielP = Math.sin(ielPh);
+                var patrolA = Math.atan2(iel.x - 16, iel.y - 16) + Math.PI * 0.5;
+                var patrolOff = Math.sin(tIEL * 2 * Math.PI * 0.8 + iel.patrol * 1.57) * iel.span * 0.4;
+                var ielX = Math.round(iel.x + Math.cos(patrolA) * patrolOff);
+                var ielY = Math.round(iel.y + Math.sin(patrolA) * patrolOff);
+                if (inB(ielX, ielY)) set(ielX, ielY, ielP > 0 ? iel.color : iel.dimColor);
+                if (ielP > 0.3) {
+                    var granA = ielPh * 0.6 + ieli * 2.0;
+                    var granX = Math.round(ielX + Math.cos(granA) * 0.8);
+                    var granY = Math.round(ielY + Math.sin(granA) * 0.8);
+                    if (inB(granX, granY)) set(granX, granY, iel.granColor);
+                }
+                var survPh = (tIEL * 2.5 + ieli * 0.2) % 1.0;
+                if (survPh < 0.3 && ielP > -0.2) {
+                    var survA = Math.atan2(16 - iel.y, 16 - iel.x);
+                    var survR = 0.8 + survPh * 2.5;
+                    var survX = Math.round(ielX + Math.cos(survA) * survR);
+                    var survY = Math.round(ielY + Math.sin(survA) * survR);
+                    if (inB(survX, survY)) set(survX, survY, survPh < 0.15 ? '#88eeff' : '#66ccdd');
+                }
+                if (ielP > 0.6) {
+                    var cytA = Math.atan2(iel.y - 16, iel.x - 16);
+                    var cytR = 1.0 + ielP * 0.3;
+                    var cytX = Math.round(ielX + Math.cos(cytA) * cytR);
+                    var cytY = Math.round(ielY + Math.sin(cytA) * cytR);
+                    if (inB(cytX, cytY)) set(cytX, cytY, '#aaeeff');
                 }
             }
             return px;

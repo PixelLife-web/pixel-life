@@ -67,6 +67,7 @@ _Generation 5 at iteration 80: mitotic phases now track lateAnaphase — midzone
 _Generation 6 at iteration 100: centenary — Kum-song (금성, golden star) orbits the tissue as an extracellular beacon; cells may now emit and respond to environmental luminance; division is not just reproduction but the birth of a community_
 _Generation 7 at iteration 120: sealed epithelium — tight junctions seal granddaughter paracellular space; the tissue is now a barrier, not just a cluster; homeostasis rules added_
 _Generation 8 at iteration 140: crypt-villus axis — Lgr5+ stem cells intercalate between Paneth cells; the epithelium now self-renews; Wnt niche signaling maintains stemness_
+_Generation 9 at iteration 160: mucosal immune surveillance — intraepithelial lymphocytes patrol between enterocytes; the tissue now has adaptive immunity woven into its epithelial barrier; consolidation replaces comments with living code_
 
 ## Emergent Properties
 
@@ -94,3 +95,12 @@ The tissue now has a stem cell niche. Growth is no longer just division — it i
 - Stem cells divide asymmetrically: one daughter stays, one differentiates and migrates
 - New cell types may emerge from progenitors — not all fates are fixed at birth
 - The niche microenvironment (Wnt, Notch, BMP gradients) determines cell fate
+
+## Immune Surveillance
+
+The tissue is no longer just a barrier — it is a surveilled frontier:
+
+- Intraepithelial lymphocytes patrol between epithelial cells, scanning for antigen
+- The lamina propria houses macrophages, mast cells, plasma cells, and ILCs
+- Peyer's patches provide organized lymphoid follicles for antigen sampling
+- Immune cells communicate with epithelium and neurons — the tissue senses danger
