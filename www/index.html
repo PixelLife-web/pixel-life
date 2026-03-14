@@ -2142,6 +2142,62 @@
                     if(p>0.6){s(Math.round(it.x+Math.cos(drA)*(drR+1.0)),Math.round(it.y+Math.sin(drA)*(drR+1.0)),'#88bb88');}}
                 }},
             ]);
+            // Flumizole — COX-2 inhibition in lamina propria
+            // Arachidonic acid is released from membrane phospholipids by PLA2
+            // COX-2 converts arachidonic acid → PGH2 → PGE2 (prostaglandin E2)
+            // PGE2 mediates mucosal defense: vasodilation, mucus secretion, HCO3⁻ output
+            // Flumizole (NSAID) binds COX-2 active site, blocking PGE2 synthesis
+            // Result: reduced inflammation but also reduced cytoprotective prostaglandins
+            var tFlum = (now % 31000) / 31000;
+            var cox2Sites = [
+                {x:22,y:22,aa:0.0},{x:15,y:20,aa:1.3},{x:25,y:18,aa:2.6},{x:19,y:25,aa:3.9},
+            ];
+            for (var ci3 = 0; ci3 < cox2Sites.length; ci3++) {
+                var cox = cox2Sites[ci3];
+                var coxPh = tFlum * 2 * Math.PI + cox.aa;
+                var coxP = Math.sin(coxPh);
+                // Flumizole molecules circulate through lamina propria (teal-green drug particles)
+                var flumAngle = tFlum * 2 * Math.PI * 1.3 + ci3 * 1.57;
+                var flumR = 1.5 + Math.sin(coxPh * 0.7) * 0.5;
+                var flumX = Math.round(cox.x + Math.cos(flumAngle) * flumR);
+                var flumY = Math.round(cox.y + Math.sin(flumAngle) * flumR);
+                if (inB(flumX, flumY)) set(flumX, flumY, Math.sin(coxPh * 2.1 + ci3) > 0 ? '#33cccc' : '#229999');
+                // COX-2 enzyme body: when flumizole is near (bound), enzyme dims
+                var flumBound = Math.sin(coxPh * 1.5 + ci3 * 0.8) > 0.3;
+                if (inB(cox.x, cox.y)) set(cox.x, cox.y, flumBound ? '#667788' : '#cc6644');
+                // Arachidonic acid substrate approaching COX-2 (wavy lipid chain)
+                if (!flumBound && coxP > -0.2) {
+                    var aaA = coxPh * 0.4 + ci3 * 2.1;
+                    var aaX = Math.round(cox.x + Math.cos(aaA) * 1.0);
+                    var aaY = Math.round(cox.y + Math.sin(aaA) * 1.0);
+                    if (inB(aaX, aaY)) set(aaX, aaY, '#eecc44');
+                }
+                // PGE2 secretion: only when COX-2 is active (not inhibited by flumizole)
+                if (!flumBound && coxP > 0.2) {
+                    var pgA = Math.atan2(cox.y - 16, cox.x - 16);
+                    var pgR = 1.2 + coxP * 0.6;
+                    var pgX = Math.round(cox.x + Math.cos(pgA) * pgR);
+                    var pgY = Math.round(cox.y + Math.sin(pgA) * pgR);
+                    if (inB(pgX, pgY)) set(pgX, pgY, coxP > 0.5 ? '#ff8866' : '#dd7755');
+                    // PGE2 downstream: vasodilation signal radiating outward
+                    if (coxP > 0.6) {
+                        var vdR = pgR + 1.0;
+                        var vdX = Math.round(cox.x + Math.cos(pgA) * vdR);
+                        var vdY = Math.round(cox.y + Math.sin(pgA) * vdR);
+                        if (inB(vdX, vdY)) set(vdX, vdY, '#ffaa88');
+                    }
+                }
+                // Inhibition marker: when flumizole is bound, show suppression halo
+                if (flumBound) {
+                    for (var ihi = 0; ihi < 4; ihi++) {
+                        var ihA = ihi * 1.57 + coxPh * 0.2;
+                        var ihX = Math.round(cox.x + Math.cos(ihA) * 0.9);
+                        var ihY = Math.round(cox.y + Math.sin(ihA) * 0.9);
+                        if (inB(ihX, ihY) && Math.sin(coxPh * 3.0 + ihi * 1.5) > 0.1)
+                            set(ihX, ihY, '#88aaaa');
+                    }
+                }
+            }
             // Notch lateral inhibition: Delta-Notch progenitor pairs with signal exchange
             var tNotch = (now % 22000) / 22000;
             var progenitors = [
