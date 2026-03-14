@@ -440,6 +440,19 @@
             { orbitR: 1.8, baseAngle: 0.5, speed: -0.38, color: '#998833' },
         ];
 
+        // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
+        // They reverse CDK1 effects on lamins, condensins, NPCs — restoring interphase state
+        cellA.phosphatases = [
+            { orbitR: 1.6, baseAngle: 0.9, speed: 0.7, color: '#44ddbb' },
+            { orbitR: 2.4, baseAngle: 3.1, speed: -0.6, color: '#33ccaa' },
+            { orbitR: 1.9, baseAngle: 5.4, speed: 0.55, color: '#44ddbb' },
+        ];
+        cellB.phosphatases = [
+            { orbitR: 1.6, baseAngle: 2.3, speed: -0.65, color: '#44ddbb' },
+            { orbitR: 2.4, baseAngle: 4.8, speed: 0.58, color: '#33ccaa' },
+            { orbitR: 1.9, baseAngle: 0.6, speed: -0.52, color: '#44ddbb' },
+        ];
+
         // METAPHASE: checkpoint kinases silenced, SAC satisfied
         // Mad2 released — dim remnant drifts in cytoplasm
         cellA.checkpointKinases = [
@@ -505,32 +518,32 @@
         cellA.dnaLigase = [];
         cellB.dnaLigase = [];
 
-        // TELOPHASE ONSET: sisters at poles, nuclear envelopes reforming
-        // CDK1 inactive → phosphatases (PP1/PP2A) dephosphorylate substrates
-        // Lamins dephosphorylate and reassemble → nuclear envelope reforms
-        // Chromosomes begin decondensing as condensin is released
-        // Contractile ring (actomyosin) assembles at cell equator → furrow initiates
+        // MID-TELOPHASE: envelopes nearly sealed, furrow deepening
+        // PP1/PP2A phosphatases dephosphorylating CDK1 substrates throughout cell
+        // Lamins mostly dephosphorylated → envelopes closing, NPCs reassembling
+        // Chromosomes decondensing as condensin releases progressively
+        // Contractile ring constricting — cleavage furrow at ~45% ingression
         cellA.prophase = {
-            condensation: 0.8, // chromosomes beginning to decondense
+            condensation: 0.6, // chromosomes decondensing as condensin releases
             pole1Target: { x: 18, y: 6 },
             pole2Target: { x: 24, y: 12 },
             prometaphase: true,
             metaphase: true,
             anaphase: true,
             lateAnaphase: true,
-            telophase: true, // nuclear envelopes reforming, chromosomes decondensing
+            telophase: true, // mid-telophase: envelopes closing, furrow deepening
             spindleForming: true,
-            asterCount: 10, // asters shrinking as spindle disassembles
-            laminPhospho: 0.3, // lamins dephosphorylating → envelope reassembly
-            npcDisassembly: 0.3, // NPCs reassembling into new envelopes
-            envelopeVesicles: false, // vesicles recruited back to reform envelope
+            asterCount: 8, // asters shrinking as spindle disassembles
+            laminPhospho: 0.12, // lamins mostly dephosphorylated → envelope nearly sealed
+            npcDisassembly: 0.12, // NPCs reassembling rapidly into new envelopes
+            envelopeVesicles: false,
             congressProgress: 1.0,
             sacSatisfaction: 1.0,
             auroraBActive: false,
-            furrowInitiation: 0.2, // contractile ring beginning to form
+            furrowInitiation: 0.45, // contractile ring constricting, furrow deepening
         };
         cellB.prophase = {
-            condensation: 0.8,
+            condensation: 0.6,
             pole1Target: { x: 8, y: 20 },
             pole2Target: { x: 14, y: 26 },
             prometaphase: true,
@@ -539,14 +552,14 @@
             lateAnaphase: true,
             telophase: true,
             spindleForming: true,
-            asterCount: 10,
-            laminPhospho: 0.3,
-            npcDisassembly: 0.3,
+            asterCount: 8,
+            laminPhospho: 0.12,
+            npcDisassembly: 0.12,
             envelopeVesicles: false,
             congressProgress: 1.0,
             sacSatisfaction: 1.0,
             auroraBActive: false,
-            furrowInitiation: 0.2,
+            furrowInitiation: 0.45,
         };
 
         // Condensin complexes: ring-shaped SMC proteins loading onto chromosomes
@@ -570,7 +583,7 @@
         cellA.separase = [];
         cellB.separase = [];
 
-        // Telophase: envelopes reform, chromosomes decondense, furrow initiates
+        // Mid-telophase: envelopes sealing, chromosomes decondensing, furrow deepening
         var growthRate = 0.8;
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
@@ -1779,6 +1792,37 @@
                 }
             }
 
+            // PP1/PP2A phosphatases: dephosphorylation wave sweeping through the cell
+            var phosphPixels = {};
+            if (cell.phosphatases && cell.separated) {
+                var tPhos = (t * 8000 / 4500) % 1.0;
+                for (var phi = 0; phi < cell.phosphatases.length; phi++) {
+                    var ph = cell.phosphatases[phi];
+                    var phAngle = ph.baseAngle + ph.speed * tOrbit;
+                    var phX = Math.round(cell.cx + Math.cos(phAngle) * ph.orbitR);
+                    var phY = Math.round(cell.cy + Math.sin(phAngle) * ph.orbitR);
+                    var phPulse = Math.sin(tPhos * 2 * Math.PI * 2.5 + phi * 1.9);
+                    var phDx = phX - cell.cx;
+                    var phDy = phY - cell.cy;
+                    var phDist = Math.sqrt(phDx * phDx + phDy * phDy);
+                    if (phDist < maxR - 1.0) {
+                        if (phX >= 0 && phX < size && phY >= 0 && phY < size) {
+                            // Bright flash when dephosphorylating a substrate
+                            phosphPixels[phX + ',' + phY] = phPulse > 0.2 ? '#66ffdd' : ph.color;
+                        }
+                        // Dephosphorylation ripple: 1-pixel trail showing substrate being restored
+                        if (phPulse > 0.5) {
+                            var ripAngle = phAngle + 0.4;
+                            var ripX = Math.round(cell.cx + Math.cos(ripAngle) * (ph.orbitR - 0.5));
+                            var ripY = Math.round(cell.cy + Math.sin(ripAngle) * (ph.orbitR - 0.5));
+                            if (ripX >= 0 && ripX < size && ripY >= 0 && ripY < size) {
+                                phosphPixels[ripX + ',' + ripY] = '#55eebb';
+                            }
+                        }
+                    }
+                }
+            }
+
             // Telophase: central spindle / midbody forms at equator, cleavage furrow ingresses
             // Anaphase remnant: separase flashes fade
             var sacPixels = {};
@@ -1823,9 +1867,11 @@
                         }
                     }
                     // Cleavage furrow: fully closed after abscission, constricting before
-                    for (var fI = -2; fI <= 2; fI++) {
-                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.7);
-                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.7);
+                    var furrowDepth = cell.prophase.furrowInitiation || 0.2;
+                    var furrowSpan = cell.prophase.abscission ? 2 : (furrowDepth > 0.3 ? 3 : 2);
+                    for (var fI = -furrowSpan; fI <= furrowSpan; fI++) {
+                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.6);
+                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.6);
                         if (fX >= 0 && fX < size && fY >= 0 && fY < size) {
                             var fPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + fI * 0.6);
                             if (cell.prophase.abscission) {
@@ -2001,7 +2047,8 @@
                 ligasePixels: ligasePixels,
                 cdc25Pixels: cdc25Pixels,
                 wee1Pixels: wee1Pixels,
-                securinPixels: securinPixels
+                securinPixels: securinPixels,
+                phosphPixels: phosphPixels
             };
         }
 
@@ -2298,6 +2345,8 @@
                                 color = dd.cycBPixels[key];
                             } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
                                 color = dd.cdc25Pixels[key];
+                            } else if (dd.phosphPixels && dd.phosphPixels[key]) {
+                                color = dd.phosphPixels[key];
                             } else if (dd.wee1Pixels && dd.wee1Pixels[key]) {
                                 color = dd.wee1Pixels[key];
                             } else if (dd.mitoPixels[key]) {
