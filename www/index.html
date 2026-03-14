@@ -430,13 +430,30 @@
             });
         }
 
-        // G1: Cyclin D-CDK4/6 mono-phosphorylates Rb, partial E2F release
-        // Trace cyclin E appears as E2F begins transcribing its gene
+        // RESTRICTION POINT CROSSED: cyclin E-CDK2 hyper-phosphorylates Rb
+        // E2F positive feedback loop: E2F → cyclin E → CDK2 → Rb hyper-P → more E2F
+        // Cyclin B (M-phase cyclin) still suppressed — only trace in cytoplasm
         cellA.cyclins = [
             { orbitR: 3.0, baseAngle: 1.2, speed: 0.6, color: '#44bbaa' },
         ];
         cellB.cyclins = [
             { orbitR: 3.0, baseAngle: 4.0, speed: -0.55, color: '#44bbaa' },
+        ];
+
+        // Cyclin E-CDK2: restriction point effector, bright green particles
+        // Accumulates via E2F transcription, hyper-phosphorylates Rb (positive feedback)
+        // Both nuclear (phosphorylating Rb) and cytoplasmic (CDK2 shuttling)
+        cellA.cyclinE = [
+            { orbitR: 0.9, baseAngle: 2.1, speed: 0.9, color: '#33ee88', nuclear: true },
+            { orbitR: 0.7, baseAngle: 4.8, speed: -0.75, color: '#44ff99', nuclear: true },
+            { orbitR: 2.4, baseAngle: 0.5, speed: 0.5, color: '#33dd77', nuclear: false },
+            { orbitR: 3.3, baseAngle: 3.0, speed: -0.4, color: '#33dd77', nuclear: false },
+        ];
+        cellB.cyclinE = [
+            { orbitR: 0.8, baseAngle: 0.7, speed: -0.85, color: '#33ee88', nuclear: true },
+            { orbitR: 0.9, baseAngle: 3.5, speed: 0.8, color: '#44ff99', nuclear: true },
+            { orbitR: 2.4, baseAngle: 2.2, speed: -0.45, color: '#33dd77', nuclear: false },
+            { orbitR: 3.3, baseAngle: 5.5, speed: 0.42, color: '#33dd77', nuclear: false },
         ];
 
         // PP1/PP2A phosphatases: dephosphorylation wave drives telophase
@@ -452,13 +469,14 @@
             { orbitR: 1.9, baseAngle: 0.6, speed: -0.52, color: '#44ddbb' },
         ];
 
-        // METAPHASE: checkpoint kinases silenced, SAC satisfied
-        // Mad2 released — dim remnant drifts in cytoplasm
+        // Rb hyper-phosphorylated: cyclin E-CDK2 completes multi-site phosphorylation
+        // Rb releases E2F completely — cell is now committed past restriction point
+        // Dim phospho-Rb remnant drifts inside nucleus (fully inactivated)
         cellA.checkpointKinases = [
-            { scanSpeed: 0.02, phase: 0, color: '#334433' },
+            { scanSpeed: 0.015, phase: 0, color: '#223322' },
         ];
         cellB.checkpointKinases = [
-            { scanSpeed: -0.02, phase: 0.15, color: '#334433' },
+            { scanSpeed: -0.015, phase: 0.15, color: '#223322' },
         ];
 
         // Cdc25 phosphatase: job done, being degraded — only 1 fading particle remains
@@ -482,12 +500,15 @@
             { orbitR: 0.6, baseAngle: 5.5, speed: -0.75, color: '#44eeff' },
         ];
 
-        // Cyclin A: suppressed in G1 by APC/C-Cdh1 — only trace amounts
+        // Cyclin A: beginning to rise — E2F activates CCNA2 transcription at restriction point
+        // APC/C-Cdh1 still partially active, so cyclin A levels still modest
         cellA.cyclinA = [
             { orbitR: 2.8, baseAngle: 4.0, speed: -0.4, color: '#cc6699' },
+            { orbitR: 3.4, baseAngle: 1.5, speed: 0.35, color: '#dd77aa' },
         ];
         cellB.cyclinA = [
             { orbitR: 2.8, baseAngle: 1.0, speed: 0.42, color: '#cc6699' },
+            { orbitR: 3.4, baseAngle: 4.3, speed: -0.38, color: '#dd77aa' },
         ];
 
         // Cyclin D-CDK4/6: mitogen-responsive G1 cyclin, driven by MAPK/ERK cascade
@@ -504,9 +525,9 @@
             { orbitR: 1.0, baseAngle: 4.5, speed: -0.65, color: '#eebb44', nuclear: true },
         ];
 
-        // G1 INTERPHASE: mitosis complete, daughters are independent cells
-        // Nuclear envelopes fully reformed, chromatin decondensed, spindle disassembled
-        // Cells enter G1 growth phase — accumulating mass before next S phase
+        // G1→S TRANSITION: restriction point crossed, cells committed to division
+        // Cyclin E-CDK2 hyper-phosphorylates Rb, E2F fully released, S-phase genes activated
+        // Growth-factor-independent — positive feedback loop locks commitment
         cellA.prophase = null;
         cellB.prophase = null;
 
@@ -1464,15 +1485,16 @@
                         checkPixels[ckX + ',' + ckY] = samplePulse > 0.3 ? '#669966' : ck.color;
                     }
                 }
-                // Restriction point passed: green glow on nuclear envelope = "S phase committed"
+                // Restriction point crossed: bright green pulse on nuclear envelope
+                // Cell is now growth-factor-independent, irreversibly committed to S phase
                 var alignPulse = Math.sin(tCheck * 2 * Math.PI * 0.5);
-                if (alignPulse > 0.6) {
-                    for (var cpe = 0; cpe < 4; cpe++) {
-                        var cpAngle = cpe * Math.PI / 2 + tCheck * 0.5;
+                if (alignPulse > 0.4) {
+                    for (var cpe = 0; cpe < 6; cpe++) {
+                        var cpAngle = cpe * Math.PI / 3 + tCheck * 0.5;
                         var cpx = Math.round(cell.cx + Math.cos(cpAngle) * unifiedNucR3);
                         var cpy = Math.round(cell.cy + Math.sin(cpAngle) * unifiedNucR3);
                         if (cpx >= 0 && cpx < size && cpy >= 0 && cpy < size) {
-                            checkPixels[cpx + ',' + cpy] = '#88cc88';
+                            checkPixels[cpx + ',' + cpy] = alignPulse > 0.7 ? '#aaffaa' : '#88ee88';
                         }
                     }
                 }
@@ -1549,6 +1571,41 @@
                         var sparkY = Math.round(cell.cy + Math.sin(sparkAngle) * (cydR + 0.5));
                         if (sparkX >= 0 && sparkX < size && sparkY >= 0 && sparkY < size) {
                             cycDPixels[sparkX + ',' + sparkY] = '#ffdd88';
+                        }
+                    }
+                }
+            }
+
+            // Cyclin E-CDK2: restriction point effector particles
+            var cycEPixels = {};
+            if (cell.cyclinE && cell.separated) {
+                var tCycE = (t * 8000 / 4800) % 1.0;
+                for (var cei = 0; cei < cell.cyclinE.length; cei++) {
+                    var cye = cell.cyclinE[cei];
+                    var cyeAngle = cye.baseAngle + cye.speed * tOrbit;
+                    var cyeR = cye.orbitR;
+                    var cyex = Math.round(cell.cx + Math.cos(cyeAngle) * cyeR);
+                    var cyey = Math.round(cell.cy + Math.sin(cyeAngle) * cyeR);
+                    var cyePulse = Math.sin(tCycE * 2 * Math.PI + cei * 1.3);
+                    var cyeDx = cyex - cell.cx;
+                    var cyeDy = cyey - cell.cy;
+                    var cyeDist = Math.sqrt(cyeDx * cyeDx + cyeDy * cyeDy);
+                    var cyeInRange = cye.nuclear
+                        ? (cyeDist < nucR + 0.5)
+                        : (cyeDist < maxR - 1.0 && cyeDist > nucR + 0.8);
+                    if (cyeInRange && cyex >= 0 && cyex < size && cyey >= 0 && cyey < size) {
+                        // Nuclear cyclin E flashes bright when phosphorylating Rb
+                        cycEPixels[cyex + ',' + cyey] = cye.nuclear
+                            ? (cyePulse > 0.1 ? '#55ffaa' : '#44ee99')
+                            : (cyePulse > 0.3 ? '#55eebb' : cye.color);
+                    }
+                    // Hyper-phosphorylation spark: nuclear cyclin E emits sparks at Rb sites
+                    if (cye.nuclear && cyePulse > 0.5) {
+                        var ceSparkAngle = cyeAngle + 0.6;
+                        var ceSparkX = Math.round(cell.cx + Math.cos(ceSparkAngle) * (cyeR + 0.4));
+                        var ceSparkY = Math.round(cell.cy + Math.sin(ceSparkAngle) * (cyeR + 0.4));
+                        if (ceSparkX >= 0 && ceSparkX < size && ceSparkY >= 0 && ceSparkY < size) {
+                            cycEPixels[ceSparkX + ',' + ceSparkY] = '#88ffcc'; // phosphorylation spark
                         }
                     }
                 }
@@ -1801,6 +1858,7 @@
                 e2fPixels: e2fPixels,
                 cycAPixels: cycAPixels,
                 cdc25Pixels: cdc25Pixels,
+                cycEPixels: cycEPixels,
                 cycDPixels: cycDPixels,
                 phosphPixels: phosphPixels,
                 gfPixels: gfPixels
@@ -2094,6 +2152,8 @@
                                 color = dd.cyclinPixels[key];
                             } else if (dd.cycAPixels && dd.cycAPixels[key]) {
                                 color = dd.cycAPixels[key];
+                            } else if (dd.cycEPixels && dd.cycEPixels[key]) {
+                                color = dd.cycEPixels[key];
                             } else if (dd.cdc25Pixels && dd.cdc25Pixels[key]) {
                                 color = dd.cdc25Pixels[key];
                             } else if (dd.cycDPixels && dd.cycDPixels[key]) {
