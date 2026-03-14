@@ -471,21 +471,21 @@
         // TELOPHASE: chromatids at poles, nuclear envelopes reform, chromosomes decondense
         // Cleavage furrow begins ingressing at the cell equator
         cellA.prophase = {
-            condensation: 0.6, // chromosomes beginning to decondense
+            condensation: 0.4, // chromosomes decondensing further into diffuse chromatin
             pole1Target: { x: 24, y: 5 },
             pole2Target: { x: 18, y: 13 },
-            asterCount: 6, // asters diminishing
+            asterCount: 4, // asters fading as spindle disassembles
             spindleForming: true,
             prometaphase: true,
             metaphase: true,
             anaphase: true,
-            telophase: true, // nuclear envelopes reforming, chromosomes decondensing
+            telophase: true, // late telophase — envelopes nearly complete, ESCRT-III at midbody
         };
         cellB.prophase = {
-            condensation: 0.6,
+            condensation: 0.4,
             pole1Target: { x: 14, y: 19 },
             pole2Target: { x: 8, y: 27 },
-            asterCount: 6,
+            asterCount: 4,
             spindleForming: true,
             prometaphase: true,
             metaphase: true,
@@ -502,11 +502,11 @@
             var growthPulse = (1 + Math.sin(tGrowth * 2 * Math.PI)) * 0.5; // 0 to 1
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
             // Telophase cells elongate along spindle axis as furrow constricts
-            var elongation = cell.separated ? (cell.prophase && cell.prophase.telophase ? 0.6 : 0.3) : 1.1;
+            var elongation = cell.separated ? (cell.prophase && cell.prophase.telophase ? 0.8 : 0.3) : 1.1;
             // Cytokinesis constriction: cell pinches at equator perpendicular to spindle
             var cytoConstriction = 0;
             if (cell.separated && cell.prophase && cell.prophase.telophase) {
-                cytoConstriction = 0.35; // furrow depth fraction — how much the waist narrows
+                cytoConstriction = 0.55; // furrow nearly complete — deep pinch, midbody thinning
             }
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
@@ -549,7 +549,7 @@
                         var eAngle = ea * 2 * Math.PI / 16;
                         // Envelope reassembles gradually — some gaps still closing
                         var reformPulse = Math.sin(t * 2 * Math.PI * 2 + ea * 0.7 + pi2 * 3);
-                        if (ea % 5 === 0 && reformPulse > 0.3) continue;
+                        if (ea % 8 === 0 && reformPulse > 0.6) continue; // fewer gaps — envelope nearly complete
                         var ex = Math.round(pole.x + Math.cos(eAngle) * teleNucR);
                         var ey = Math.round(pole.y + Math.sin(eAngle) * teleNucR);
                         if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
@@ -811,7 +811,7 @@
                     }
                     // SPINDLE MICROTUBULES: fully formed between the two poles
                     if (cell.prophase.spindleForming) {
-                        var spindleCount = cell.prophase.telophase ? 6 : (cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4)));
+                        var spindleCount = cell.prophase.telophase ? 4 : (cell.prophase.anaphase ? 10 : (cell.prophase.metaphase ? 8 : (cell.prophase.prometaphase ? 6 : 4)));
                         for (var spi = 0; spi < spindleCount; spi++) {
                             var spFrac = (spi + 1) / (spindleCount + 1);
                             var spx = p1x + (p2x - p1x) * spFrac;
@@ -1411,46 +1411,38 @@
                     // TELOPHASE: central spindle condenses into midbody at equator
                     var spindleAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
                     var perpAngle = spindleAngle + Math.PI / 2;
-                    // Midbody: dense bundle compacting as furrow constricts — flemming body forming
+                    // Midbody: thinning to a narrow intercellular bridge — abscission approaches
                     var mbPulse = Math.sin(tSAC * 2 * Math.PI * 0.8);
-                    // Central dark ring of the midbody
+                    // Central flemming body: bright dense core of the midbody
                     var mbCX = Math.round(sacMidX);
                     var mbCY = Math.round(sacMidY);
                     if (mbCX >= 0 && mbCX < size && mbCY >= 0 && mbCY < size) {
-                        sacPixels[mbCX + ',' + mbCY] = mbPulse > 0 ? '#aaddee' : '#99ccdd';
+                        // Flemming body glows brighter as ESCRT-III machinery assembles
+                        sacPixels[mbCX + ',' + mbCY] = mbPulse > 0 ? '#bbeeff' : '#aaddee';
                     }
-                    // Flanking dense regions (midbody arms)
+                    // Midbody arms thin — only a thread connects the two halves
                     for (var mbI = -1; mbI <= 1; mbI += 2) {
-                        var mbArmX = Math.round(sacMidX + Math.cos(spindleAngle) * mbI * 1.0);
-                        var mbArmY = Math.round(sacMidY + Math.sin(spindleAngle) * mbI * 1.0);
+                        var mbArmX = Math.round(sacMidX + Math.cos(spindleAngle) * mbI * 0.7);
+                        var mbArmY = Math.round(sacMidY + Math.sin(spindleAngle) * mbI * 0.7);
                         if (mbArmX >= 0 && mbArmX < size && mbArmY >= 0 && mbArmY < size) {
-                            sacPixels[mbArmX + ',' + mbArmY] = mbPulse > 0 ? '#88bbcc' : '#779aaa';
+                            // ESCRT-III spiral pulses along the bridge
+                            var escrtPulse = Math.sin(tSAC * 2 * Math.PI * 2.5 + mbI * 1.5);
+                            sacPixels[mbArmX + ',' + mbArmY] = escrtPulse > 0.3 ? '#99ddee' : '#77aabb';
                         }
                     }
-                    // Cleavage furrow: contractile ring constricting — deep ingression
-                    var furrowDepth = 2.5; // deepening ingression
-                    // Actomyosin ring tightens — two arcs pinch from both sides of the equator
-                    for (var fI = -3; fI <= 3; fI++) {
-                        var fR = Math.abs(fI) * 0.9;
+                    // Cleavage furrow: contractile ring nearly closed — extreme pinch
+                    // Only the innermost pixels remain as the bridge narrows
+                    for (var fI = -2; fI <= 2; fI++) {
                         // Furrow constricts inward from both sides along the perpendicular
-                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.9);
-                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.9);
+                        var fX = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.7);
+                        var fY = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.7);
                         if (fX >= 0 && fX < size && fY >= 0 && fY < size) {
                             var fPulse = Math.sin(tSAC * 2 * Math.PI * 1.5 + fI * 0.6);
-                            // Inner furrow pixels are darker (deeper constriction)
+                            // Very tight constriction — dark actomyosin ring
                             var fColor = Math.abs(fI) <= 1
-                                ? (fPulse > 0 ? '#663311' : '#552200')
-                                : (fPulse > 0 ? '#885533' : '#774422');
+                                ? (fPulse > 0 ? '#552200' : '#441100')
+                                : (fPulse > 0 ? '#774422' : '#663311');
                             sacPixels[fX + ',' + fY] = fColor;
-                        }
-                        // Second row offset along spindle axis — thicker furrow band
-                        for (var fOff = -1; fOff <= 1; fOff++) {
-                            if (fOff === 0) continue;
-                            var fX2 = Math.round(sacMidX + Math.cos(perpAngle) * fI * 0.9 + Math.cos(spindleAngle) * fOff * 0.6);
-                            var fY2 = Math.round(sacMidY + Math.sin(perpAngle) * fI * 0.9 + Math.sin(spindleAngle) * fOff * 0.6);
-                            if (fX2 >= 0 && fX2 < size && fY2 >= 0 && fY2 < size) {
-                                sacPixels[fX2 + ',' + fY2] = '#774422';
-                            }
                         }
                     }
                 } else {
