@@ -2046,6 +2046,72 @@
                     }
                 }
             }
+            // Serosa: outermost gut wall layer — thin mesothelial membrane + subserosal connective tissue
+            // Simple squamous mesothelial cells secrete serous fluid (lubricant) into peritoneal cavity
+            // Subserosal layer contains loose connective tissue, adipocytes, and blood vessels
+            // Completes the gut wall: mucosa → submucosa → muscularis externa → serosa
+            var tSer = (now % 30000) / 30000;
+            var serosalPath = [
+                {x:31,y:2},{x:31,y:6},{x:31,y:10},{x:31,y:14},{x:31,y:18},
+                {x:30,y:22},{x:28,y:25},{x:26,y:28},{x:22,y:30},
+                {x:17,y:31},{x:12,y:31},{x:7,y:31},{x:3,y:28},{x:1,y:24},{x:0,y:20},
+            ];
+            // Mesothelial cells: flat squamous cells forming a smooth peritoneal surface
+            // Serous fluid secretion: rhythmic exocytosis of lubricating glycoproteins
+            var serWave = (tSer * 1.5) % 1.0;
+            for (var sri = 0; sri < serosalPath.length; sri++) {
+                var srP = serosalPath[sri];
+                var srFrac = sri / (serosalPath.length - 1);
+                // Slow mesothelial renewal wave — cells shed and replace in a traveling front
+                var srDist = Math.abs(srFrac - serWave);
+                if (srDist > 0.5) srDist = 1.0 - srDist;
+                var srRenewal = Math.max(0, 1.0 - srDist * 4.0);
+                var srPulse = Math.sin(tSer * 2 * Math.PI * 0.8 + sri * 0.5);
+                // Mesothelium: pale silvery-blue tones; renewing cells flash brighter
+                var srActive = srRenewal > 0.3;
+                set(srP.x, srP.y, srActive ? '#bbccdd' : (srPulse > 0 ? '#99aabb' : '#8899aa'));
+                // Interpolate between path points for continuous serosal coat
+                if (sri < serosalPath.length - 1) {
+                    var srN = serosalPath[sri + 1];
+                    var srdx = srN.x - srP.x, srdy = srN.y - srP.y;
+                    var srSt = Math.max(Math.abs(srdx), Math.abs(srdy));
+                    for (var srs = 1; srs < srSt; srs++) {
+                        var srsFrac = sri / (serosalPath.length - 1) + (1.0 / (serosalPath.length - 1)) * (srs / srSt);
+                        var srsDist = Math.abs(srsFrac - serWave);
+                        if (srsDist > 0.5) srsDist = 1.0 - srsDist;
+                        var srsRenewal = Math.max(0, 1.0 - srsDist * 4.0);
+                        var srsP = Math.sin(tSer * 2 * Math.PI * 1.2 + sri * 0.6 + srs * 0.3);
+                        var srsActive = srsRenewal > 0.3;
+                        set(Math.round(srP.x+srdx*srs/srSt), Math.round(srP.y+srdy*srs/srSt),
+                            srsActive ? '#ccddee' : (srsP > 0 ? '#8899aa' : '#778899'));
+                    }
+                }
+                // Serous fluid droplets: tiny glycoprotein vesicles released from mesothelial surface
+                // Visible as brief sparkles at the peritoneal interface during active secretion
+                if (srRenewal > 0.5 && sri % 3 === 0) {
+                    var sfP = Math.sin(tSer * 2 * Math.PI * 5.0 + sri * 2.3);
+                    if (sfP > 0.3) {
+                        // Droplet appears just outside the serosal surface
+                        var sfAngle = Math.atan2(srP.y - 16, srP.x - 16);
+                        var sfx = Math.round(srP.x + Math.cos(sfAngle) * 0.8);
+                        var sfy = Math.round(srP.y + Math.sin(sfAngle) * 0.8);
+                        if (sfx >= 0 && sfx < size && sfy >= 0 && sfy < size) {
+                            set(sfx, sfy, '#ddeeff');
+                        }
+                    }
+                }
+                // Subserosal adipocytes: scattered fat cells in loose connective tissue
+                // Small lipid-filled cells beneath mesothelium — energy storage for outer wall
+                if (sri % 4 === 1) {
+                    var adP = Math.sin(tSer * 2 * Math.PI * 0.5 + sri * 1.7);
+                    var adAngle = Math.atan2(16 - srP.y, 16 - srP.x);
+                    var adx = Math.round(srP.x + Math.cos(adAngle) * 1.0);
+                    var ady = Math.round(srP.y + Math.sin(adAngle) * 1.0);
+                    if (adx >= 0 && adx < size && ady >= 0 && ady < size) {
+                        set(adx, ady, adP > 0 ? '#eedd99' : '#ddcc88');
+                    }
+                }
+            }
             return px;
         }
 
