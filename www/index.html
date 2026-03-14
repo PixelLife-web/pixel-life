@@ -290,6 +290,17 @@
                 { memAngle: gn.cajalAngle + 1.5, speed: 0.32, phase: gbi * 0.6, color: '#aa55cc' },
                 { memAngle: gn.cajalAngle + 4.0, speed: 0.28, phase: gbi * 0.6 + 0.5, color: '#9944bb' },
             ];
+            // Multivesicular body (MVB): late endosome compartment containing intraluminal vesicles
+            // MVBs orbit between endosomes and membrane; when they fuse with PM, exosomes are released
+            gn.mvbAngle = gn.lysoAngle + 1.2;
+            gn.mvbDist = gn.bodyRadius * 0.42;
+            gn.mvbSpeed = (gbi % 2 === 0 ? 0.25 : -0.22);
+            // Exosome release: 2 exosomes per granddaughter, ejected from MVB fusion with membrane
+            // Tiny vesicles (~0.1µm) carrying proteins/RNA, drift toward neighboring cells
+            gn.exosomes = [
+                { releaseAngle: gn.mvbAngle + 0.5, driftAngle: gbi * 1.57 + 0.3, speed: 0.18, phase: gbi * 0.4, color: '#cc88dd' },
+                { releaseAngle: gn.mvbAngle + 2.8, driftAngle: gbi * 1.57 + 2.5, speed: 0.15, phase: gbi * 0.4 + 0.5, color: '#bb77cc' },
+            ];
         }
 
         // Tunneling nanotubes (TNTs): thin membrane bridges between adjacent granddaughter cells
@@ -2193,6 +2204,20 @@
                                         }
                                     }
                                 }
+                                // Multivesicular body (MVB): late endosome with intraluminal vesicles
+                                // Dark purple body with brighter internal vesicle dots
+                                if (!drawn) {
+                                    var tMVB = (Date.now() % 14000) / 14000 * 2 * Math.PI;
+                                    var mvbA = gn.mvbAngle + gn.mvbSpeed * tMVB;
+                                    var mvbX = Math.round(gn.x + Math.cos(mvbA) * gn.mvbDist);
+                                    var mvbY = Math.round(gn.y + Math.sin(mvbA) * gn.mvbDist);
+                                    if (x === mvbX && y === mvbY) {
+                                        // MVB body pulses as intraluminal vesicles accumulate
+                                        var mvbPulse = Math.sin(tMVB * 1.5 + gni * 2.3);
+                                        color = mvbPulse > 0 ? '#9955bb' : '#7744aa';
+                                        drawn = true;
+                                    }
+                                }
                                 // Centrosome: single centriole pair near nucleus, bright yellow dot
                                 // Establishes MTOC — 2 short microtubule rays radiate outward
                                 if (!drawn) {
@@ -2313,6 +2338,32 @@
                                     var caPulse = Math.sin(tCa * 2 * Math.PI * 3 + cwi * 1.5);
                                     color = caPulse > 0 ? cw.color : cw.dimColor;
                                     drawn = true;
+                                }
+                            }
+                        }
+                        // Exosomes: tiny extracellular vesicles released from MVB-membrane fusion
+                        // Drift outward from granddaughter cells, carrying cargo to neighbors
+                        if (!drawn) {
+                            var tExo = (Date.now() % 16000) / 16000;
+                            for (var exi = 0; exi < granddaughterNuclei.length && !drawn; exi++) {
+                                var exGn = granddaughterNuclei[exi];
+                                if (!exGn.exosomes) continue;
+                                for (var exj = 0; exj < exGn.exosomes.length && !drawn; exj++) {
+                                    var exo = exGn.exosomes[exj];
+                                    // Exosome progress: 0=just released from membrane, 1=reaching neighbor
+                                    var exProgress = (tExo * exo.speed + exo.phase) % 1.0;
+                                    // Start at cell body surface, drift outward along release angle
+                                    var exStartR = exGn.bodyRadius + 0.5;
+                                    var exDriftR = exStartR + exProgress * 3.5;
+                                    var exAngle = exo.releaseAngle + exProgress * (exo.driftAngle - exo.releaseAngle) * 0.3;
+                                    var exX = Math.round(exGn.x + Math.cos(exAngle) * exDriftR);
+                                    var exY = Math.round(exGn.y + Math.sin(exAngle) * exDriftR);
+                                    if (x === exX && y === exY) {
+                                        // Exosome flickers as it carries its cargo through the medium
+                                        var exPulse = Math.sin(tExo * 2 * Math.PI * 4 + exj * 2.1 + exi * 1.7);
+                                        color = exPulse > 0 ? '#ddaaee' : exo.color;
+                                        drawn = true;
+                                    }
                                 }
                             }
                         }
