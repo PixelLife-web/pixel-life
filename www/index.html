@@ -416,6 +416,8 @@
             {transporterColor:'#66bb55',folateColor:'#99ee77',hColor:'#ddff66',restColor:'#448833'},'enterocyte');
         initTransporters('rfc','basal',2,0.52,-0.28,0.65,2.0,
             {carrierColor:'#55aa44',folateOutColor:'#88dd66',restColor:'#337722'},'enterocyte');
+        initTransporters('cubilin','apical',2,0.40,0.70,0.85,1.7,
+            {receptorColor:'#cc5577',ifb12Color:'#ee88aa',clathrinColor:'#aa4466',restColor:'#993355'},'enterocyte');
         for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
             var aqn = granddaughterNuclei[aqi];
             aqn.aquaporins = [];
@@ -468,6 +470,18 @@
                     monoColor: '#99ee77',    // monoglutamate folate (entering)
                     polyColor: '#55cc44',    // polyglutamate folate (FPGS product)
                     enzymeColor: '#77dd55',  // FPGS enzyme flash
+                });
+            }
+            ecn.tcnShuttle = [];
+            var tcnCount = 2 + (eci % 2);
+            for (var tcni = 0; tcni < tcnCount; tcni++) {
+                ecn.tcnShuttle.push({
+                    apicalAngle: ecApicalA + (tcni - (tcnCount-1)/2) * 0.34 + 0.40,
+                    basalAngle: ecBasalA + (tcni - (tcnCount-1)/2) * 0.38 + 0.30,
+                    phase: eci * 0.85 + tcni * 1.4,
+                    b12Color: '#dd5588',
+                    holoColor: '#ee77aa',
+                    apoColor: '#6699aa',
                 });
             }
             ecn.chromaffinGranules = [];
@@ -1007,6 +1021,13 @@
                     if (d < mr - 0.3) px[x+','+y] = c;
                 }
             }
+            function renderShuttle(g,bR,arr,now,period,cfg){if(!arr)return;var tS=(now%period)/period;
+                for(var si=0;si<arr.length;si++){var sh=arr[si];var cyc=(tS*cfg.spd+sh.phase*cfg.pOff)%1.0;var pulse=Math.sin(tS*2*Math.PI*cfg.pF+sh.phase);
+                if(cyc<cfg.t1){var r=bR*cfg.r1-cyc*(bR*cfg.d1);var a=sh.apicalAngle+cyc*(sh.basalAngle-sh.apicalAngle)*cfg.aB;
+                setR(Math.round(g.x+Math.cos(a)*r),Math.round(g.y+Math.sin(a)*r),pulse>0?sh[cfg.bK]:sh[cfg.cK],g.x,g.y,bR);
+                }else if(cyc<cfg.t2){var r2=bR*cfg.r2+(cyc-cfg.t1)*(bR*cfg.d2);var a2=sh.basalAngle+(cyc-cfg.t1)*(sh.apicalAngle-sh.basalAngle)*cfg.aB;
+                setR(Math.round(g.x+Math.cos(a2)*r2),Math.round(g.y+Math.sin(a2)*r2),pulse>cfg.fT?sh[cfg.fK]:cfg.fF,g.x,g.y,bR);
+                }}}
             for (var i = 0; i < granddaughterNuclei.length; i++) {
                 var g = granddaughterNuclei[i];
                 var bb = Math.sin(tN * 2 * Math.PI * 0.7 + i * 1.1) * 0.15;
@@ -1187,33 +1208,10 @@
                     for(var sri2=0;sri2<g.serotoninRelease.length;sri2++){var sr=g.serotoninRelease[sri2],srProg=(t5HT*sr.speed+sr.phase)%1.0,srDR=bR+0.3+srProg*3.0,srA=sr.angle+Math.sin(t5HT*2*Math.PI+sr.phase)*0.12,srPulse=Math.sin(t5HT*2*Math.PI*3+sri2*2.3+i*1.5);
                     set(Math.round(g.x+Math.cos(srA)*srDR),Math.round(g.y+Math.sin(srA)*srDR),srPulse>0?sr.htColor:sr.htDimColor);
                     if(srProg>0.3&&srProg<0.7)set(Math.round(g.x+Math.cos(srA)*(srDR-1.2)),Math.round(g.y+Math.sin(srA)*(srDR-1.2)),sr.trailColor);}}
-                if(g.calbindin){var tCab=(now%12000)/12000;
-                    for(var cabi2=0;cabi2<g.calbindin.length;cabi2++){var cab=g.calbindin[cabi2];
-                    var cabCyc=(tCab*1.6+cab.phase*0.25)%1.0;
-                    var cabPulse=Math.sin(tCab*2*Math.PI*2.2+cab.phase);
-                    if(cabCyc<0.35){var cabR=bR*0.75-cabCyc*(bR*0.5);var cabA=cab.apicalAngle+cabCyc*(cab.basalAngle-cab.apicalAngle)*0.5;
-                    setR(Math.round(g.x+Math.cos(cabA)*cabR),Math.round(g.y+Math.sin(cabA)*cabR),cabPulse>0?cab.boundColor:cab.caColor,g.x,g.y,bR);
-                    }else if(cabCyc<0.65){var cabR2=bR*0.25+(cabCyc-0.35)*(bR*0.5);var cabA2=cab.basalAngle+(cabCyc-0.35)*(cab.apicalAngle-cab.basalAngle)*0.5;
-                    setR(Math.round(g.x+Math.cos(cabA2)*cabR2),Math.round(g.y+Math.sin(cabA2)*cabR2),cabPulse>0.2?cab.freeColor:'#77cc99',g.x,g.y,bR);
-                    }}}
-                if(g.metallothionein){var tMT2=(now%13000)/13000;
-                    for(var mti3=0;mti3<g.metallothionein.length;mti3++){var mt2=g.metallothionein[mti3];
-                    var mtCyc=(tMT2*1.5+mt2.phase*0.28)%1.0;
-                    var mtPulse=Math.sin(tMT2*2*Math.PI*2.0+mt2.phase);
-                    if(mtCyc<0.35){var mtR=bR*0.72-mtCyc*(bR*0.48);var mtA=mt2.apicalAngle+mtCyc*(mt2.basalAngle-mt2.apicalAngle)*0.5;
-                    setR(Math.round(g.x+Math.cos(mtA)*mtR),Math.round(g.y+Math.sin(mtA)*mtR),mtPulse>0?mt2.znBoundColor:mt2.znColor,g.x,g.y,bR);
-                    }else if(mtCyc<0.65){var mtR2=bR*0.24+(mtCyc-0.35)*(bR*0.48);var mtA2=mt2.basalAngle+(mtCyc-0.35)*(mt2.apicalAngle-mt2.basalAngle)*0.5;
-                    setR(Math.round(g.x+Math.cos(mtA2)*mtR2),Math.round(g.y+Math.sin(mtA2)*mtR2),mtPulse>0.2?mt2.apoColor:'#669faa',g.x,g.y,bR);
-                    }}}
-                if(g.fpgsShuttle){var tFPS=(now%11500)/11500;
-                    for(var fpsi2=0;fpsi2<g.fpgsShuttle.length;fpsi2++){var fps=g.fpgsShuttle[fpsi2];
-                    var fpsCyc=(tFPS*1.4+fps.phase*0.26)%1.0;
-                    var fpsPulse=Math.sin(tFPS*2*Math.PI*2.4+fps.phase);
-                    if(fpsCyc<0.3){var fpsR=bR*0.70-fpsCyc*(bR*0.45);var fpsA=fps.apicalAngle+fpsCyc*(fps.basalAngle-fps.apicalAngle)*0.4;
-                    setR(Math.round(g.x+Math.cos(fpsA)*fpsR),Math.round(g.y+Math.sin(fpsA)*fpsR),fpsPulse>0?fps.monoColor:fps.enzymeColor,g.x,g.y,bR);
-                    }else if(fpsCyc<0.6){var fpsR2=bR*0.25+(fpsCyc-0.3)*(bR*0.5);var fpsA2=fps.basalAngle+(fpsCyc-0.3)*(fps.apicalAngle-fps.basalAngle)*0.4;
-                    setR(Math.round(g.x+Math.cos(fpsA2)*fpsR2),Math.round(g.y+Math.sin(fpsA2)*fpsR2),fpsPulse>0.2?fps.polyColor:'#44aa33',g.x,g.y,bR);
-                    }}}
+                renderShuttle(g,bR,g.calbindin,now,12000,{spd:1.6,pOff:0.25,pF:2.2,t1:0.35,t2:0.65,r1:0.75,d1:0.5,aB:0.5,bK:'boundColor',cK:'caColor',r2:0.25,d2:0.5,fT:0.2,fK:'freeColor',fF:'#77cc99'});
+                renderShuttle(g,bR,g.metallothionein,now,13000,{spd:1.5,pOff:0.28,pF:2.0,t1:0.35,t2:0.65,r1:0.72,d1:0.48,aB:0.5,bK:'znBoundColor',cK:'znColor',r2:0.24,d2:0.48,fT:0.2,fK:'apoColor',fF:'#669faa'});
+                renderShuttle(g,bR,g.fpgsShuttle,now,11500,{spd:1.4,pOff:0.26,pF:2.4,t1:0.30,t2:0.60,r1:0.70,d1:0.45,aB:0.4,bK:'monoColor',cK:'enzymeColor',r2:0.25,d2:0.5,fT:0.2,fK:'polyColor',fF:'#44aa33'});
+                renderShuttle(g,bR,g.tcnShuttle,now,12500,{spd:1.5,pOff:0.27,pF:2.1,t1:0.35,t2:0.65,r1:0.73,d1:0.48,aB:0.45,bK:'holoColor',cK:'b12Color',r2:0.25,d2:0.48,fT:0.2,fK:'apoColor',fF:'#558899'});
                 if(g.exosomes){var tExo=(now%16000)/16000;
                     for(var exi=0;exi<g.exosomes.length;exi++){var exo=g.exosomes[exi],exP=(tExo*exo.speed+exo.phase)%1.0,exDR=g.bodyRadius+0.5+exP*3.5,exA=exo.releaseAngle+exP*(exo.driftAngle-exo.releaseAngle)*0.3;
                     set(Math.round(g.x+Math.cos(exA)*exDR),Math.round(g.y+Math.sin(exA)*exDR),Math.sin(tExo*2*Math.PI*4+exi*2.1+i*1.7)>0?'#ddaaee':exo.color);}}
@@ -1415,6 +1413,8 @@
                     substrates:[{key:'folateColor', dir:'in', startR:1.3, range:3.0},{key:'hColor', dir:'in', startR:0.7, range:2.2, phaseOff:0.06, spread:0.14}]},
                 {field:'rfc', period:10500, activeKey:'carrierColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
                     substrates:[{key:'folateOutColor', dir:'out', range:2.0, phaseOff:0.5}]},
+                {field:'cubilin', period:11500, activeKey:'receptorColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.5,
+                    substrates:[{key:'ifb12Color', dir:'in', startR:1.5, range:3.5, wiggleFreq:5},{key:'clathrinColor', dir:'in', startR:0.5, range:1.5, phaseOff:0.18}]},
             ]);
             var tFA = (now % 11000) / 11000;
             for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {

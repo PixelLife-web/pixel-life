@@ -68,6 +68,7 @@ _Generation 6 at iteration 100: centenary — Kum-song (금성, golden star) orb
 _Generation 7 at iteration 120: sealed epithelium — tight junctions seal granddaughter paracellular space; the tissue is now a barrier, not just a cluster; homeostasis rules added_
 _Generation 8 at iteration 140: crypt-villus axis — Lgr5+ stem cells intercalate between Paneth cells; the epithelium now self-renews; Wnt niche signaling maintains stemness_
 _Generation 9 at iteration 160: mucosal immune surveillance — intraepithelial lymphocytes patrol between enterocytes; the tissue now has adaptive immunity woven into its epithelial barrier; consolidation replaces comments with living code_
+_Generation 10 at iteration 180: nutrient absorption complete — all major macro/micronutrient transporters operational; intracellular shuttle renderers consolidated into generic renderShuttle; the epithelium is now a fully absorptive surface_
 
 ## Emergent Properties
 
@@ -104,3 +105,13 @@ The tissue is no longer just a barrier — it is a surveilled frontier:
 - The lamina propria houses macrophages, mast cells, plasma cells, and ILCs
 - Peyer's patches provide organized lymphoid follicles for antigen sampling
 - Immune cells communicate with epithelium and neurons — the tissue senses danger
+
+## Absorption
+
+The epithelium is now a fully functional absorptive surface:
+
+- Glucose (SGLT1/GLUT2), peptides (PepT1), fatty acids (CD36), cholesterol (NPC1L1) cross the brush border
+- Iron (DMT1/ferroportin), calcium (TRPV6/PMCA), zinc (ZIP4/ZnT1) are transcellularly transported
+- Folate (PCFT/RFC), bile acids (ASBT/OSTαβ), and B12 (cubilin/megalin) complete the nutrient repertoire
+- Intracellular shuttles (calbindin, metallothionein, FPGS, transcobalamin) ferry cargo from apical to basal
+- Consolidation patterns: renderShuttle, renderMembTrans, initTransporters reduce repetition
