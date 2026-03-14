@@ -53,14 +53,14 @@
             chromatin: [
                 { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
             ],
-            // Prophase: sister chromatids condense into thick chromosomes
+            // Prometaphase: sister chromatids with kinetochores, drifting toward metaphase plate
             sisterChromatin: [
                 { x: 21, y: 9 }, { x: 21, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 9 },
             ],
-            // Prophase: centrosomes migrating to opposite poles
+            // Prometaphase: centrosomes at poles, spindle fully formed
             centrosomes: [
-                { x: 23, y: 8 },
-                { x: 17, y: 12 },
+                { x: 24, y: 7 },
+                { x: 16, y: 13 },
             ],
             cilia: [],
             receptors: [
@@ -95,14 +95,14 @@
             chromatin: [
                 { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
             ],
-            // Prophase: sister chromatids condense into thick chromosomes
+            // Prometaphase: sister chromatids with kinetochores, drifting toward metaphase plate
             sisterChromatin: [
                 { x: 13, y: 21 }, { x: 13, y: 23 }, { x: 11, y: 23 }, { x: 11, y: 21 },
             ],
-            // Prophase: centrosomes migrating to opposite poles
+            // Prometaphase: centrosomes at poles, spindle fully formed
             centrosomes: [
-                { x: 15, y: 20 },
-                { x: 9, y: 24 },
+                { x: 16, y: 19 },
+                { x: 8, y: 25 },
             ],
             cilia: [],
             receptors: [
@@ -183,9 +183,9 @@
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            // Prophase: nucleus still swollen, envelope starting to weaken
-            var nucSwell = 0.4;
-            var nucR = cell.nucleusRadius + nucleusPulse * 0.2 + nucSwell;
+            // Prometaphase: nucleus dissolving, area fading
+            var nucSwell = 0.2;
+            var nucR = cell.nucleusRadius + nucleusPulse * 0.1 + nucSwell;
 
             // Compute mitochondria
             var mitoPixels = {};
@@ -212,38 +212,55 @@
             var nucPixels = {};
             var envPulse = Math.sin(t * 2 * Math.PI * 1.3) * 0.1;
             var envR = nucR + envPulse;
+            // Prometaphase: nuclear envelope has dissolved — only scattered fragments remain
             for (var ea = 0; ea < 20; ea++) {
                 var eAngle = ea * 2 * Math.PI / 20;
-                // Prophase: nuclear envelope starts to flicker/weaken at some points
                 var envFlicker = Math.sin(tChromatin * 3 + ea * 1.2);
-                if (envFlicker < -0.6) continue; // gaps forming in the envelope
+                // Most envelope gone, only faint fragments visible briefly
+                if (envFlicker < 0.7) continue;
                 var ex = Math.round(cell.nucleusCx + Math.cos(eAngle) * envR);
                 var ey = Math.round(cell.nucleusCy + Math.sin(eAngle) * envR);
                 if (ex >= 0 && ex < size && ey >= 0 && ey < size) {
-                    envPixels[ex + ',' + ey] = envFlicker > 0.3 ? cell.nucleusEdge : '#cc9933';
+                    envPixels[ex + ',' + ey] = '#aa8822'; // faded envelope fragment
                 }
             }
-            // Nucleolus
-            nucPixels[cell.nucleusCx + ',' + cell.nucleusCy] = cell.nucleolusColor;
+            // Nucleolus has dispersed in prometaphase — only a ghost remains
+            var nuclGhost = Math.sin(tChromatin * 2) > 0.5;
+            if (nuclGhost) {
+                nucPixels[cell.nucleusCx + ',' + cell.nucleusCy] = '#cc8833';
+            }
 
-            // Chromatin inside nucleus — Prophase: condensing into thick chromosomes
+            // Prometaphase: chromosomes freed from nucleus, drifting toward metaphase plate
             var chrPixels = {};
+            // Metaphase plate center (midpoint between centrosomes)
+            var plateCx = cell.cx;
+            var plateCy = cell.cy;
+            if (cell.centrosomes && cell.centrosomes.length >= 2) {
+                plateCx = (cell.centrosomes[0].x + cell.centrosomes[1].x) / 2;
+                plateCy = (cell.centrosomes[0].y + cell.centrosomes[1].y) / 2;
+            }
+            // Chromosomes drift partway toward the plate (prometaphase = not yet aligned)
+            var driftFrac = 0.3 + Math.sin(tChromatin * 0.5) * 0.15; // oscillating drift
             for (var chi = 0; chi < cell.chromatin.length; chi++) {
                 var ch = cell.chromatin[chi];
-                // Prophase: chromosomes glow brighter as they condense
+                var driftX = Math.round(ch.x + (plateCx - ch.x) * driftFrac);
+                var driftY = Math.round(ch.y + (plateCy - ch.y) * driftFrac);
                 var cPulse = Math.sin(tChromatin + chi * 0.8);
-                chrPixels[ch.x + ',' + ch.y] = cPulse > 0 ? '#ee7744' : '#dd6633';
+                chrPixels[driftX + ',' + driftY] = cPulse > 0 ? '#ee7744' : '#dd6633';
             }
-            // Sister chromatids: condensed and paired tightly with originals
+            // Sister chromatids drift alongside, with kinetochore glow
             if (cell.sisterChromatin) {
                 for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
                     var rc = cell.sisterChromatin[rci];
+                    var sDriftX = Math.round(rc.x + (plateCx - rc.x) * driftFrac);
+                    var sDriftY = Math.round(rc.y + (plateCy - rc.y) * driftFrac);
                     var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
-                    chrPixels[rc.x + ',' + rc.y] = rcPulse > 0 ? '#ee8855' : '#dd7744';
+                    // Kinetochore: bright spot where spindle attaches
+                    chrPixels[sDriftX + ',' + sDriftY] = rcPulse > 0.3 ? '#ffcc44' : '#ee8855';
                 }
             }
 
-            // Centrosomes: prophase — migrating to poles, asters grow, early spindle forms
+            // Centrosomes: prometaphase — at poles, full spindle, kinetochore fibers reach chromosomes
             var centPixels = {};
             if (cell.centrosomes) {
                 var tCent = (t * 8000 / 3000) % 1.0;
@@ -251,9 +268,9 @@
                     var cs = cell.centrosomes[csi];
                     var centPulse = Math.sin(tCent * 2 * Math.PI + csi * Math.PI);
                     centPixels[cs.x + ',' + cs.y] = centPulse > 0 ? '#ffee66' : '#eedd44';
-                    // Longer aster microtubules radiating outward (2 rays per centrosome)
-                    for (var ai = 0; ai < 3; ai++) {
-                        var asterAngle = tCent * 2 * Math.PI + csi * 1.5 + ai * 2.1;
+                    // Prominent aster microtubules (4 rays, longer reach)
+                    for (var ai = 0; ai < 4; ai++) {
+                        var asterAngle = tCent * 2 * Math.PI + csi * 1.5 + ai * 1.57;
                         for (var al = 1; al <= 2; al++) {
                             var astX = Math.round(cs.x + Math.cos(asterAngle) * al);
                             var astY = Math.round(cs.y + Math.sin(asterAngle) * al);
@@ -263,19 +280,36 @@
                         }
                     }
                 }
-                // Early spindle fibers: a faint line between the two centrosomes
+                // Full spindle apparatus: solid fibers between centrosomes
                 if (cell.centrosomes.length >= 2) {
                     var c0 = cell.centrosomes[0];
                     var c1 = cell.centrosomes[1];
                     var spindleSteps = Math.max(Math.abs(c1.x - c0.x), Math.abs(c1.y - c0.y));
-                    var spindlePulse = Math.sin(tCent * 2 * Math.PI * 2);
-                    if (spindlePulse > -0.3) { // spindle flickers as it forms
-                        for (var spi = 1; spi < spindleSteps; spi++) {
-                            var spFrac = spi / spindleSteps;
-                            var spX = Math.round(c0.x + (c1.x - c0.x) * spFrac);
-                            var spY = Math.round(c0.y + (c1.y - c0.y) * spFrac);
-                            if (spX >= 0 && spX < size && spY >= 0 && spY < size) {
-                                centPixels[spX + ',' + spY] = '#bbaa33';
+                    // Main spindle fiber — always visible now
+                    for (var spi = 1; spi < spindleSteps; spi++) {
+                        var spFrac = spi / spindleSteps;
+                        var spX = Math.round(c0.x + (c1.x - c0.x) * spFrac);
+                        var spY = Math.round(c0.y + (c1.y - c0.y) * spFrac);
+                        if (spX >= 0 && spX < size && spY >= 0 && spY < size) {
+                            centPixels[spX + ',' + spY] = '#bbaa33';
+                        }
+                    }
+                    // Kinetochore fibers: from each centrosome toward the metaphase plate center
+                    var kPulse = Math.sin(tCent * 2 * Math.PI * 1.5);
+                    if (kPulse > -0.5) {
+                        // Offset spindle fibers for the bundle look
+                        for (var offset = -1; offset <= 1; offset += 2) {
+                            for (var spi2 = 1; spi2 < spindleSteps - 1; spi2++) {
+                                var spFrac2 = spi2 / spindleSteps;
+                                // Curve outward in the middle for barrel shape
+                                var curveAmt = Math.sin(spFrac2 * Math.PI) * offset * 0.8;
+                                var perpX = -(c1.y - c0.y) / spindleSteps;
+                                var perpY = (c1.x - c0.x) / spindleSteps;
+                                var kfX = Math.round(c0.x + (c1.x - c0.x) * spFrac2 + perpX * curveAmt * spindleSteps);
+                                var kfY = Math.round(c0.y + (c1.y - c0.y) * spFrac2 + perpY * curveAmt * spindleSteps);
+                                if (kfX >= 0 && kfX < size && kfY >= 0 && kfY < size) {
+                                    centPixels[kfX + ',' + kfY] = '#aa9922';
+                                }
                             }
                         }
                     }
@@ -483,7 +517,8 @@
                                 var ndy2 = y - cc.nucleusCy;
                                 var ndist = Math.sqrt(ndx2 * ndx2 + ndy2 * ndy2);
                                 if (ndist <= dd.nucR) {
-                                    color = cc.nucleusColor;
+                                    // Prometaphase: nuclear region fading into cytoplasm
+                                    color = '#7a3500';
                                 } else {
                                     color = cc.cytoColor;
                                 }
