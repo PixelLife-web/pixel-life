@@ -178,6 +178,27 @@
             { fromCell: 'B', toCell: 'A', color: '#66aaff', speed: 0.0003, phase: 0.55 },
         ];
 
+        // Extracellular matrix (ECM): fibrous proteins secreted by both cells
+        // forming connective tissue between the daughter cells
+        var ecmFibers = [];
+        // Build fibers connecting the two cells through the intercellular space
+        var fiberCount = 5;
+        for (var fi = 0; fi < fiberCount; fi++) {
+            var frac = (fi + 1) / (fiberCount + 1);
+            // Each fiber has a slightly different path offset for visual variety
+            var offsetX = (fi % 2 === 0 ? 1 : -1) * (fi * 0.6);
+            var offsetY = (fi % 2 === 0 ? -1 : 1) * ((fi + 1) * 0.4);
+            ecmFibers.push({
+                // Start near cell A's membrane, end near cell B's membrane
+                startFrac: 0.25 + fi * 0.02,
+                endFrac: 0.75 - fi * 0.02,
+                offsetX: offsetX,
+                offsetY: offsetY,
+                color: fi % 2 === 0 ? '#c4a882' : '#b89870', // collagen-like tones
+                pulsePhase: fi * 1.3,
+            });
+        }
+
         // G1 growth: cells slowly grow as they absorb nutrients
         // Growth oscillates gently to show metabolic activity
         var growthRate = 0.4; // max additional radius from growth
@@ -453,6 +474,43 @@
             var scarVisible = tScar < 0.3; // fading remnant, visible 30% of the time
             var scarColor = abscissionScar.color;
 
+            // ECM fiber positions — collagen-like strands between the two cells
+            var ecmPx = {};
+            var tECM = (Date.now() % 15000) / 15000; // slow assembly pulse
+            for (var fi = 0; fi < ecmFibers.length; fi++) {
+                var fiber = ecmFibers[fi];
+                // Path from cell A toward cell B
+                var ax = cellA.cx + (cellB.cx - cellA.cx) * fiber.startFrac;
+                var ay = cellA.cy + (cellB.cy - cellA.cy) * fiber.startFrac;
+                var bx = cellA.cx + (cellB.cx - cellA.cx) * fiber.endFrac;
+                var by = cellA.cy + (cellB.cy - cellA.cy) * fiber.endFrac;
+                // Midpoint with offset to create wavy fibers
+                var mx = (ax + bx) / 2 + fiber.offsetX;
+                var my = (ay + by) / 2 + fiber.offsetY;
+                // Draw as two segments: start->mid, mid->end
+                var segments = [
+                    { x1: ax, y1: ay, x2: mx, y2: my },
+                    { x1: mx, y1: my, x2: bx, y2: by },
+                ];
+                // Assembly pulse: fibers gently brighten and dim
+                var pulse = Math.sin(tECM * 2 * Math.PI + fiber.pulsePhase);
+                var visible = pulse > -0.3; // visible most of the time
+                if (visible) {
+                    for (var si2 = 0; si2 < segments.length; si2++) {
+                        var seg = segments[si2];
+                        var steps = Math.max(Math.abs(Math.round(seg.x2) - Math.round(seg.x1)), Math.abs(Math.round(seg.y2) - Math.round(seg.y1)));
+                        if (steps === 0) steps = 1;
+                        for (var step = 0; step <= steps; step++) {
+                            var px = Math.round(seg.x1 + (seg.x2 - seg.x1) * step / steps);
+                            var py = Math.round(seg.y1 + (seg.y2 - seg.y1) * step / steps);
+                            if (px >= 0 && px < size && py >= 0 && py < size) {
+                                ecmPx[px + ',' + py] = fiber.color;
+                            }
+                        }
+                    }
+                }
+            }
+
             // Signal molecule positions
             var signalPx = {};
             var tSig = Date.now();
@@ -571,6 +629,10 @@
                         }
                         if (!drawn && signalPx[key]) {
                             color = signalPx[key];
+                            drawn = true;
+                        }
+                        if (!drawn && ecmPx[key]) {
+                            color = ecmPx[key];
                             drawn = true;
                         }
                         if (!drawn && scarVisible && x === abscissionScar.x && y === abscissionScar.y) {
