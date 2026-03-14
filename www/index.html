@@ -53,17 +53,17 @@
             chromatin: [
                 { x: 20, y: 9 }, { x: 21, y: 10 }, { x: 20, y: 11 }, { x: 19, y: 10 },
             ],
-            // Telophase: chromatids arrived at poles, decondensing
+            // Cytokinesis: chromatids fully decondensed into daughter nuclei
             sisterChromatin: [
                 { x: 21, y: 9 }, { x: 21, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 9 },
             ],
-            // Telophase: centrosomes at poles, spindle disassembling
+            // Cytokinesis: centrosomes retained, spindle fully gone
             centrosomes: [
                 { x: 24, y: 7 },
                 { x: 16, y: 13 },
             ],
-            // Telophase: cleavage furrow forming perpendicular to spindle axis
-            furrowProgress: 0.35,
+            // Cytokinesis: cleavage furrow deepening, nearly pinching off
+            furrowProgress: 0.75,
             cilia: [],
             receptors: [
                 { angle: 0.3, color: '#33cc99' },
@@ -97,17 +97,17 @@
             chromatin: [
                 { x: 12, y: 21 }, { x: 13, y: 22 }, { x: 12, y: 23 }, { x: 11, y: 22 },
             ],
-            // Telophase: chromatids arrived at poles, decondensing
+            // Cytokinesis: chromatids fully decondensed into daughter nuclei
             sisterChromatin: [
                 { x: 13, y: 21 }, { x: 13, y: 23 }, { x: 11, y: 23 }, { x: 11, y: 21 },
             ],
-            // Telophase: centrosomes at poles, spindle disassembling
+            // Cytokinesis: centrosomes retained, spindle fully gone
             centrosomes: [
                 { x: 16, y: 19 },
                 { x: 8, y: 25 },
             ],
-            // Telophase: cleavage furrow forming perpendicular to spindle axis
-            furrowProgress: 0.35,
+            // Cytokinesis: cleavage furrow deepening, nearly pinching off
+            furrowProgress: 0.75,
             cilia: [],
             receptors: [
                 { angle: 3.5, color: '#3399cc' },
@@ -182,16 +182,16 @@
 
         function drawCell(cell, t, tOrbit, tCilia, tChromatin, tGrowth) {
             var breath = Math.sin(t * 2 * Math.PI);
-            // Telophase: cells still elongated, cleavage furrow pinching
+            // Cytokinesis: cell constricting at equator, about to split
             var growthPulse = (1 + Math.sin(tGrowth * 2 * Math.PI)) * 0.5; // 0 to 1
             var maxR = cell.radius + breath * 0.3 + growthPulse * growthRate;
-            // Telophase: still elongated but furrow constricting
-            var elongation = 0.9;
+            // Cytokinesis: elongated with deep furrow
+            var elongation = 1.1;
 
             var nucleusPulse = Math.sin((t * 8000 / 5000) * 2 * Math.PI);
-            // Telophase: nuclear envelopes reforming around chromatid clusters
-            var nucSwell = 0.3;
-            var nucR = cell.nucleusRadius * 0.7 + nucleusPulse * 0.05;
+            // Cytokinesis: daughter nuclei fully reformed
+            var nucSwell = 0.5;
+            var nucR = cell.nucleusRadius * 0.85 + nucleusPulse * 0.05;
 
             // Compute mitochondria
             var mitoPixels = {};
@@ -213,23 +213,22 @@
                 mitoPixels[pts[2].x + ',' + pts[2].y] = m.bodyColor;
             }
 
-            // Telophase: two small nuclear envelopes reforming around each chromatid cluster
+            // Cytokinesis: fully reformed daughter nuclei at each pole
             var envPixels = {};
             var nucPixels = {};
-            var envPulse = Math.sin(t * 2 * Math.PI * 1.3) * 0.1;
-            var envR = nucR * 0.8 + envPulse;
-            // Reform envelope around pole 0 chromatids
+            var envPulse = Math.sin(t * 2 * Math.PI * 1.3) * 0.08;
+            var envR = nucR * 1.0 + envPulse;
             if (cell.centrosomes && cell.centrosomes.length >= 2) {
                 var pole0 = cell.centrosomes[0];
                 var pole1 = cell.centrosomes[1];
-                // Envelope forms at each pole where chromatids gathered
+                // Full nuclear envelopes around each daughter nucleus
                 var reformR = envR + nucSwell;
-                for (var ea = 0; ea < 16; ea++) {
-                    var eAngle = ea * 2 * Math.PI / 16;
-                    var ex0 = Math.round(pole0.x + Math.cos(eAngle) * reformR * 0.6);
-                    var ey0 = Math.round(pole0.y + Math.sin(eAngle) * reformR * 0.6);
-                    var ex1 = Math.round(pole1.x + Math.cos(eAngle) * reformR * 0.6);
-                    var ey1 = Math.round(pole1.y + Math.sin(eAngle) * reformR * 0.6);
+                for (var ea = 0; ea < 20; ea++) {
+                    var eAngle = ea * 2 * Math.PI / 20;
+                    var ex0 = Math.round(pole0.x + Math.cos(eAngle) * reformR * 0.7);
+                    var ey0 = Math.round(pole0.y + Math.sin(eAngle) * reformR * 0.7);
+                    var ex1 = Math.round(pole1.x + Math.cos(eAngle) * reformR * 0.7);
+                    var ey1 = Math.round(pole1.y + Math.sin(eAngle) * reformR * 0.7);
                     if (ex0 >= 0 && ex0 < size && ey0 >= 0 && ey0 < size) {
                         envPixels[ex0 + ',' + ey0] = cell.nucleusEdge;
                     }
@@ -237,91 +236,76 @@
                         envPixels[ex1 + ',' + ey1] = cell.nucleusEdge;
                     }
                 }
-                // Interior glow of reforming nuclei
+                // Nucleoli visible inside each reformed nucleus
                 nucPixels[pole0.x + ',' + pole0.y] = cell.nucleolusColor;
                 nucPixels[pole1.x + ',' + pole1.y] = cell.nucleolusColor;
+                // Adjacent nucleolus pixels for fuller appearance
+                nucPixels[(pole0.x + 1) + ',' + pole0.y] = cell.nucleusColor;
+                nucPixels[(pole1.x - 1) + ',' + pole1.y] = cell.nucleusColor;
             }
 
-            // Telophase: chromatids at poles, decondensing into diffuse chromatin
+            // Cytokinesis: chromatin fully decondensed into diffuse nuclear material
             var chrPixels = {};
             if (cell.centrosomes && cell.centrosomes.length >= 2) {
                 var pole0 = cell.centrosomes[0];
                 var pole1 = cell.centrosomes[1];
-                // Chromatids cluster tightly around pole 0, gently pulsing as they decondense
+                // Diffuse chromatin fills each daughter nucleus — gentle slow drift
                 for (var chi = 0; chi < cell.chromatin.length; chi++) {
-                    var decondenseR = 0.6 + Math.sin(tChromatin + chi * 1.2) * 0.3;
-                    var decAngle = chi * 2 * Math.PI / cell.chromatin.length + tChromatin * 0.2;
-                    var driftX = Math.round(pole0.x + Math.cos(decAngle) * decondenseR);
-                    var driftY = Math.round(pole0.y + Math.sin(decAngle) * decondenseR);
-                    var cPulse = Math.sin(tChromatin + chi * 0.8);
-                    chrPixels[driftX + ',' + driftY] = cPulse > 0 ? '#dd8855' : '#cc7744';
+                    var diffuseR = 0.4 + Math.sin(tChromatin * 0.5 + chi * 1.6) * 0.2;
+                    var diffAngle = chi * 2 * Math.PI / cell.chromatin.length + tChromatin * 0.08;
+                    var driftX = Math.round(pole0.x + Math.cos(diffAngle) * diffuseR);
+                    var driftY = Math.round(pole0.y + Math.sin(diffAngle) * diffuseR);
+                    chrPixels[driftX + ',' + driftY] = '#c08050'; // light diffuse chromatin
                 }
-                // Sister chromatids decondensing around pole 1
+                // Sister chromatin in other daughter nucleus
                 if (cell.sisterChromatin) {
                     for (var rci = 0; rci < cell.sisterChromatin.length; rci++) {
-                        var decR2 = 0.6 + Math.sin(tChromatin + rci * 1.2 + 1.0) * 0.3;
-                        var decAngle2 = rci * 2 * Math.PI / cell.sisterChromatin.length + tChromatin * 0.2 + 0.5;
-                        var sDriftX = Math.round(pole1.x + Math.cos(decAngle2) * decR2);
-                        var sDriftY = Math.round(pole1.y + Math.sin(decAngle2) * decR2);
-                        var rcPulse = Math.sin(tChromatin + rci * 0.8 + 1.0);
-                        chrPixels[sDriftX + ',' + sDriftY] = rcPulse > -0.2 ? '#eebb66' : '#ddaa55';
+                        var diffR2 = 0.4 + Math.sin(tChromatin * 0.5 + rci * 1.6 + 1.0) * 0.2;
+                        var diffAngle2 = rci * 2 * Math.PI / cell.sisterChromatin.length + tChromatin * 0.08 + 0.5;
+                        var sDriftX = Math.round(pole1.x + Math.cos(diffAngle2) * diffR2);
+                        var sDriftY = Math.round(pole1.y + Math.sin(diffAngle2) * diffR2);
+                        chrPixels[sDriftX + ',' + sDriftY] = '#c08050';
                     }
                 }
             }
 
-            // Telophase: centrosomes still at poles, spindle disassembling (fading)
+            // Cytokinesis: centrosomes at poles, spindle fully disassembled, deep cleavage furrow
             var centPixels = {};
-            // Cleavage furrow pixels
             var furrowPixels = {};
             if (cell.centrosomes) {
                 var tCent = (t * 8000 / 3000) % 1.0;
+                // Centrosomes remain at poles but quiescent
                 for (var csi = 0; csi < cell.centrosomes.length; csi++) {
                     var cs = cell.centrosomes[csi];
-                    var centPulse = Math.sin(tCent * 2 * Math.PI + csi * Math.PI);
-                    centPixels[cs.x + ',' + cs.y] = centPulse > 0 ? '#eedd55' : '#ddcc44';
-                    // Reduced asters — spindle dismantling
-                    for (var ai = 0; ai < 3; ai++) {
-                        var asterAngle = tCent * 2 * Math.PI + csi * 1.5 + ai * 2.09;
-                        var astX = Math.round(cs.x + Math.cos(asterAngle));
-                        var astY = Math.round(cs.y + Math.sin(asterAngle));
-                        if (astX >= 0 && astX < size && astY >= 0 && astY < size) {
-                            centPixels[astX + ',' + astY] = '#ccbb33';
-                        }
-                    }
+                    centPixels[cs.x + ',' + cs.y] = '#ddcc44';
                 }
-                // Fading spindle remnant — only partial fibers remain
                 if (cell.centrosomes.length >= 2) {
                     var c0 = cell.centrosomes[0];
                     var c1 = cell.centrosomes[1];
-                    var spindleSteps = Math.max(Math.abs(c1.x - c0.x), Math.abs(c1.y - c0.y));
-                    // Only middle portion of spindle visible (midbody forming)
-                    var midStart = Math.floor(spindleSteps * 0.35);
-                    var midEnd = Math.ceil(spindleSteps * 0.65);
-                    for (var spi = midStart; spi <= midEnd; spi++) {
-                        var spFrac = spi / spindleSteps;
-                        var spX = Math.round(c0.x + (c1.x - c0.x) * spFrac);
-                        var spY = Math.round(c0.y + (c1.y - c0.y) * spFrac);
-                        if (spX >= 0 && spX < size && spY >= 0 && spY < size) {
-                            centPixels[spX + ',' + spY] = '#aa9933';
-                        }
-                    }
-                    // Cleavage furrow: actin ring constricting perpendicular to spindle axis
+                    // Midbody: single dense body at the cell equator where abscission will occur
                     var midX = (c0.x + c1.x) / 2;
                     var midY = (c0.y + c1.y) / 2;
+                    var mbX = Math.round(midX);
+                    var mbY = Math.round(midY);
+                    var mbPulse = Math.sin(tCent * 2 * Math.PI);
+                    centPixels[mbX + ',' + mbY] = mbPulse > 0 ? '#bbaa44' : '#aa9933';
+
+                    // Deep cleavage furrow: contractile actin-myosin ring constricting
                     var fAxisX = c1.x - c0.x;
                     var fAxisY = c1.y - c0.y;
                     var fAxisLen = Math.sqrt(fAxisX * fAxisX + fAxisY * fAxisY);
                     if (fAxisLen > 0) {
-                        // Perpendicular to spindle
                         var fPerpX = -fAxisY / fAxisLen;
                         var fPerpY = fAxisX / fAxisLen;
                         var furrowLen = cell.furrowProgress ? cell.furrowProgress * maxR : 0;
-                        // Contractile ring — two dots on each side of the cell equator
-                        for (var fi = -2; fi <= 2; fi++) {
+                        // Thicker contractile ring — more constriction visible
+                        for (var fi = -3; fi <= 3; fi++) {
                             var fx = Math.round(midX + fPerpX * fi * furrowLen);
                             var fy = Math.round(midY + fPerpY * fi * furrowLen);
                             if (fx >= 0 && fx < size && fy >= 0 && fy < size) {
-                                furrowPixels[fx + ',' + fy] = '#995533';
+                                // Inner furrow pixels are darker (deeper constriction)
+                                var fIntensity = 1.0 - Math.abs(fi) / 3.0;
+                                furrowPixels[fx + ',' + fy] = fIntensity > 0.5 ? '#774422' : '#995533';
                             }
                         }
                     }
@@ -547,7 +531,7 @@
                                 var ndy2 = y - cc.nucleusCy;
                                 var ndist = Math.sqrt(ndx2 * ndx2 + ndy2 * ndy2);
                                 if (ndist <= dd.nucR) {
-                                    // Telophase: nuclear region beginning to reform
+                                    // Cytokinesis: reformed nuclear interior
                                     color = '#7a3500';
                                 } else {
                                     color = cc.cytoColor;
