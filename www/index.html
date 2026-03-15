@@ -571,9 +571,6 @@
          ['phosphatases',[[1.6,0.9,0.7,'#44ddbb'],[2.4,3.1,-0.6,'#33ccaa'],[1.9,5.4,0.55,'#44ddbb']],[[1.6,2.3,-0.65,'#44ddbb'],[2.4,4.8,0.58,'#33ccaa'],[1.9,0.6,-0.52,'#44ddbb']],'orbitR,baseAngle,speed,color'],
          ['cdc25',[[2.4,0.6,0.5,'#338877'],[3.2,3.8,-0.38,'#44aa88']],[[2.4,2.2,-0.5,'#338877'],[3.2,5.5,0.4,'#44aa88']],'orbitR,baseAngle,speed,color'],
          ['cyclinA',[[2.8,4.0,-0.4,'#996677'],[1.2,0.3,0.65,'#aa7788']],[[2.8,1.0,0.42,'#996677'],[1.2,3.2,-0.6,'#aa7788']],'orbitR,baseAngle,speed,color'],
-         ['topoII',[[1.5,1.0,0.3,'#dd6644'],[4.0,0.7,-0.2,'#cc5533']],[[4.2,1.0,-0.28,'#dd6644'],[1.0,0.7,0.22,'#cc5533']],'baseAngle,orbitR,speed,color'],
-         ['cyclinB',[[3.5,0.4,0.5,'#228866']],[[3.5,2.8,-0.48,'#228866']],'orbitR,baseAngle,speed,color,+nuclear:false'],
-         ['plk1',[[2.2,1.5,0.55,'#ee6644'],[3.0,4.8,-0.48,'#dd5533']],[[2.2,4.2,-0.52,'#ee6644'],[3.0,1.5,0.46,'#dd5533']],'orbitR,baseAngle,speed,color'],
         ].forEach(function(d){var keys=d[3].split(','),extra={};
             keys=keys.filter(function(k){if(k.charAt(0)==='+'){var p=k.slice(1).split(':');extra[p[0]]=p[1]==='false'?false:p[1]==='true'?true:p[1];return false;}return true;});
             function mkArr(src){return src.map(function(v){var o={};for(var i=0;i<keys.length;i++)o[keys[i]]=v[i];for(var ek in extra)o[ek]=extra[ek];return o;});}
@@ -594,10 +591,6 @@
         mirrorOrg('cyclinD',
             [{orbitR:2.6,baseAngle:0.9,speed:0.45,color:'#ddaa33',nuclear:false},{orbitR:3.2,baseAngle:3.4,speed:-0.38,color:'#ccaa44',nuclear:false},{orbitR:1.0,baseAngle:1.8,speed:0.7,color:'#eebb44',nuclear:true}],
             [{orbitR:2.6,baseAngle:3.8,speed:-0.42,color:'#ddaa33',nuclear:false},{orbitR:3.2,baseAngle:0.5,speed:0.4,color:'#ccaa44',nuclear:false},{orbitR:1.0,baseAngle:4.5,speed:-0.65,color:'#eebb44',nuclear:true}]);
-        mirrorOrg('auroraA',
-            [{targetPole:1,speed:0.8,phase:0,color:'#88ddff'},{targetPole:2,speed:0.75,phase:0.5,color:'#99eeff'}],
-            [{targetPole:1,speed:-0.78,phase:0.3,color:'#88ddff'},{targetPole:2,speed:-0.72,phase:0.8,color:'#99eeff'}]);
-
         function mkProphase(p1, p2) {
             return { condensation:0.3, laminPhospho:0.2, npcDisassembly:0.25,
                 envelopeVesicles:true, asterCount:12, spindleForming:true,
@@ -1259,50 +1252,30 @@
                     }
                 }
             }
-            renderMembTrans([
-                {field:'aquaporins', period:7000, activeKey:'channelColor', restKey:'dimColor', pulseFreq:2.5, cycleSpeed:3,
-                    substrates:[{key:'waterColor', dir:'out', startR:0, range:1.2, phaseOff:0}]},
-                {field:'naKPumps', period:8000, activeKey:'pumpColor', restKey:'restColor', pulseFreq:3, cycleSpeed:2.5,
-                    substrates:[{key:'naColor', dir:'out', range:2.4, phaseOff:0},{key:'kColor', dir:'in', startR:1.2, range:1.5, phaseOff:0.5, spread:0.1}]},
-                {field:'sglt1', period:9000, activeKey:'transporterColor', restFallback:'#aa6622', pulseFreq:2.5, cycleSpeed:2.0,
-                    substrates:[{key:'glucoseColor', dir:'in', startR:1.2, range:3.0},{key:'naCoColor', dir:'in', startR:0.8, range:2.8, phaseOff:0.04, spread:0.11}]},
-                {field:'glut2', period:9000, activeKey:'channelColor', restFallback:'#995511', pulseFreq:2, cycleSpeed:1.8,
-                    substrates:[{key:'glucoseColor', dir:'out', range:1.8, phaseOff:0.5}]},
-                {field:'pepT1', period:10000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.2, cycleSpeed:2.2,
-                    substrates:[{key:'peptideColor', dir:'in', startR:1.0, range:2.8},{key:'hColor', dir:'in', startR:0.6, range:2.4, phaseOff:0.06, spread:0.15}]},
-                {field:'cd36', period:11000, activeKey:'receptorColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.8,
-                    substrates:[{key:'faColor', dir:'in', startR:1.3, range:3.2, wiggleFreq:12}]},
-                {field:'cftrChannels', period:8500, activeKey:'channelColor', restKey:'dimColor', pulseFreq:2.5, cycleSpeed:2.2,
-                    substrates:[{key:'clColor', dir:'out', range:2.2}]},
-                {field:'nhe3', period:9500, activeKey:'exchangerColor', restKey:'restColor', pulseFreq:2.8, cycleSpeed:2.0,
-                    substrates:[{key:'naInColor', dir:'in', startR:1.0, range:2.6},{key:'hOutColor', dir:'out', range:2.0, phaseOff:0.5, spread:0.12}]},
-                {field:'dra', period:9500, activeKey:'exchangerColor', restKey:'restColor', pulseFreq:2.5, cycleSpeed:1.8,
-                    substrates:[{key:'clInColor', dir:'in', startR:1.1, range:2.8},{key:'hco3OutColor', dir:'out', range:1.8, phaseOff:0.5, spread:-0.14}]},
-                {field:'dmt1', period:10000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.3, cycleSpeed:2.0,
-                    substrates:[{key:'feColor', dir:'in', startR:1.2, range:3.0},{key:'hColor', dir:'in', startR:0.7, range:2.2, phaseOff:0.08, spread:0.13}]},
-                {field:'ferroportin', period:10500, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
-                    substrates:[{key:'feColor', dir:'out', range:2.2, phaseOff:0.5},{key:'hephColor', dir:'out', range:1.5, phaseOff:0.3, spread:0.15}]},
-                {field:'asbt', period:11000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.2, cycleSpeed:1.8,
-                    substrates:[{key:'bileColor', dir:'in', startR:1.4, range:3.2, wiggleFreq:8},{key:'naCoColor', dir:'in', startR:0.8, range:2.4, phaseOff:0.06, spread:0.12}]},
-                {field:'ost', period:11500, activeKey:'channelColor', restKey:'restColor', pulseFreq:1.8, cycleSpeed:1.5,
-                    substrates:[{key:'bileColor', dir:'out', range:2.0, phaseOff:0.5}]},
-                {field:'npc1l1', period:12000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
-                    substrates:[{key:'cholColor', dir:'in', startR:1.5, range:3.5, wiggleFreq:6},{key:'clathrinColor', dir:'in', startR:0.5, range:1.8, phaseOff:0.15}]},
-                {field:'trpv6', period:9500, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.8, cycleSpeed:2.2,
-                    substrates:[{key:'caColor', dir:'in', startR:1.0, range:2.6}]},
-                {field:'pmca', period:10000, activeKey:'pumpColor', restKey:'restColor', pulseFreq:2.5, cycleSpeed:1.8,
-                    substrates:[{key:'caOutColor', dir:'out', range:2.0, phaseOff:0.5},{key:'atpColor', dir:'in', startR:0.6, range:1.5, phaseOff:0.3, spread:0.12}]},
-                {field:'zip4', period:10500, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.4, cycleSpeed:2.0,
-                    substrates:[{key:'znColor', dir:'in', startR:1.2, range:2.8}]},
-                {field:'znt1', period:11000, activeKey:'channelColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
-                    substrates:[{key:'znOutColor', dir:'out', range:2.2, phaseOff:0.5}]},
-                {field:'pcft', period:10000, activeKey:'transporterColor', restKey:'restColor', pulseFreq:2.6, cycleSpeed:2.0,
-                    substrates:[{key:'folateColor', dir:'in', startR:1.3, range:3.0},{key:'hColor', dir:'in', startR:0.7, range:2.2, phaseOff:0.06, spread:0.14}]},
-                {field:'rfc', period:10500, activeKey:'carrierColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.6,
-                    substrates:[{key:'folateOutColor', dir:'out', range:2.0, phaseOff:0.5}]},
-                {field:'cubilin', period:11500, activeKey:'receptorColor', restKey:'restColor', pulseFreq:2.0, cycleSpeed:1.5,
-                    substrates:[{key:'ifb12Color', dir:'in', startR:1.5, range:3.5, wiggleFreq:5},{key:'clathrinColor', dir:'in', startR:0.5, range:1.5, phaseOff:0.18}]},
-            ]);
+            var _mtD=[['aquaporins',7e3,'channelColor','dimColor',2.5,3,[['waterColor','o',0,1.2]]],
+            ['naKPumps',8e3,'pumpColor','restColor',3,2.5,[['naColor','o',0,2.4],['kColor','i',1.2,1.5,.5,.1]]],
+            ['sglt1',9e3,'transporterColor','#aa6622',2.5,2,[['glucoseColor','i',1.2,3],['naCoColor','i',.8,2.8,.04,.11]]],
+            ['glut2',9e3,'channelColor','#995511',2,1.8,[['glucoseColor','o',0,1.8,.5]]],
+            ['pepT1',1e4,'transporterColor','restColor',2.2,2.2,[['peptideColor','i',1,2.8],['hColor','i',.6,2.4,.06,.15]]],
+            ['cd36',11e3,'receptorColor','restColor',2,1.8,[['faColor','i',1.3,3.2,0,0,12]]],
+            ['cftrChannels',8500,'channelColor','dimColor',2.5,2.2,[['clColor','o',0,2.2]]],
+            ['nhe3',9500,'exchangerColor','restColor',2.8,2,[['naInColor','i',1,2.6],['hOutColor','o',0,2,.5,.12]]],
+            ['dra',9500,'exchangerColor','restColor',2.5,1.8,[['clInColor','i',1.1,2.8],['hco3OutColor','o',0,1.8,.5,-.14]]],
+            ['dmt1',1e4,'transporterColor','restColor',2.3,2,[['feColor','i',1.2,3],['hColor','i',.7,2.2,.08,.13]]],
+            ['ferroportin',10500,'channelColor','restColor',2,1.6,[['feColor','o',0,2.2,.5],['hephColor','o',0,1.5,.3,.15]]],
+            ['asbt',11e3,'transporterColor','restColor',2.2,1.8,[['bileColor','i',1.4,3.2,0,0,8],['naCoColor','i',.8,2.4,.06,.12]]],
+            ['ost',11500,'channelColor','restColor',1.8,1.5,[['bileColor','o',0,2,.5]]],
+            ['npc1l1',12e3,'transporterColor','restColor',2,1.6,[['cholColor','i',1.5,3.5,0,0,6],['clathrinColor','i',.5,1.8,.15]]],
+            ['trpv6',9500,'channelColor','restColor',2.8,2.2,[['caColor','i',1,2.6]]],
+            ['pmca',1e4,'pumpColor','restColor',2.5,1.8,[['caOutColor','o',0,2,.5],['atpColor','i',.6,1.5,.3,.12]]],
+            ['zip4',10500,'channelColor','restColor',2.4,2,[['znColor','i',1.2,2.8]]],
+            ['znt1',11e3,'channelColor','restColor',2,1.6,[['znOutColor','o',0,2.2,.5]]],
+            ['pcft',1e4,'transporterColor','restColor',2.6,2,[['folateColor','i',1.3,3],['hColor','i',.7,2.2,.06,.14]]],
+            ['rfc',10500,'carrierColor','restColor',2,1.6,[['folateOutColor','o',0,2,.5]]],
+            ['cubilin',11500,'receptorColor','restColor',2,1.5,[['ifb12Color','i',1.5,3.5,0,0,5],['clathrinColor','i',.5,1.5,.18]]]];
+            renderMembTrans(_mtD.map(function(m){var rk=m[3],isF=rk.charAt(0)==='#',o={field:m[0],period:m[1],activeKey:m[2],pulseFreq:m[4],cycleSpeed:m[5]};
+            if(isF)o.restFallback=rk;else o.restKey=rk;
+            if(m[6])o.substrates=m[6].map(function(s){var sub={key:s[0],dir:s[1]==='i'?'in':'out'};if(s[2])sub.startR=s[2];if(s[3])sub.range=s[3];if(s[4])sub.phaseOff=s[4];if(s[5])sub.spread=s[5];if(s[6])sub.wiggleFreq=s[6];return sub;});return o;}));
             var tFA = (now % 11000) / 11000;
             for (var fai2 = 0; fai2 < granddaughterNuclei.length; fai2++) {
                 var faG = granddaughterNuclei[fai2];
@@ -2201,6 +2174,20 @@
             }else if(tcyPh2<0.75){var bA3=lumA6+_P,bR3=0.5+(tcyPh2-0.55)*6.0;set(_r(mc.x+_c(bA3)*bR3),_r(mc.y+_s(bA3)*bR3),'#ccbb77');
             }else{var pR=1.5+_s(mcPh*0.8)*0.3,pA2=mc.pA+_s(mcPh*0.4+mci*1.7)*0.12;set(_r(mc.x+_c(pA2)*pR),_r(mc.y+_s(pA2)*pR),_s(mcPh*2.5+mci*1.3)>0?'#eedd99':'#ccbb77');}
             if(mcP>0.3)set(_r(mc.x+_c(lumA6+(mci===0?0.25:-0.25))*0.8),_r(mc.y+_s(lumA6+(mci===0?0.25:-0.25))*0.8),'#88ccbb');}
+            var tDC=(now%26000)/26000,sedDCs=[{x:26,y:15,a:0.7,mcIdx:0},{x:27,y:17,a:2.1,mcIdx:1}];
+            for(var dci=0;dci<sedDCs.length;dci++){var dc=sedDCs[dci],dcPh=tDC*2*_P+dc.a,dcP=_s(dcPh);
+            if(inB(dc.x,dc.y))set(dc.x,dc.y,dcP>0?'#ddaa66':'#bb8844');
+            for(var ddi2=0;ddi2<4;ddi2++){var ddA2=ddi2*1.57+dcPh*0.10+dci*0.8,ddR2=1.0+_s(dcPh*0.4+ddi2*1.5)*0.25;
+            var ddX2=_r(dc.x+_c(ddA2)*ddR2),ddY2=_r(dc.y+_s(ddA2)*ddR2);
+            if(inB(ddX2,ddY2))set(ddX2,ddY2,_s(dcPh*1.3+ddi2*2.1)>0?'#ccaa55':'#aa8833');}
+            var mcSrc=mCells[dc.mcIdx],agPh2=(tDC*1.6+dci*0.40)%1.0,agA2=_a(dc.y-mcSrc.y,dc.x-mcSrc.x);
+            if(agPh2<0.5){var agR2=0.5+agPh2*_q((dc.x-mcSrc.x)*(dc.x-mcSrc.x)+(dc.y-mcSrc.y)*(dc.y-mcSrc.y))*2;
+            var agX2=_r(mcSrc.x+_c(agA2)*agR2),agY2=_r(mcSrc.y+_s(agA2)*agR2);
+            if(inB(agX2,agY2))set(agX2,agY2,agPh2<0.2?'#eedd88':'#ccbb66');}
+            if(dcP>0.2){var mhcA=dcPh*0.15+dci*1.57,mhcR=0.5+dcP*0.3;
+            set(_r(dc.x+_c(mhcA)*mhcR),_r(dc.y+_s(mhcA)*mhcR),dcP>0.5?'#ffcc77':'#eebb55');
+            if(dcP>0.5){var tCellA=_a(16-dc.y,16-dc.x),tcR=1.8+dcP*0.5;
+            set(_r(dc.x+_c(tCellA)*tcR),_r(dc.y+_s(tCellA)*tcR),_s(dcPh*2.5+dci*1.3)>0?'#88ddaa':'#66bb88');}}}
             var tAnoi=(now%37000)/37000;
             var anoikisCells=[[2,3,1.2,0,'#ee5544','#aa7766','#55bb88','#886655'],[8,1,1.5,.35,'#dd4433','#997766','#44aa77','#776644'],[1,8,1.0,.70,'#ee5544','#aa7766','#55bb88','#886655']].map(function(d){return{x:d[0],y:d[1],shedA:_P*d[2],phase:d[3],casp:d[4],bleb:d[5],ps:d[6],frag:d[7]};});
             for(var ani=0;ani<anoikisCells.length;ani++){var ac=anoikisCells[ani],anPh=(tAnoi+ac.phase)%1.0,anSin=_s(tAnoi*2*_P+ani*2.09);
