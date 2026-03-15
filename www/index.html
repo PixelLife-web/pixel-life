@@ -344,23 +344,6 @@
             }
         }
 
-        for (var igi = 0; igi < granddaughterNuclei.length; igi++) {
-            var ign = granddaughterNuclei[igi];
-            var igBasalA = _a(blCenter.y - ign.y, blCenter.x - ign.x);
-            ign.pigr = [];
-            var pigrCount = 2 + (igi % 2);
-            for (var pgi = 0; pgi < pigrCount; pgi++) {
-                ign.pigr.push({
-                    basalAngle: igBasalA + (pgi - (pigrCount-1)/2) * 0.40,
-                    phase: igi * 0.7 + pgi * 1.3,
-                    receptorColor: '#55bb99',
-                    igaColor: '#ddaa77',
-                    vesicleColor: '#ccbb88',
-                    releaseColor: '#eedd99',
-                });
-            }
-        }
-
         var blCenter = { x: 16, y: 22 };
         function initTransporters(field, face, count, spread, angleOff, phaseMul, phaseStep, props, cellFilter) {
             for (var ti = 0; ti < granddaughterNuclei.length; ti++) {
@@ -419,6 +402,8 @@
             {carrierColor:'#55aa44',folateOutColor:'#88dd66',restColor:'#337722'},'enterocyte');
         initTransporters('cubilin','apical',2,0.40,0.70,0.85,1.7,
             {receptorColor:'#cc5577',ifb12Color:'#ee88aa',clathrinColor:'#aa4466',restColor:'#993355'},'enterocyte');
+        initTransporters('pigr','basal',function(i){return 2+(i%2)},0.40,0,0.7,1.3,
+            {receptorColor:'#55bb99',igaColor:'#ddaa77',vesicleColor:'#ccbb88',releaseColor:'#eedd99'});
         for (var aqi = 0; aqi < granddaughterNuclei.length; aqi++) {
             var aqn = granddaughterNuclei[aqi];
             aqn.aquaporins = [];
@@ -2200,6 +2185,16 @@
             if(trP>0.2&&il10Ph<0.65){var il10A=trPh*0.12+tri*1.57+_P*0.5,il10R=0.8+il10Ph*3.5;
             set(_r(tr.x+_c(il10A)*il10R),_r(tr.y+_s(il10A)*il10R),il10Ph<0.2?'#88eebb':'#66ccaa');
             if(il10Ph>0.25){var tgfA=il10A+0.6,tgfR=il10R*0.8;set(_r(tr.x+_c(tgfA)*tgfR),_r(tr.y+_s(tgfA)*tgfR),il10Ph<0.4?'#77ddaa':'#55bb88');}}}
+            var tNK=(now%29000)/29000,nkCells=[{x:11,y:21,a:0.6},{x:16,y:24,a:2.4},{x:21,y:22,a:4.2}];
+            for(var nki=0;nki<nkCells.length;nki++){var nk=nkCells[nki],nkPh=tNK*2*_P+nk.a,nkP=_s(nkPh);
+            if(inB(nk.x,nk.y))set(nk.x,nk.y,nkP>0?'#dd4466':'#bb2244');
+            emitGranules({x:nk.x,y:nk.y},nkPh,nki,3,2.09,0.7,'#ee6688','#cc4466',set);
+            var nkg2dPh=(tNK*2.0+nki*0.35)%1.0;
+            if(nkP>0.1&&nkg2dPh<0.5){var nkgA=_a(16-nk.y,16-nk.x),nkgR=0.8+nkg2dPh*3.0;
+            set(_r(nk.x+_c(nkgA)*nkgR),_r(nk.y+_s(nkgA)*nkgR),nkg2dPh<0.18?'#ff7799':(nkg2dPh<0.35?'#ee5577':'#cc3355'));}
+            if(nkP>0.3){var perfA=_a(nk.y-16,nk.x-16),perfR=1.0+nkP*0.5;
+            set(_r(nk.x+_c(perfA)*perfR),_r(nk.y+_s(perfA)*perfR),nkP>0.6?'#ffaa88':'#dd8866');
+            if(nkP>0.6){var grzR=perfR+0.8;set(_r(nk.x+_c(perfA+0.15)*grzR),_r(nk.y+_s(perfA+0.15)*grzR),'#ffcc99');}}}
             var tAnoi=(now%37000)/37000;
             var anoikisCells=[[2,3,1.2,0,'#ee5544','#aa7766','#55bb88','#886655'],[8,1,1.5,.35,'#dd4433','#997766','#44aa77','#776644'],[1,8,1.0,.70,'#ee5544','#aa7766','#55bb88','#886655']].map(function(d){return{x:d[0],y:d[1],shedA:_P*d[2],phase:d[3],casp:d[4],bleb:d[5],ps:d[6],frag:d[7]};});
             for(var ani=0;ani<anoikisCells.length;ani++){var ac=anoikisCells[ani],anPh=(tAnoi+ac.phase)%1.0,anSin=_s(tAnoi*2*_P+ani*2.09);
@@ -2231,9 +2226,9 @@
             var tIgA=(now%16000)/16000;
             for(var igai=0;igai<granddaughterNuclei.length;igai++){var igaG=granddaughterNuclei[igai];if(!igaG.pigr)continue;var igaBR=igaG.bodyRadius,igaApA=_a(igaG.y-blCenter.y,igaG.x-blCenter.x);
             for(var igaj=0;igaj<igaG.pigr.length;igaj++){var pgr=igaG.pigr[igaj],pgrCyc=(tIgA*1.8+pgr.phase*0.25)%1.0,pgrP=_s(tIgA*2*_P*2.5+pgr.phase);
-            set(_r(igaG.x+_c(pgr.basalAngle)*igaBR),_r(igaG.y+_s(pgr.basalAngle)*igaBR),pgrP>0.2?pgr.receptorColor:'#448877');
-            if(pgrCyc<0.25){var igaDR=igaBR+0.5+(0.25-pgrCyc)*4.0;set(_r(igaG.x+_c(pgr.basalAngle)*igaDR),_r(igaG.y+_s(pgr.basalAngle)*igaDR),pgrP>0?pgr.igaColor:'#bb9966');
-            }else if(pgrCyc<0.65){var tcyF2=(pgrCyc-0.25)/0.40,tcyA3=pgr.basalAngle+tcyF2*(igaApA-pgr.basalAngle),tcyR3=igaBR*(0.8-tcyF2*0.6);setR(_r(igaG.x+_c(tcyA3)*tcyR3),_r(igaG.y+_s(tcyA3)*tcyR3),tcyF2<0.5?pgr.vesicleColor:'#bbaa77',igaG.x,igaG.y,igaBR);
+            set(_r(igaG.x+_c(pgr.angle)*igaBR),_r(igaG.y+_s(pgr.angle)*igaBR),pgrP>0.2?pgr.receptorColor:'#448877');
+            if(pgrCyc<0.25){var igaDR=igaBR+0.5+(0.25-pgrCyc)*4.0;set(_r(igaG.x+_c(pgr.angle)*igaDR),_r(igaG.y+_s(pgr.angle)*igaDR),pgrP>0?pgr.igaColor:'#bb9966');
+            }else if(pgrCyc<0.65){var tcyF2=(pgrCyc-0.25)/0.40,tcyA3=pgr.angle+tcyF2*(igaApA-pgr.angle),tcyR3=igaBR*(0.8-tcyF2*0.6);setR(_r(igaG.x+_c(tcyA3)*tcyR3),_r(igaG.y+_s(tcyA3)*tcyR3),tcyF2<0.5?pgr.vesicleColor:'#bbaa77',igaG.x,igaG.y,igaBR);
             }else if(pgrCyc<0.80){var relF2=(pgrCyc-0.65)/0.15,relR3=igaBR+0.3+relF2*2.5,relA3=igaApA+_s(tIgA*2*_P+igaj*1.8)*0.10;set(_r(igaG.x+_c(relA3)*relR3),_r(igaG.y+_s(relA3)*relR3),relF2<0.4?pgr.releaseColor:'#ddcc88');}}}
             function renderCryptCell(cells,period,bodyC,bodyD,granC,granD,grCount,grStep,secFn){
                 var tCC=(now%period)/period;
