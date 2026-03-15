@@ -2182,6 +2182,18 @@
             var mmpPh=(tFb*1.8+fbi*0.30)%1.0;
             if(fbP>0.2&&mmpPh<0.4){var mmpA=fbPh*0.12+fbi*2.3+_P,mmpR=0.6+mmpPh*2.5;
             set(_r(fb.x+_c(mmpA)*mmpR),_r(fb.y+_s(mmpA)*mmpR),mmpPh<0.15?'#eedd66':'#ccbb44');}})
+            renderLPBody([{x:10,y:20,a:0.7},{x:15,y:22,a:2.3},{x:21,y:23,a:4.0},{x:17,y:18,a:5.5}]
+            ,30000,'#cc6644','#aa4422','#ee8855','#cc6633',3,2.09,function(eo,eoP,eoPh,tEo,eoi){
+            var biA=eoPh*0.06+eoi*1.57,biR=0.4;
+            set(_r(eo.x+_c(biA)*biR),_r(eo.y+_s(biA)*biR),_s(eoPh*1.2+eoi*0.9)>0?'#bb4422':'#993311');
+            set(_r(eo.x+_c(biA+_P)*biR),_r(eo.y+_s(biA+_P)*biR),_s(eoPh*1.2+eoi*0.9+1.0)>0?'#bb4422':'#993311');
+            var degrPh=(tEo*2.0+eoi*0.30)%1.0;
+            if(eoP>0.2&&degrPh<0.5){var mbpA=_a(16-eo.y,16-eo.x),mbpR=0.8+degrPh*3.5;
+            set(_r(eo.x+_c(mbpA)*mbpR),_r(eo.y+_s(mbpA)*mbpR),degrPh<0.18?'#ffaa66':'#dd8844');
+            if(degrPh>0.2){var epoR=mbpR+0.8;set(_r(eo.x+_c(mbpA+0.15)*epoR),_r(eo.y+_s(mbpA+0.15)*epoR),degrPh<0.35?'#ffbb77':'#ddaa55');}}
+            var eotPh=(tEo*1.5+eoi*0.35)%1.0;
+            if(eoP>0.1&&eotPh<0.4){var eotA=_a(16-eo.y,16-eo.x)+0.3,eotR=1.0+eotPh*2.5;
+            set(_r(eo.x+_c(eotA)*eotR),_r(eo.y+_s(eotA)*eotR),eotPh<0.15?'#ffdd88':'#eebb66');}})
             var tAnoi=(now%37000)/37000;
             var anoikisCells=[[2,3,1.2,0,'#ee5544','#aa7766','#55bb88','#886655'],[8,1,1.5,.35,'#dd4433','#997766','#44aa77','#776644'],[1,8,1.0,.70,'#ee5544','#aa7766','#55bb88','#886655']].map(function(d){return{x:d[0],y:d[1],shedA:_P*d[2],phase:d[3],casp:d[4],bleb:d[5],ps:d[6],frag:d[7]};});
             for(var ani=0;ani<anoikisCells.length;ani++){var ac=anoikisCells[ani],anPh=(tAnoi+ac.phase)%1.0,anSin=_s(tAnoi*2*_P+ani*2.09);
