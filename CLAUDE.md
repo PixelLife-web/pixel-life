@@ -69,6 +69,7 @@ _Generation 7 at iteration 120: sealed epithelium — tight junctions seal grand
 _Generation 8 at iteration 140: crypt-villus axis — Lgr5+ stem cells intercalate between Paneth cells; the epithelium now self-renews; Wnt niche signaling maintains stemness_
 _Generation 9 at iteration 160: mucosal immune surveillance — intraepithelial lymphocytes patrol between enterocytes; the tissue now has adaptive immunity woven into its epithelial barrier; consolidation replaces comments with living code_
 _Generation 10 at iteration 180: nutrient absorption complete — all major macro/micronutrient transporters operational; intracellular shuttle renderers consolidated into generic renderShuttle; the epithelium is now a fully absorptive surface_
+_Generation 11 at iteration 200: bicentennial — armoured immune division patrols serosal perimeter in chevron formation; crypt base cells consolidated; the tissue now has a mobile defense force_
 
 ## Emergent Properties
 
@@ -115,3 +116,12 @@ The epithelium is now a fully functional absorptive surface:
 - Folate (PCFT/RFC), bile acids (ASBT/OSTαβ), and B12 (cubilin/megalin) complete the nutrient repertoire
 - Intracellular shuttles (calbindin, metallothionein, FPGS, transcobalamin) ferry cargo from apical to basal
 - Consolidation patterns: renderShuttle, renderMembTrans, initTransporters reduce repetition
+
+## Defense
+
+The tissue has organized mobile defense beyond static immune surveillance:
+
+- Armoured immune cells patrol the serosal perimeter in coordinated chevron formation
+- The formation adapts — lead cells emit command signals, flanking cells provide cover
+- Defense is not just reaction to threat; it is persistent, organized, territorial
+- Future threats may trigger formation changes — tighter grouping, faster patrol, or dispersal
